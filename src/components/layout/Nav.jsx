@@ -2,28 +2,29 @@ import React from "react";
 import logoIntermedi from "../../assets/logoIntermedi.png";
 import { NavLink } from "react-router-dom";
 
-function Nav({ scrolled, menuOpen, setMenuOpen }) {
+function Nav({ scrolled, menuOpen, setMenuOpen, activeSection }) {
   return (
-    <nav className={`lp-nav${scrolled ? " scrolled" : ""}`}>
-      <a href="#" className="lp-logo">
+    <nav className={`lp-nav${scrolled ? " scrolled" : ""}`} aria-label="Navegação principal">
+      <a href="#inicio" className="lp-logo" aria-label="Intermedi — início">
         <img src={logoIntermedi} alt="Intermedi" className="lp-logo-img" />
       </a>
 
       <ul className="lp-nav-links">
-        <li className="active"><a href="#inicio">Inicio</a></li>
-        <li><a href="#como-funciona">Como funciona</a></li>
-        <li><a href="#catalogo">Catálogo <i className="bx bx-chevron-down" /></a></li>
-        <li><a href="#parceiros">Parceiros</a></li>
+        {[["#inicio", "Início"], ["#como-funciona", "Como funciona"], ["#catalogo", "Catálogo"], ["#parceiros", "Parceiros"]].map(([href, label]) => (
+          <li key={href} className={activeSection === href ? "active" : undefined}>
+            <a href={href} aria-current={activeSection === href ? "location" : undefined}>{label}</a>
+          </li>
+        ))}
       </ul>
 
       <div className="lp-nav-actions">
-        <NavLink to="/login">
-          <button className="btn-nav-primary">Entrar</button>
+        <NavLink to="/login" className="btn-nav-primary">
+          Entrar <span aria-hidden="true">↗</span>
         </NavLink>
         
       </div>
 
-      <button className="lp-hamburger" onClick={() => setMenuOpen(v => !v)} aria-label="Menu">
+      <button className="lp-hamburger" onClick={() => setMenuOpen(v => !v)} aria-label="Menu" aria-expanded={menuOpen} aria-controls="mobile-menu">
         <span /><span /><span />
       </button>
     </nav>

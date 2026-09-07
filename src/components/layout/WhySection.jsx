@@ -1,63 +1,39 @@
-import React from "react";
-import { useReveal } from "../../hooks/useReveal";
+import stockImage from "../../assets/benefit-stock.png";
+import securityImage from "../../assets/benefit-security.png";
+import deliveryImage from "../../assets/benefit-delivery.png";
+import "../../styles/whySection.css";
 
-/* ─── WHY CARDS DATA ─── */
-const whyCards = [
-  {
-    icon: "bx bx-package",
-    title: <><strong>Estoque</strong> <span className="green">Inteligente</span></>,
-    desc: "Medicamentos e produtos disponíveis com atualização em tempo real.",
-  },
-  {
-    icon: "bx bx-shield-quarter",
-    title: <><strong>Plataforma</strong> <span className="green">Segura</span></>,
-    desc: "Transações protegidas e fornecedores verificados para maior tranquilidade.",
-  },
-  {
-    icon: "bx bx-package",
-    title: <><strong>Distribuição</strong> <span className="green">Rápida</span></>,
-    desc: "Entregas otimizadas para garantir velocidade e eficiência operacional.",
-  },
+const benefits = [
+  { id: "stock", title: "Estoque", accent: "inteligente", description: "Encontre os medicamentos que faltam e dê mais movimento ao seu estoque.", image: stockImage, href: "#mapa", link: "Explore a rede" },
+  { id: "security", title: "Plataforma", accent: "segura", description: "Conecte sua farmácia a fornecedores e parceiros em um só lugar.", image: securityImage, href: "#parceiros", link: "Conheça os parceiros" },
+  { id: "delivery", title: "Distribuição", accent: "rápida", description: "Da solicitação à entrega, acompanhe cada etapa do seu pedido.", image: deliveryImage, href: "#como-funciona", link: "Veja como funciona" },
 ];
 
-function WhySection() {
-  const whyRef = useReveal();
-
+export default function WhySection() {
   return (
     <section className="lp-section lp-why" id="catalogo">
-      {/* O ref foi movido para cá, englobando todo o conteúdo da seção */}
-      <div className="lp-section-inner" ref={whyRef}>
-
-        {/* Mantém a classe reveal para o cabeçalho ser animado também */}
-        <div className="lp-section-head reveal">
+      <div className="lp-section-inner">
+        <div className="lp-section-head">
           <h2 className="lp-section-title">
-            <span className="chevron-left">▶</span>
-            {" "}Por que <span className="green">escolher</span> a <span className="green">Inter</span>medi ?{" "}
-            <span className="chevron-right">◀</span>
+            <span className="chevron-left" aria-hidden="true">▶</span>
+            {" "}Por que <span className="green">escolher</span> a <span className="green">Inter</span>medi?{" "}
+            <span className="chevron-right" aria-hidden="true">◀</span>
           </h2>
-          <p className="lp-section-sub">
-            Encontre os medicamentos que sua farmácia precisa em nosso<br />
-            catalogo completo e atualizado.
-          </p>
+          <p className="lp-section-sub">Encontre os medicamentos que sua farmácia precisa em nosso catálogo completo e atualizado.</p>
         </div>
-
-        <div className="lp-why-cards">
-          {whyCards.map((card, i) => (
-            <div className={`lp-why-card reveal reveal-delay-${i + 1}`} key={i}>
-              <div className="lp-why-card-left">
-                <h3>{card.title}</h3>
-                <div className="lp-why-underline" />
-                <p>{card.desc}</p>
+        <div className="benefits-grid">
+          {benefits.map((benefit) => (
+            <article className={`benefit-card benefit-card--${benefit.id}`} key={benefit.id}>
+              <div className="benefit-copy">
+                <h3>{benefit.title}<span>{benefit.accent}</span></h3>
+                <p>{benefit.description}</p>
               </div>
-              <div className="lp-why-icon">
-                <i className={card.icon} />
-              </div>
-            </div>
+              <img className="benefit-art" src={benefit.image} alt="" width="1254" height="1254" loading="lazy" decoding="async" />
+              <a className="benefit-link" href={benefit.href}><span aria-hidden="true">↗</span>{benefit.link}</a>
+            </article>
           ))}
         </div>
       </div>
     </section>
   );
 }
-
-export default WhySection;

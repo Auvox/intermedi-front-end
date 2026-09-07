@@ -1,5 +1,5 @@
 import React from "react";
-import pilula from "../../assets/pilula.png";
+import Pill3D from "./Pill3D";
 import mancha from "../../assets/mancha.png";
 import fundoCruz from "../../assets/fundoCruz.png";
 import logoI from "../../assets/logoI.png";
@@ -21,10 +21,16 @@ function HeroSection() {
               camentos
             </strong>
           </h1>
+          <p className="lp-hero-sub">O medicamento que sua farmácia procura pode estar mais perto do que você imagina. Encontre produtos e conecte-se a fornecedores em um só lugar.</p>
           <div className="lp-hero-actions">
-            <button className="btn-hero-primary">Explorar catálogo</button>
-            <button className="btn-hero-outline">Saiba mais</button>
+            <a className="btn-hero-primary" href="#catalogo">Explorar catálogo <span aria-hidden="true">↗</span></a>
+            <a className="btn-hero-outline" href="#como-funciona">Como funciona <span aria-hidden="true">→</span></a>
           </div>
+          <ul className="hero-benefits" aria-label="Recursos da Intermedi">
+            <li>Encontre medicamentos</li>
+            <li>Conecte farmácias</li>
+            <li>Simplifique pedidos</li>
+          </ul>
         </div>
 
         {/* RIGHT — visual */}
@@ -34,7 +40,7 @@ function HeroSection() {
             <img src={mancha} alt="" className="lp-hero-mancha" aria-hidden />
 
             {/* Pílula principal */}
-            <img src={pilula} alt="Pílula Intermedi" className="lp-hero-pilula" />
+            <Pill3D />
 
             {/* FLOATING CARD 1: Medicamento (Fica em cima/esquerda da pílula) */}
             <div className="lp-float-card card-medicamento">

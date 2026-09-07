@@ -1,13 +1,13 @@
 import React from "react";
+import { NavLink } from "react-router-dom";
 
-function MobileMenu({ menuOpen, setMenuOpen }) {
+function MobileMenu({ menuOpen, setMenuOpen, activeSection }) {
   return (
-    <div className={`lp-mobile-menu${menuOpen ? " open" : ""}`}>
-      <a href="#inicio" onClick={() => setMenuOpen(false)}>Início</a>
-      <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
-      <a href="#catalogo" onClick={() => setMenuOpen(false)}>Catálogo</a>
-      <a href="#parceiros" onClick={() => setMenuOpen(false)}>Parceiros</a>
-      <button className="btn-nav-primary" style={{ marginTop: 8 }}>Entrar</button>
+    <div id="mobile-menu" className={`lp-mobile-menu${menuOpen ? " open" : ""}`} inert={!menuOpen}>
+      {[["#inicio", "Início"], ["#como-funciona", "Como funciona"], ["#catalogo", "Catálogo"], ["#parceiros", "Parceiros"]].map(([href, label]) => (
+        <a key={href} href={href} aria-current={activeSection === href ? "location" : undefined} onClick={() => setMenuOpen(false)}>{label}</a>
+      ))}
+      <NavLink to="/login" className="btn-nav-primary" onClick={() => setMenuOpen(false)}>Entrar <span aria-hidden="true">↗</span></NavLink>
     </div>
   );
 }

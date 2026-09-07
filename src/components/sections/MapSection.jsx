@@ -233,12 +233,15 @@ export default function MapSection() {
         {/* Header da Seção integrado ao estilo do Hero */}
         <div className="section-header reveal">
           <div className="map-badge">
-            <span className="map-badge-dot" />
+            <svg className="map-badge-signal" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" fill="currentColor" />
+              <path d="M7 7a7 7 0 0 0 0 10M17 7a7 7 0 0 1 0 10M4 4a11 11 0 0 0 0 16M20 4a11 11 0 0 1 0 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
             AO VIVO
           </div>
           <h2 className="map-section-title">
-            Matches acontecendo <span className="green">agora</span> em São
-            Paulo
+            Matches acontecendo <span className="green">agora</span> em{" "}
+            <span className="map-title-region">São Paulo</span>
           </h2>
           <p className="map-section-subtitle">
             Veja em tempo real as conexões entre farmácias acontecendo pelo estado.
@@ -248,6 +251,10 @@ export default function MapSection() {
         <div className="map-wrapper reveal">
           {/* COLUNA DA ESQUERDA: Agrupa o Mapa e a Legenda logo abaixo dele */}
           <div className="map-main-content">
+            <div className="map-panel-heading">
+              <span><span className="map-region-mark" aria-hidden="true">+</span> Uma rede que aproxima</span>
+              <span className="map-region-label">São Paulo · SP</span>
+            </div>
             <div className="map-svg-container">
               <img
                 src={mapaSvg}
@@ -336,20 +343,24 @@ export default function MapSection() {
           </div>
 
           {/* COLUNA DA DIREITA: Painel Lateral com os Cards */}
-          <aside className="map-sidebar">
-            <div className="map-stat-pill">
+          <aside className="map-sidebar" aria-label="Indicadores da rede">
+            <div className="map-stat-pill map-stat-pill--featured">
+              <span className="map-stat-kicker">CONEXÕES QUE CUIDAM <span aria-hidden="true">↗</span></span>
               <div className="map-stat-pill-value">
                 {matchCount.toLocaleString("pt-BR")}
               </div>
               <div className="map-stat-pill-label">Matches hoje em SP</div>
+              <div className="map-stat-caption">Cada conexão, uma nova possibilidade de cuidado.</div>
             </div>
             <div className="map-stat-pill">
+              <span className="map-stat-symbol" aria-hidden="true">+</span>
               <div className="map-stat-pill-value">
                 {activeCount.toLocaleString("pt-BR")}
               </div>
               <div className="map-stat-pill-label">Farmácias ativas agora</div>
             </div>
             <div className="map-stat-pill">
+              <span className="map-stat-symbol" aria-hidden="true">↗</span>
               <div className="map-stat-pill-value">{medCount}</div>
               <div className="map-stat-pill-label">
                 Medicamentos em trânsito
@@ -359,12 +370,16 @@ export default function MapSection() {
 
           {/* PARTE INFERIOR: Feed ocupando toda a largura */}
           <div className="map-feed">
-            <div className="map-feed-title">Atividade recente</div>
+            <div className="map-feed-heading">
+              <h3 className="map-feed-title">A rede em movimento</h3>
+              <span>Atividade recente</span>
+            </div>
             <div className="map-feed-list">
+              {feed.length === 0 && <p className="map-feed-empty">Preparando as conexões no mapa…</p>}
               {feed.map((item) => (
                 <div key={item.id} className="map-feed-item">
-                  <span className="map-feed-dot" />
-                  {item.text}
+                  <span className="map-feed-dot" aria-hidden="true">↗</span>
+                  <span>{item.text}</span>
                 </div>
               ))}
             </div>
