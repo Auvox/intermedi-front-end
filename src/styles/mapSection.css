@@ -42,14 +42,23 @@
 .map-legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 500; color: var(--map-muted); line-height: 1.5; }
 .map-legend-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; border: 1px solid white; box-shadow: 0 0 0 1px #00000010; }
 .map-legend-line { width: 16px; height: 2px; flex-shrink: 0; border-radius: 2px; }
-.map-feed { grid-column: 1 / -1; min-width: 0; padding-top: 4px; }
+.map-feed { grid-column: 1 / -1; min-width: 0; padding-top: 22px; border-top: 1px solid var(--map-border); }
 .map-feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-.map-feed-title { margin: 0; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--map-ink); }
+.map-feed-title { margin: 0; font-family: inherit; font-size: 17px; font-weight: 600; letter-spacing: -.3px; color: var(--map-ink); }
 .map-feed-heading > span { font-size: 10px; color: var(--map-muted); }
-.map-feed-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 130px; align-content: start; }
-.map-feed-item { display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px; min-height: 60px; border-radius: 12px; border: 1px solid var(--map-border); font-size: 11px; line-height: 1.6; color: #42604e; }
-.map-feed-item > span:last-child { min-width: 0; overflow-wrap: anywhere; }
-.map-feed-dot { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #edf8ef; color: #219653; font-size: 17px; flex-shrink: 0; }
+.map-feed-list { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; min-height: 244px; align-content: start; }
+.map-feed-item { --activity-color: #168447; --activity-bg: #eaf8ef; display: flex; align-items: center; gap: 15px; background: #fff; padding: 18px; min-height: 116px; border-radius: 16px; border: 1px solid var(--map-border); box-shadow: 0 3px 9px #173e3004; font-size: 12px; line-height: 1.6; color: #42604e; animation: mapFeedAppear .35s ease-out; }
+.map-feed-item--match { --activity-color: #2569a4; --activity-bg: #edf5fd; }
+.map-feed-item--shipping { --activity-color: #996015; --activity-bg: #fff6e8; }
+.map-feed-dot { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--activity-bg); color: var(--activity-color); flex-shrink: 0; }
+.map-feed-dot svg { width: 23px; height: 23px; }
+.map-feed-detail { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
+.map-feed-type { font-size: 9px; line-height: 1.5; font-weight: 600; padding: 3px 8px; border-radius: 6px; color: var(--activity-color); background: var(--activity-bg); }
+.map-feed-medicine { font-size: 14px; font-weight: 600; color: var(--map-ink); }
+.map-feed-route { display: flex; flex-wrap: wrap; gap: 4px 7px; color: #60766a; font-size: 11px; overflow-wrap: anywhere; }
+.map-feed-route b { font-weight: 500; }
+.map-feed-subtitle { margin: 5px 0 0; font-size: 11px; color: var(--map-muted); line-height: 1.6; }
+@keyframes mapFeedAppear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 .map-feed-empty { grid-column: 1 / -1; font-size: 12px; padding: 18px 0; color: var(--map-muted); }
 @media (max-width: 1024px) {
   .map-wrapper { grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -75,12 +84,13 @@
   .map-stat-pill-label { font-size: 10px; }
   .map-stat-symbol { width: 26px; height: 26px; font-size: 19px; }
   .map-feed-heading { gap: 8px; flex-wrap: wrap; }
-  .map-feed-title { font-size: 13px; }
-  .map-feed-list { grid-template-columns: 1fr; min-height: 270px; }
-  .map-feed-item { padding: 12px; }
+  .map-feed-title { font-size: 16px; }
+  .map-feed-list { grid-template-columns: 1fr; min-height: 500px; }
+  .map-feed-item { padding: 15px; gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .map-badge-signal { animation: none; }
+  .map-feed-item { animation: none; }
   .mapsection .reveal { opacity: 1; transform: none; transition: none; }
 }
 .map-title-region { white-space: nowrap; }

@@ -43,10 +43,10 @@ const MEDS = [
   "Sinvastatina 20mg",
 ];
 
-const FEED_MSGS = [
-  (a, b, m) => `Match: ${a} → ${b} (${m})`,
-  (a, b, m) => `${a} enviando ${m} para ${b}`,
-  (a, b, m) => `Chamado resolvido: ${m} em ${b}`,
+const FEED_TYPES = [
+  { id: "match", label: "Conexão encontrada", path: "M8 12h8m-3-3 3 3-3 3M9 5H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h3m6-14h3a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-3" },
+  { id: "shipping", label: "Em transporte", path: "M3 6h11v12H3zM14 10h4l3 4v4h-7M7 18v1m11-1v1M3 10h7" },
+  { id: "resolved", label: "Chamado resolvido", path: "m8 12 3 3 5-6M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9Z" },
 ];
 
 export default function MapSection() {
@@ -136,7 +136,7 @@ export default function MapSection() {
       if (a.id === b.id) return;
 
       const med = MEDS[Math.floor(Math.random() * MEDS.length)];
-      const msgFn = FEED_MSGS[Math.floor(Math.random() * FEED_MSGS.length)];
+      const activity = FEED_TYPES[Math.floor(Math.random() * FEED_TYPES.length)];
 
       const lid = ++idRef.current;
       const pid = ++idRef.current;
@@ -203,7 +203,7 @@ export default function MapSection() {
 
         setFeed((prev) =>
           [
-            { id: ++idRef.current, text: msgFn(a.name, b.name, med) },
+            { id: ++idRef.current, activity, medicine: med, origin: a.name, destination: b.name },
             ...prev,
           ].slice(0, 4)
         );
@@ -371,15 +371,23 @@ export default function MapSection() {
           {/* PARTE INFERIOR: Feed ocupando toda a largura */}
           <div className="map-feed">
             <div className="map-feed-heading">
-              <h3 className="map-feed-title">A rede em movimento</h3>
-              <span>Atividade recente</span>
+              <div>
+                <h3 className="map-feed-title">A rede em movimento</h3>
+                <p className="map-feed-subtitle">Conexões que aproximam o cuidado de quem precisa.</p>
+              </div>
             </div>
             <div className="map-feed-list">
               {feed.length === 0 && <p className="map-feed-empty">Preparando as conexões no mapa…</p>}
               {feed.map((item) => (
-                <div key={item.id} className="map-feed-item">
-                  <span className="map-feed-dot" aria-hidden="true">↗</span>
-                  <span>{item.text}</span>
+                <div key={item.id} className={`map-feed-item map-feed-item--${item.activity.id}`}>
+                  <span className="map-feed-dot" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={item.activity.path} /></svg>
+                  </span>
+                  <div className="map-feed-detail">
+                    <span className="map-feed-type">{item.activity.label}</span>
+                    <strong className="map-feed-medicine">{item.medicine}</strong>
+                    <span className="map-feed-route">{item.activity.id === "resolved" ? <>Atendimento em <b>{item.destination}</b></> : <><span>{item.origin}</span><span aria-label="para">→</span><span>{item.destination}</span></>}</span>
+                  </div>
                 </div>
               ))}
             </div>
