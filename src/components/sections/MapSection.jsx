@@ -50,9 +50,7 @@ const FEED_TYPES = [
 ];
 
 export default function MapSection() {
-  const [matchCount, setMatchCount] = useState(0);
-  const [activeCount, setActiveCount] = useState(0);
-  const [medCount, setMedCount] = useState(0);
+  const [activityCounts, setActivityCounts] = useState({ match: 0, shipping: 0, resolved: 0 });
   const [feed, setFeed] = useState([]);
   const [lines, setLines] = useState([]);
   const [pulses, setPulses] = useState([]);
@@ -93,26 +91,6 @@ export default function MapSection() {
     });
     citiesRef.current = assigned;
     setCities(assigned);
-  }, []);
-
-  // Contador animado (Dashboard numérico)
-  useEffect(() => {
-    const targets = [
-      { set: setMatchCount, val: 3842, dur: 1400 },
-      { set: setActiveCount, val: 874, dur: 1000 },
-      { set: setMedCount, val: 127, dur: 800 },
-    ];
-    const timers = targets.map(({ set, val, dur }) => {
-      const step = val / (dur / 16);
-      let cur = 0;
-      const id = setInterval(() => {
-        cur = Math.min(cur + step, val);
-        set(Math.round(cur));
-        if (cur >= val) clearInterval(id);
-      }, 16);
-      return id;
-    });
-    return () => timers.forEach(clearInterval);
   }, []);
 
   // Controle de conexões e animações em tempo real (Sem Warnings)
@@ -199,7 +177,7 @@ export default function MapSection() {
 
         if (!isMounted) return;
         setLines((prev) => prev.filter((l) => l.id !== lid));
-        setMatchCount((c) => c + 1);
+        setActivityCounts((counts) => ({ ...counts, [activity.id]: counts[activity.id] + 1 }));
 
         setFeed((prev) =>
           [
@@ -344,28 +322,18 @@ export default function MapSection() {
 
           {/* COLUNA DA DIREITA: Painel Lateral com os Cards */}
           <aside className="map-sidebar" aria-label="Indicadores da rede">
-            <div className="map-stat-pill map-stat-pill--featured">
-              <span className="map-stat-kicker">CONEXÕES QUE CUIDAM <span aria-hidden="true">↗</span></span>
-              <div className="map-stat-pill-value">
-                {matchCount.toLocaleString("pt-BR")}
+            <div className="map-network-heading"><span>RESUMO DA REDE</span><small>Nesta visualização</small></div>
+            {FEED_TYPES.map((activity) => (
+              <div key={activity.id} className={`map-stat-pill map-network-stat map-network-stat--${activity.id}`}>
+                <div className="map-network-stat-top">
+                  <span className="map-network-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={activity.path} /></svg></span>
+                  <span className="map-network-category">{activity.label}</span>
+                </div>
+                <div className="map-stat-pill-value">{activityCounts[activity.id].toLocaleString("pt-BR")}</div>
+                <div className="map-stat-pill-label">{activity.id === "match" ? "Conexões entre farmácias" : activity.id === "shipping" ? "Envios registrados" : "Chamados resolvidos"}</div>
+                <p className="map-network-description">{activity.id === "match" ? "Disponibilidade e necessidade se encontram." : activity.id === "shipping" ? "Medicamentos a caminho de quem precisa." : "Mais uma necessidade atendida pela rede."}</p>
               </div>
-              <div className="map-stat-pill-label">Matches hoje em SP</div>
-              <div className="map-stat-caption">Cada conexão, uma nova possibilidade de cuidado.</div>
-            </div>
-            <div className="map-stat-pill">
-              <span className="map-stat-symbol" aria-hidden="true">+</span>
-              <div className="map-stat-pill-value">
-                {activeCount.toLocaleString("pt-BR")}
-              </div>
-              <div className="map-stat-pill-label">Farmácias ativas agora</div>
-            </div>
-            <div className="map-stat-pill">
-              <span className="map-stat-symbol" aria-hidden="true">↗</span>
-              <div className="map-stat-pill-value">{medCount}</div>
-              <div className="map-stat-pill-label">
-                Medicamentos em trânsito
-              </div>
-            </div>
+            ))}
           </aside>
 
           {/* PARTE INFERIOR: Feed ocupando toda a largura */}

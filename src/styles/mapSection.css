@@ -94,3 +94,29 @@
   .mapsection .reveal { opacity: 1; transform: none; transition: none; }
 }
 .map-title-region { white-space: nowrap; }
+.map-network-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 3px 2px; color: var(--map-muted); }
+.map-network-heading > span { font-size: 9px; font-weight: 600; letter-spacing: .08em; }
+.map-network-heading small { font-size: 9px; }
+.map-network-stat { --activity-color: #2569a4; --activity-bg: #edf5fd; padding: 18px 20px; border-radius: 16px; box-shadow: 0 3px 9px #173e3004; }
+.map-network-stat--shipping { --activity-color: #996015; --activity-bg: #fff6e8; }
+.map-network-stat--resolved { --activity-color: #168447; --activity-bg: #eaf8ef; }
+.map-network-stat-top { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.map-network-icon { display: grid; place-items: center; flex-shrink: 0; width: 33px; height: 33px; border-radius: 10px; color: var(--activity-color); background: var(--activity-bg); }
+.map-network-icon svg { width: 19px; height: 19px; }
+.map-network-category { font-size: 10px; font-weight: 600; color: var(--activity-color); }
+.map-network-stat .map-stat-pill-value { font-size: 36px; }
+.map-network-stat .map-stat-pill-label { color: var(--map-ink); font-size: 11px; font-weight: 500; }
+.map-network-description { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--map-border); font-size: 10px; line-height: 1.65; color: var(--map-muted); }
+@media (max-width: 1024px) {
+  .map-network-heading { grid-column: 1 / -1; }
+  .map-sidebar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .map-network-stat { padding: 16px; }
+}
+@media (max-width: 600px) {
+  .map-sidebar { grid-template-columns: 1fr; }
+  .map-network-stat { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; }
+  .map-network-stat-top { margin: 0; }
+  .map-network-stat .map-stat-pill-value { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+  .map-network-stat .map-stat-pill-label { margin: 0; }
+  .map-network-description { grid-column: 1 / -1; margin-top: 5px; }
+}
