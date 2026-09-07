@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { authRequest } from "../services/auth";
 import logo from "../assets/logoIntermedi.png";
 import phoneMockup from "../assets/intermedi-phones.png";
 import "../styles/auth.css";
@@ -29,7 +30,9 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
   return <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 export default function LoginUser({ initialMode = "login" }: { initialMode?: Mode }) {
-  const [role, setRole] = useState<Role | null>(null);
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [role, setRole] = useState<Role | null>(params.get("perfil") === "gerente" ? "gerente" : null);
   const [mode, setMode] = useState<Mode>(initialMode);
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
@@ -47,29 +50,35 @@ export default function LoginUser({ initialMode = "login" }: { initialMode?: Mod
     if (pending) return;
     const data = new FormData(event.currentTarget);
     if (mode === "cadastro" && data.get("senha") !== data.get("confirmarSenha")) { setMessage("As senhas não coincidem. Confira os dois campos e tente novamente."); return; }
-    if (mode === "cadastro") {
-      setMessage("O cadastro online ainda não está disponível. Nenhuma conta foi criada. Entre em contato com o responsável pela plataforma.");
+    if (role !== "gerente" && mode === "cadastro") {
+      setMessage("O cadastro está disponível apenas para gerentes neste momento.");
       return;
     }
     const currentRequest = ++requestId.current;
     setPending(true);
     setMessage("");
     try {
-      // Preserve the existing API contract; permissions must be checked by the server.
-      const response = await fetch("http://localhost/repositorioIntermedi/Intermedi/backEnd/api/usuarios/loginUsuario.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.get("email"), senha: data.get("senha") }),
-        signal: AbortSignal.timeout(15000),
+      if (role !== "gerente") {
+        const response = await fetch("http://localhost/repositorioIntermedi/Intermedi/backEnd/api/usuarios/loginUsuario.php", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: data.get("email"), senha: data.get("senha") }),
+          signal: AbortSignal.timeout(15000),
+        });
+        const result = await response.json();
+        if (currentRequest !== requestId.current) return;
+        const apiMessage = result?.mensagem ?? result?.message;
+        setMessage(typeof apiMessage === "string" ? apiMessage : "O servidor ainda não informou o próximo passo do acesso.");
+        return;
+      }
+      const result = await authRequest(mode === "cadastro" ? "register" : "login", {
+        email: data.get("email"), senha: data.get("senha"), role,
+        ...(mode === "cadastro" ? { nome: data.get("nome"), unidade: data.get("unidade"), confirmarSenha: data.get("confirmarSenha") } : {}),
       });
-      const result = await response.json();
       if (currentRequest !== requestId.current) return;
-      const apiMessage = result?.mensagem ?? result?.message;
-      setMessage(typeof apiMessage === "string" ? apiMessage : response.ok
-        ? "Solicitação enviada. O servidor ainda não informou o próximo passo do acesso."
-        : "Não foi possível entrar. Confira seus dados e tente novamente.");
-    } catch {
-      if (currentRequest === requestId.current) setMessage("Não foi possível conectar ao serviço de login. Tente novamente em instantes.");
+      if (result.user?.role === "gerente") navigate("/gerente", { replace: true });
+      else setMessage("Esta conta não tem acesso à área do gerente.");
+    } catch (error) {
+      if (currentRequest === requestId.current) setMessage(error instanceof Error ? error.message : "Não foi possível conectar ao serviço de contas. Tente novamente.");
     } finally {
       if (currentRequest === requestId.current) setPending(false);
     }
@@ -93,13 +102,14 @@ export default function LoginUser({ initialMode = "login" }: { initialMode?: Mod
           {role !== "admin" && <div className="auth-mode" aria-label="Tipo de acesso"><button aria-pressed={mode === "login"} onClick={() => changeMode("login")}>Entrar</button><button aria-pressed={mode === "cadastro"} onClick={() => changeMode("cadastro")}>Criar conta</button></div>}
           <form key={`${role}-${mode}`} className="auth-form" onSubmit={submit}>
             {mode === "cadastro" && <label>Nome completo<input name="nome" autoComplete="name" placeholder="Como podemos chamar você?" required minLength={3} maxLength={120} /></label>}
+            {mode === "cadastro" && role === "gerente" && <label>Nome da sua nova unidade<input name="unidade" autoComplete="organization" placeholder="Ex.: Farmácia São Lucas" required minLength={3} maxLength={150} /><small>O cadastro cria uma unidade própria. Não concede acesso a uma farmácia já cadastrada.</small></label>}
             <label>E-mail<input name="email" type="email" autoComplete="email" placeholder="voce@farmacia.com.br" required maxLength={254} /></label>
             <label>Senha<span className="auth-password"><input name="senha" type={visible ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder={mode === "login" ? "Digite sua senha" : "Crie uma senha com 8 ou mais caracteres"} required minLength={mode === "cadastro" ? 8 : 1} maxLength={128} /><button type="button" onClick={() => setVisible(!visible)} aria-label={visible ? "Ocultar senha" : "Mostrar senha"} aria-pressed={visible}><Icon name={visible ? "hidden" : "eye"} /></button></span></label>
             {mode === "cadastro" && <label>Confirmar senha<input name="confirmarSenha" type={visible ? "text" : "password"} autoComplete="new-password" placeholder="Digite sua senha novamente" required minLength={8} maxLength={128} /></label>}
             {mode === "login" && <button type="button" className="auth-forgot" onClick={() => setMessage("Para recuperar seu acesso, entre em contato com o responsável pela sua farmácia. A recuperação online ainda não está disponível.")}>Esqueci minha senha</button>}
             {role === "admin" && <p className="auth-admin-note"><Icon name="shield" /> Acesso exclusivo para administradores autorizados.</p>}
             {message && <p className="auth-message" role="alert">{message}</p>}
-            <button className="auth-submit" type="submit" disabled={pending} aria-busy={pending}>{pending ? "Entrando…" : mode === "login" ? "Entrar na minha conta" : "Criar minha conta"}<Icon name="arrow" /></button>
+            <button className="auth-submit" type="submit" disabled={pending} aria-busy={pending}>{pending ? (mode === "cadastro" ? "Criando sua conta…" : "Entrando…") : mode === "login" ? "Entrar na minha conta" : "Criar minha conta"}<Icon name="arrow" /></button>
           </form>
           <p className="auth-form-foot"><Icon name="lock" /> Seu espaço para cuidar e conectar.</p>
         </>}

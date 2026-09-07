@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:auth": "node server/auth.mjs",
+    "test:auth": "node --test server/auth.test.mjs server/vite-auth.test.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
