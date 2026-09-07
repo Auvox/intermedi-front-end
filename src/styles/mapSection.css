@@ -1,0 +1,228 @@
+/* ============================================================
+   MAP SECTION — Intermedi (redesign integrado)
+   ============================================================ */
+
+   .mapsection {
+    padding: 100px 0;
+    background-color: #ffffff; /* Fundo limpo para contrastar com os elementos em var(--gray) */
+    font-family: "DM Sans", sans-serif;
+    position: relative;
+  }
+  
+  .section-container {
+    width: 90%;
+    max-width: 1200px; /* Alinhado perfeitamente com o container do Hero */
+    margin: 0 auto;
+  }
+  
+  /* ── Header da Seção ── */
+  .mapsection .section-header {
+    text-align: left;
+    margin-bottom: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  /* Títulos da Seção (Seguindo a hierarquia visual do Hero) */
+  .map-section-title {
+    font-family: "Sora", sans-serif;
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--black);
+    margin-bottom: 16px;
+  }
+  .map-section-title .green { color: var(--green); }
+  
+  .map-section-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 540px;
+    margin-bottom: 48px;
+  }
+  
+  /* Estrutura do Grid (Mapa + Lateral) */
+  .map-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 48px;
+    align-items: start;
+  }
+  
+  /* Container do SVG e da Imagem de Fundo */
+  .map-svg-container {
+    position: relative; /* CRÍTICO: Garante que as coordenadas do SVG se baseiem nesta caixa */
+    width: 100%;
+    background-color: var(--gray); /* Mesma cor de fundo suave da seção Hero */
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid var(--gray2);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.3s ease;
+  }
+  .map-svg-container:hover {
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Imagem de Fundo do Estado de SP */
+  .sp-map-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+  
+  /* SVG de Overlay (Camada de Linhas e Cidades) */
+  .map-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Deixa cliques passarem através caso necessário */
+  }
+  
+  /* Sidebar de Estatísticas */
+  .map-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .map-stat-pill {
+    background: white;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray2);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .map-stat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(46, 204, 113, 0.2); /* Sutil brilho verde no hover */
+  }
+  
+  .map-stat-pill-value {
+    font-family: "Sora", sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--black);
+    line-height: 1;
+  }
+  
+  .map-stat-pill-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 8px;
+    letter-spacing: 0.01em;
+  }
+  
+  /* Legendas */
+  .map-legend {
+    grid-column: 1;
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+  }
+  
+  .map-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  
+  .map-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  }
+  /* Cores dinâmicas para as bolinhas da legenda herdando do tema */
+  .map-legend-dot.primary   { background: var(--green); }
+  .map-legend-dot.secondary { background: var(--text-muted); }
+  
+  /* Feed Recente (Seção inferior larga) */
+  .map-feed {
+    grid-column: 1 / -1;
+    margin-top: 48px;
+    border-top: 1px solid var(--gray3);
+    padding-top: 32px;
+  }
+  
+  .map-feed-title {
+    font-family: "Sora", sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 20px;
+  }
+  
+  .map-feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .map-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--gray);
+    padding: 14px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--gray2);
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: background 0.2s ease;
+  }
+  .map-feed-item:hover {
+    background: white;
+    border-color: var(--gray3);
+  }
+  
+  .map-feed-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite; /* Usa o mesmo efeito pulsar do badge do Hero */
+    flex-shrink: 0;
+  }
+  
+  /* ── Responsividade Adaptada ── */
+  @media (max-width: 1024px) {
+    .map-wrapper {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .map-legend {
+      grid-column: auto;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .map-feed {
+      margin-top: 32px;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .mapsection {
+      padding: 60px 0;
+    }
+    .map-stat-pill {
+      padding: 20px;
+    }
+    .map-stat-pill-value {
+      font-size: 30px;
+    }
+  }

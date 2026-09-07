@@ -1,0 +1,159 @@
+/* ============================================================
+   GLOBAL STYLES — Intermedi
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap");
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:        #22c55e;
+  --green-dark:   #16a34a;
+  --green-light:  #4ade80;
+  --green-glow:   rgba(34, 197, 94, 0.18);
+  --green-subtle: rgba(34, 197, 94, 0.09);
+  --black:        #0d0d0d;
+  --white:        #fff;
+  --gray:         #f5f7f4;
+  --gray2:        #e4e7e1;
+  --gray3:        #c9cdc5;
+  --text-sec:     #5a5f56;
+  --text-muted:   #8a9086;
+  --t:            0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  --r-sm:         8px;
+  --r-md:         14px;
+  --r-lg:         20px;
+  --r-xl:         28px;
+  --sh-sm:        0 2px 10px rgba(0, 0, 0, 0.06);
+  --sh-md:        0 8px 28px rgba(0, 0, 0, 0.09);
+  --sh-green:     0 12px 40px rgba(34, 197, 94, 0.22);
+
+  /* Aliases for components that use the old names */
+  --transition:         var(--t);
+  --radius-sm:          var(--r-sm);
+  --radius-md:          var(--r-md);
+  --radius-lg:          var(--r-lg);
+  --radius-xl:          var(--r-xl);
+  --shadow-sm:          var(--sh-sm);
+  --shadow-md:          var(--sh-md);
+  --shadow-green:       var(--sh-green);
+  --text-secondary:     var(--text-sec);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "DM Sans", sans-serif;
+  color: var(--black);
+  background: var(--white);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 26px;
+  border-radius: var(--r-sm);
+  font-family: "DM Sans", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all var(--t);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover {
+  background: var(--green-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--sh-green);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--black);
+  border: 1.5px solid var(--gray3);
+}
+.btn-outline:hover {
+  border-color: var(--green);
+  color: var(--green);
+  transform: translateY(-2px);
+}
+.btn-lg { padding: 14px 32px; font-size: 15px; border-radius: 10px; }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-sec);
+  border: 1.5px solid var(--gray2);
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 9px 20px;
+}
+.btn-ghost:hover {
+  border-color: var(--gray3);
+  color: var(--black);
+}
+
+/* ── Sections ── */
+.section { padding: 110px 5%; }
+.section-container { max-width: 1200px; margin: 0 auto; }
+.section-header { text-align: center; margin-bottom: 72px; }
+
+.section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green-dark);
+  background: var(--green-subtle);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  padding: 5px 14px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+}
+.section-tag::before { content: "●"; font-size: 6px; animation: pulse 2.5s infinite; }
+
+.section-title {
+  font-family: "Sora", sans-serif;
+  font-size: clamp(30px, 3.8vw, 48px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+  color: var(--black);
+}
+.section-title .green { color: var(--green); }
+
+.section-desc {
+  font-size: 16px;
+  color: var(--text-sec);
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.75;
+  font-weight: 400;
+}
+
+/* ── Reveal ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-d1  { transition-delay: 0.12s; }
+.reveal-d2  { transition-delay: 0.22s; }
+.reveal-d3  { transition-delay: 0.34s; }
+.reveal-delay-1 { transition-delay: 0.12s; }
+.reveal-delay-2 { transition-delay: 0.22s; }
+.reveal-delay-3 { transition-delay: 0.34s; }
+
+/* ── Animations ── */
+@keyframes fadeInUp    { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInRight { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeInLeft  { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes float       { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes pulse       { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes scrollLeft  { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes scrollRight { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }

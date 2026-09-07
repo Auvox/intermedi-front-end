@@ -1,0 +1,238 @@
+/* ============================================================
+   MAP SECTION — Redesign Premium com Fonte Poppins
+   ============================================================ */
+
+   .mapsection {
+    padding: 100px 0;
+    background-color: #ffffff;
+    font-family: "Poppins", sans-serif;
+  }
+  
+  .section-container {
+    width: 90%;
+    max-width: 1200px; /* Alinhamento exato com a largura do Hero */
+    margin: 0 auto;
+  }
+  
+  /* ── Badge Ao Vivo ── */
+  .map-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid var(--gray2, #eef0f2);
+    border-radius: 100px;
+    padding: 7px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary, #666);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.02));
+    letter-spacing: 0.05em;
+    font-family: "Poppins", sans-serif;
+  }
+  
+  .map-badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e74c3c;
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+  
+  /* ── Títulos (Hierarquia robusta em Poppins) ── */
+  .map-section-title {
+    font-family: "Poppins", sans-serif;
+    font-size: clamp(32px, 4.2vw, 48px);
+    font-weight: 800; /* Peso forte para marcar presença */
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--black, #111);
+    margin-bottom: 16px;
+  }
+  .map-section-title .green { 
+    color: var(--green, #2ecc71); 
+  }
+  
+  .map-section-subtitle {
+    font-family: "Poppins", sans-serif;
+    font-size: 16px;
+    color: var(--text-secondary, #666);
+    line-height: 1.7;
+    max-width: 640px;
+    margin-bottom: 56px;
+    font-weight: 400;
+  }
+  
+  /* ── Estrutura de Grid ── */
+  .map-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 48px;
+    align-items: start;
+  }
+  
+  .map-main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* Container do Mapa */
+  .map-svg-container {
+    position: relative;
+    width: 100%;
+    background-color: var(--gray, #f8fafc);
+    border-radius: var(--radius-lg, 16px);
+    overflow: hidden;
+    border: 1px solid var(--gray2, #eef0f2);
+    box-shadow: var(--shadow-sm, 0 4px 12px rgba(0,0,0,0.02));
+  }
+  
+  .sp-map-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+  
+  .map-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  
+  /* ── Legendas ── */
+  .map-legend {
+    display: flex;
+    gap: 24px;
+    padding: 4px 0;
+  }
+  
+  .map-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #555);
+    font-family: "Poppins", sans-serif;
+  }
+  
+  .map-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  
+  .map-legend-line {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  
+  /* ── Sidebar de Cards Estatísticos ── */
+  .map-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .map-stat-pill {
+    background: white;
+    padding: 24px;
+    border-radius: var(--radius-lg, 16px);
+    border: 1px solid var(--gray2, #eef0f2);
+    box-shadow: var(--shadow-sm, 0 4px 12px rgba(0,0,0,0.02));
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .map-stat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md, 0 12px 28px rgba(0,0,0,0.06));
+    border-color: rgba(46, 204, 113, 0.25);
+  }
+  
+  .map-stat-pill-value {
+    font-family: "Poppins", sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--black, #111);
+    line-height: 1;
+  }
+  
+  .map-stat-pill-label {
+    font-family: "Poppins", sans-serif;
+    font-size: 13px;
+    color: var(--text-muted, #777);
+    font-weight: 500;
+    margin-top: 8px;
+  }
+  
+  /* ── Feed de Atividades Inferior ── */
+  .map-feed {
+    grid-column: 1 / -1;
+    margin-top: 48px;
+    border-top: 1px solid var(--gray3, #eef0f2);
+    padding-top: 36px;
+  }
+  
+  .map-feed-title {
+    font-family: "Poppins", sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--black, #111);
+    margin-bottom: 20px;
+  }
+  
+  .map-feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .map-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--gray, #f8fafc);
+    padding: 14px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--gray2, #eef0f2);
+    font-size: 14px;
+    color: var(--text-secondary, #444);
+    font-weight: 500;
+    font-family: "Poppins", sans-serif;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .map-feed-item:hover {
+    background: white;
+    border-color: var(--gray3, #cbd5e1);
+  }
+  
+  .map-feed-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green, #2ecc71);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+  
+  /* ── Responsividade ── */
+  @media (max-width: 960px) {
+    .map-wrapper {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .map-feed {
+      margin-top: 32px;
+    }
+  }

@@ -1,0 +1,178 @@
+/* ============================================================
+   NAVBAR — Intermedi
+   ============================================================ */
+
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  height: 68px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all var(--transition);
+}
+.nav.scrolled {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+}
+
+/* Logo */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.nav-logo-mark {
+  width: 36px; height: 36px;
+  background: var(--green);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-logo-mark svg {
+  width: 20px; height: 20px;
+  stroke: #fff; stroke-width: 2.2; fill: none;
+}
+.nav-logo-text {
+  font-family: "Sora", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--black);
+  letter-spacing: -0.02em;
+}
+.nav-logo-text span { color: var(--green); }
+
+/* Links */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+.nav-links a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-sec);
+  text-decoration: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  transition: all var(--transition);
+}
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--black);
+  background: var(--gray);
+}
+.nav-links a.active { font-weight: 600; }
+
+/* Dropdown */
+.nav-dropdown { position: relative; }
+.nav-dropdown > a { display: flex; align-items: center; gap: 4px; }
+.nav-dropdown-icon {
+  width: 14px; height: 14px;
+  stroke: currentColor; stroke-width: 2; fill: none;
+  transition: transform var(--transition);
+}
+.nav-dropdown:hover .nav-dropdown-icon { transform: rotate(180deg); }
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: #fff;
+  border: 1px solid var(--gray2);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 180px;
+  box-shadow: var(--sh-md);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition), transform var(--transition);
+}
+.nav-dropdown:hover .nav-dropdown-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.nav-dropdown-menu a {
+  display: block;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-sec);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all var(--transition);
+  background: transparent;
+}
+.nav-dropdown-menu a:hover { background: var(--gray); color: var(--black); }
+
+/* Actions */
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px;
+}
+.hamburger span {
+  display: block;
+  width: 22px; height: 2px;
+  background: var(--black);
+  border-radius: 2px;
+  transition: all var(--transition);
+}
+
+/* Mobile nav */
+.mobile-nav {
+  position: fixed;
+  top: 68px; left: 0; right: 0;
+  background: #fff;
+  padding: 20px 5%;
+  border-bottom: 1px solid var(--gray2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transform: translateY(-120%);
+  transition: transform var(--transition);
+  z-index: 99;
+  box-shadow: var(--sh-md);
+}
+.mobile-nav.open { transform: translateY(0); }
+.mobile-nav a {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--black);
+  text-decoration: none;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray2);
+  transition: color var(--transition);
+}
+.mobile-nav a:hover { color: var(--green); }
+.mobile-nav a:last-child { border-bottom: none; }
+.mobile-nav-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.mobile-nav-actions a { flex: 1; text-align: center; }
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .nav-actions { gap: 6px; }
+  .nav-actions .btn-ghost { display: none; }
+}
+@media (max-width: 480px) {
+  .nav-actions .btn-primary { display: none; }
+}

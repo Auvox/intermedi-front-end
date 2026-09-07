@@ -1,0 +1,102 @@
+/* ============================================================
+   TESTIMONIALS SECTION — Intermedi
+   ============================================================ */
+
+.testimonials { background: var(--gray); overflow: hidden; }
+
+/* ── Track (infinite scroll) ── */
+.testimonials-track-wrap {
+  position: relative;
+  margin: 0 -5%;
+  padding: 8px 0;
+}
+
+/* Fade edges */
+.testimonials-track-wrap::before,
+.testimonials-track-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 120px;
+  z-index: 2;
+  pointer-events: none;
+}
+.testimonials-track-wrap::before { left: 0;  background: linear-gradient(90deg, var(--gray), transparent); }
+.testimonials-track-wrap::after  { right: 0; background: linear-gradient(-90deg, var(--gray), transparent); }
+
+.testimonials-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: marquee 38s linear infinite;
+}
+.testimonials-track:hover { animation-play-state: paused; }
+
+.testimonials-track-wrap.row2 { margin-top: 16px; }
+.testimonials-track-wrap.row2 .testimonials-track { animation-direction: reverse; animation-duration: 44s; }
+
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ── Card ── */
+.testi-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 26px;
+  border: 1.5px solid var(--gray2);
+  width: 320px;
+  flex-shrink: 0;
+  transition: all var(--transition);
+  cursor: default;
+}
+.testi-card:hover {
+  border-color: rgba(46,204,113,0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(46,204,113,0.1);
+}
+
+/* Stars */
+.testi-stars { display: flex; gap: 3px; margin-bottom: 14px; }
+.testi-star  { color: #f59e0b; font-size: 14px; }
+
+/* Text */
+.testi-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.72;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+.testi-text::before { content: ""; color: var(--green); font-size: 22px; line-height: 0; vertical-align: -6px; margin-right: 2px; font-style: normal; }
+
+/* Author */
+.testi-author { display: flex; align-items: center; gap: 12px; }
+.testi-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Sora", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+.testi-name  { font-family: "Sora", sans-serif; font-size: 14px; font-weight: 600; color: var(--black); }
+.testi-role  { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
+
+/* Verified badge */
+.testi-verified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--green-dark);
+  font-weight: 600;
+  margin-left: auto;
+  background: var(--green-subtle);
+  padding: 3px 8px;
+  border-radius: 100px;
+  border: 1px solid rgba(46,204,113,0.2);
+  flex-shrink: 0;
+}
