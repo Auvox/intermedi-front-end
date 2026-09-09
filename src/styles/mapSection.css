@@ -87,3 +87,29 @@
   .map-badge-signal, .map-feed-item { animation: none; }
   .mapsection .reveal { opacity: 1; transform: none; transition: none; }
 }
+/* Refined network metrics: clear values, quiet surfaces, consistent spacing. */
+.map-network-heading { padding: 2px 3px 7px; }
+.map-network-heading > span { font-size: 9px; letter-spacing: 1.3px; }
+.map-network-heading small { color: #738677; }
+.map-network-stat { isolation: isolate; overflow: hidden; padding: 21px 23px; border: 1px solid #e6ecde; border-radius: 23px; background: linear-gradient(135deg, #f6f8f0, #edf3e5); box-shadow: 0 5px 15px #25472c04; }
+.map-network-stat-top { position: relative; z-index: 1; flex-direction: row-reverse; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.map-network-icon { width: 36px; height: 36px; border-radius: 12px; border: 1px solid #58754412; background: #e4edd9; }
+.map-network-icon svg { width: 20px; height: 20px; }
+.map-network-category { font-size: 10px; font-weight: 600; line-height: 1.6; max-width: 145px; }
+.map-network-stat .map-stat-pill-value { font-size: 48px; font-weight: 500; letter-spacing: -2px; line-height: 1; }
+.map-network-stat .map-stat-pill-label { font-size: 11px; margin-top: 9px; line-height: 1.6; }
+.map-network-description { margin-top: 16px; padding-top: 12px; border-top: 1px solid #536a451c; font-size: 10px; line-height: 1.75; }
+.map-network-stat--match { border-color: #254f39; background: linear-gradient(125deg, #123b2b, #23553a); box-shadow: 0 7px 20px #193e2b12; }
+.map-network-stat--match::before { z-index: -1; width: 180px; height: 180px; right: -123px; bottom: -82px; border-color: #d2e9b926; box-shadow: 0 0 0 22px #c9e9a708, 0 0 0 44px #c9e9a705; }
+.map-network-stat--match .map-network-icon { background: #d6efb512; border-color: #d6efb521; color: #d6edba; }
+.map-network-stat--match .map-network-description { border-color: #e0efce21; }
+.map-network-stat--shipping { background: linear-gradient(135deg, #faf8f1, #f2eee3); border-color: #eee8d9; }
+.map-network-stat--shipping .map-network-icon { background: #eee7d5; border-color: #ae945719; }
+@media (min-width: 601px) and (max-width: 1024px) { .map-network-stat { padding: 18px; } .map-network-stat .map-stat-pill-value { font-size: 42px; } }
+@media (max-width: 600px) {
+  .map-network-stat { grid-template-columns: 1fr; gap: 0; padding: 20px 22px; border-radius: 21px; }
+  .map-network-stat-top { margin-bottom: 9px; }
+  .map-network-stat .map-stat-pill-value { grid-column: auto; grid-row: auto; font-size: 44px; }
+  .map-network-stat .map-stat-pill-label { margin-top: 8px; }
+  .map-network-description { grid-column: auto; margin-top: 14px; padding-top: 11px; }
+}
