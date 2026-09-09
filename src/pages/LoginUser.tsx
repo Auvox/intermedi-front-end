@@ -127,7 +127,8 @@ export default function LoginUser({
     profiles.find((profile) => profile.id === params.get("perfil"))?.id ?? null,
   );
 
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const [requestedMode, setMode] = useState<Mode>(initialMode);
+  const mode: Mode = role === "gerente" || role === "admin" ? "login" : requestedMode;
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -204,7 +205,7 @@ export default function LoginUser({
                     onClick={() => {
                       setRole(profile.id);
                       setMessage("");
-                      if (profile.id === "admin") setMode("login");
+                      if (profile.id === "admin" || profile.id === "gerente") setMode("login");
                     }}
                   >
                     <span className="auth-profile-icon">
@@ -257,7 +258,7 @@ export default function LoginUser({
                   ? "Entre com seus dados para acessar sua conta."
                   : "Preencha seus dados para começar no Intermedi."}
               </p>
-              {role !== "admin" && (
+              {role === "funcionario" && (
                 <div className="auth-mode" aria-label="Tipo de acesso">
                   <button
                     aria-pressed={mode === "login"}
