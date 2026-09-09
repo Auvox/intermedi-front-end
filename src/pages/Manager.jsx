@@ -309,6 +309,11 @@ export function ManagerEmployees() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteNotice, setDeleteNotice] = useState("");
+  const deletingRef = useRef(false);
   const [period, setPeriod] = useState("");
 
   // funcionários reais vindos do backend
@@ -344,6 +349,7 @@ export function ManagerEmployees() {
           phone: f.telFuncionario,
         })),
       );
+      return lista;
     } catch (error) {
       setErroFuncionarios(
         error instanceof Error
@@ -379,6 +385,7 @@ export function ManagerEmployees() {
   const [cargoFuncionario, setCargoFuncionario] = useState("atendente");
   const [turnoFuncionario, setTurnoFuncionario] = useState("manha");
   const [cadastroMensagem, setCadastroMensagem] = useState("");
+  const [cadastroNotificacao, setCadastroNotificacao] = useState(null);
   const [cadastrando, setCadastrando] = useState(false);
 
   async function cadastrarFuncionario(event) {
@@ -411,9 +418,18 @@ export function ManagerEmployees() {
       }
 
       // busca a lista atualizada para o novo funcionário aparecer na hora
-      await buscarFuncionarios();
-
-      setCadastroMensagem("Funcionário cadastrado com sucesso.");
+      const listaAtualizada = await buscarFuncionarios();
+      const criado = result.funcionario || result;
+      const registro = listaAtualizada?.find((item) =>
+        criado.idFuncionario != null
+          ? item.idFuncionario === criado.idFuncionario
+          : item.emailFuncionario?.toLowerCase() === funcionario.emailFuncionario,
+      );
+      setCadastroNotificacao({
+        nome: registro?.nomeFuncionario || criado.nomeFuncionario || funcionario.nomeFuncionario,
+        matricula: registro?.matriculaFuncionario || criado.matriculaFuncionario || null,
+      });
+      setAdding(false);
       setNomeFuncionario("");
       setCpfFuncionario("");
       setEmailFuncionario("");
@@ -429,6 +445,41 @@ export function ManagerEmployees() {
       );
     } finally {
       setCadastrando(false);
+    }
+  }
+
+  function closeEmployee() {
+    if (deletingRef.current) return;
+    setSelected(null);
+    setConfirmDelete(false);
+    setDeleteError("");
+  }
+
+  async function deleteEmployee() {
+    if (!selected || selected.id == null || deletingRef.current) return;
+    const employee = selected;
+    deletingRef.current = true;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const response = await fetch(
+        `http://localhost:3000/funcionario/${encodeURIComponent(employee.id)}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || "Não foi possível excluir o funcionário.");
+      }
+      setFuncionarios((current) => current.filter((item) => item.id !== employee.id));
+      setSelected(null);
+      setConfirmDelete(false);
+      setCadastroNotificacao(null);
+      setDeleteNotice(`${employee.name} · Matrícula: ${employee.matricula || "não informada"}. Funcionário excluído com sucesso.`);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Não foi possível conectar ao servidor.");
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
     }
   }
 
@@ -449,6 +500,18 @@ export function ManagerEmployees() {
           </button>
         }
       />
+      {cadastroNotificacao && (
+        <div className="mgr-registration-notice">
+          <ManagerIcon name="check" size={24} />
+          <div role="status" aria-live="polite">
+            <strong>Funcionário cadastrado com sucesso</strong>
+            <p>{cadastroNotificacao.nome}</p>
+            <span>Matrícula: <b>{cadastroNotificacao.matricula ?? "Não informada pelo servidor"}</b></span>
+          </div>
+          <button type="button" aria-label="Fechar notificação de cadastro" onClick={() => setCadastroNotificacao(null)}>×</button>
+        </div>
+      )}
+      {deleteNotice && <div className="mgr-registration-notice"><p role="status">{deleteNotice}</p><button aria-label="Fechar notificação de exclusão" onClick={() => setDeleteNotice("")}>×</button></div>}
       <Stats
         items={[
           [
@@ -555,16 +618,6 @@ export function ManagerEmployees() {
               />
             </label>
             <label>
-              Matrícula
-              <input
-                name="matriculaFuncionario"
-                required
-                maxLength={255}
-                value={matriculaFuncionario}
-                onChange={({ target }) => setMatriculaFuncionario(target.value)}
-              />
-            </label>
-            <label>
               Telefone
               <input
                 type="text"
@@ -609,12 +662,26 @@ export function ManagerEmployees() {
         </Modal>
       )}
       {selected && (
-        <Modal title={selected.name} onClose={() => setSelected(null)}>
+        <Modal title={selected.name} onClose={closeEmployee}>
           <p>
             {selected.role} · {selected.shift}
           </p>
           <p>Matrícula: {selected.matricula}</p>
           <p>{selected.email}</p>
+          <div className="mgr-delete-area">
+            {!confirmDelete ? (
+              <button className="mgr-delete-button" disabled={selected.id == null} onClick={() => setConfirmDelete(true)}>Excluir funcionário</button>
+            ) : (
+              <>
+                <p>Excluir <strong>{selected.name}</strong> (matrícula {selected.matricula || "não informada"})? Esta ação não pode ser desfeita.</p>
+                <div className="mgr-modal-actions">
+                  <button className="mgr-secondary" disabled={deleting} onClick={() => { setConfirmDelete(false); setDeleteError(""); }}>Cancelar</button>
+                  <button className="mgr-delete-button" disabled={deleting} onClick={deleteEmployee}>{deleting ? "Excluindo…" : "Confirmar exclusão"}</button>
+                </div>
+                {deleteError && <p role="alert">{deleteError}</p>}
+              </>
+            )}
+          </div>
           <div className="mgr-toolbar">
             <h3>Atividade na unidade</h3>
             <Period value={period} onChange={setPeriod} />

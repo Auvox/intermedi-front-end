@@ -145,3 +145,18 @@
   .mgr-primary,.mgr-secondary,.mgr-shell tbody tr,.mgr-employee-card { transition: none; }
   .mgr-primary:hover,.mgr-employee-card:hover { transform: none; }
 }
+.mgr-registration-notice { display: flex; align-items: flex-start; gap: 14px; margin: 0 0 24px; padding: 18px 20px; border: 1px solid #cfe6d5; border-radius: 14px; background: #edf8f0; color: #24643d; }
+.mgr-registration-notice > svg { flex-shrink: 0; margin-top: 2px; }
+.mgr-registration-notice strong { font-size: 13px; }
+.mgr-registration-notice p { margin: 6px 0 3px; font-size: 13px; overflow-wrap: anywhere; }
+.mgr-registration-notice span { font-size: 12px; }
+.mgr-registration-notice b { font-variant-numeric: tabular-nums; }
+.mgr-registration-notice button { margin-left: auto; flex-shrink: 0; border: 0; border-radius: 7px; background: transparent; color: #24643d; font-size: 23px; width: 32px; height: 32px; cursor: pointer; }
+.mgr-registration-notice button:focus-visible { outline: 2px solid #24643d; outline-offset: 2px; }
+.mgr-delete-area { margin-top: 18px; padding-top: 16px; border-top: 1px solid #eee4e4; }
+.mgr-delete-area p { font-size: 13px; line-height: 1.7; }
+.mgr-delete-area [role=alert] { margin-top: 12px; color: #a33838; }
+.mgr-delete-button { padding: 10px 16px; border: 1px solid #e7caca; border-radius: 9px; background: #fff4f3; color: #a33838; font: inherit; font-size: 12px; cursor: pointer; }
+.mgr-delete-button:hover:not(:disabled) { background: #fbe4e2; }
+.mgr-delete-button:disabled { opacity: .55; cursor: not-allowed; }
+.mgr-delete-button:focus-visible { outline: 2px solid #a33838; outline-offset: 3px; }
