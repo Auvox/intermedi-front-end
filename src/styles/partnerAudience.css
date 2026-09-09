@@ -23,8 +23,6 @@
 .node-two { right: 10%; top: 19%; transform: rotate(10deg); }
 .node-three { left: 18%; bottom: 20%; width: 31px; height: 31px; border-radius: 10px; }
 .node-four { right: 16%; bottom: 18%; width: 31px; height: 31px; border-radius: 10px; }
-.network-caption { position: absolute; bottom: 0; width: 100%; text-align: center; color: #c2d7c8; font-size: 9px; letter-spacing: .4px; }
-.network-caption i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #c9e9a7; margin-right: 6px; }
 .audience-neighborhood { border-radius: 22px; background: #e0ead6; }
 .neighborhood-map { position: absolute; inset: -15px; transform: rotate(-13deg); }
 .map-block { position: absolute; background: #d1dfc6; border-radius: 18px; border: 1px solid #c6d8b9; }

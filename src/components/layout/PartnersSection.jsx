@@ -16,7 +16,6 @@ function NetworkArt() {
     <span className="network-node node-three">+</span>
     <span className="network-node node-four">+</span>
     <div className="network-center"><span>intermedi<span className="network-dot">.</span></span><small>O cuidado conecta.</small></div>
-    <span className="art-caption network-caption"><i /> Uma rede. Mais possibilidades.</span>
   </div>;
 }
 
