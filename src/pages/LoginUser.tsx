@@ -124,9 +124,8 @@ export default function LoginUser({
 }) {
   const [params] = useSearchParams();
   const [role, setRole] = useState<Role | null>(
-    params.get("perfil") === "gerente" ? "gerente" : null
+    params.get("perfil") === "gerente" ? "gerente" : null,
   );
-
 
   const [mode, setMode] = useState<Mode>(initialMode);
   const [visible, setVisible] = useState(false);
@@ -152,11 +151,6 @@ export default function LoginUser({
   }
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage(
-      mode === "cadastro"
-        ? "Cadastro ainda não está conectado ao back-end."
-        : "Login ainda não está conectado ao back-end."
-    );
   }
   return (
     <main className="auth-page">
@@ -291,7 +285,6 @@ export default function LoginUser({
                       name="nome"
                       autoComplete="name"
                       placeholder="Como podemos chamar você?"
-                      required
                       minLength={3}
                       maxLength={120}
                     />
@@ -304,7 +297,6 @@ export default function LoginUser({
                       name="unidade"
                       autoComplete="organization"
                       placeholder="Ex.: Farmácia São Lucas"
-                      required
                       minLength={3}
                       maxLength={150}
                     />
@@ -321,7 +313,6 @@ export default function LoginUser({
                     type="email"
                     autoComplete="email"
                     placeholder="voce@farmacia.com.br"
-                    required
                     maxLength={254}
                   />
                 </label>
@@ -339,7 +330,6 @@ export default function LoginUser({
                           ? "Digite sua senha"
                           : "Crie uma senha com 8 ou mais caracteres"
                       }
-                      required
                       minLength={mode === "cadastro" ? 8 : 1}
                       maxLength={128}
                     />
@@ -361,7 +351,6 @@ export default function LoginUser({
                       type={visible ? "text" : "password"}
                       autoComplete="new-password"
                       placeholder="Digite sua senha novamente"
-                      required
                       minLength={8}
                       maxLength={128}
                     />
@@ -373,7 +362,7 @@ export default function LoginUser({
                     className="auth-forgot"
                     onClick={() =>
                       setMessage(
-                        "Para recuperar seu acesso, entre em contato com o responsável pela sua farmácia. A recuperação online ainda não está disponível."
+                        "Para recuperar seu acesso, entre em contato com o responsável pela sua farmácia. A recuperação online ainda não está disponível.",
                       )
                     }
                   >
@@ -391,10 +380,7 @@ export default function LoginUser({
                     {message}
                   </p>
                 )}
-                <button
-                  className="auth-submit"
-                  type="submit"
-                >
+                <button className="auth-submit" type="submit">
                   {mode === "login"
                     ? "Entrar na minha conta"
                     : "Criar minha conta"}

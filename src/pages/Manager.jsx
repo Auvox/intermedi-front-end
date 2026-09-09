@@ -96,10 +96,10 @@ function Stats({ items }) {
                   (/paciente/i.test(label)
                     ? "heart"
                     : /chamado/i.test(label)
-                    ? "ticket"
-                    : /retirada/i.test(label)
-                    ? "clock"
-                    : "box")
+                      ? "ticket"
+                      : /retirada/i.test(label)
+                        ? "clock"
+                        : "box")
                 }
               />
             </i>
@@ -149,8 +149,18 @@ function MedicineTable({ medicines }) {
     </div>
   );
 }
+const devManagerUser = {
+  id: "dev-manager",
+  name: "Gerente Local",
+  email: "dev@intermedi.local",
+  role: "gerente",
+  unitId: "dev-unit",
+  unitName: "Unidade Local",
+};
+
 export default function Manager() {
-  const { user } = useOutletContext();
+  const outletContext = useOutletContext();
+  const user = outletContext?.user ?? devManagerUser;
   const data = initialData;
   useEffect(() => {
     document.title = "Área do gerente | Intermedi";
@@ -159,7 +169,7 @@ export default function Manager() {
     };
   }, []);
   const external = data.tickets.filter(
-    (t) => t.unit !== unit && t.status !== "Resolvido"
+    (t) => t.unit !== unit && t.status !== "Resolvido",
   ).length;
   return (
     <div className="mgr-shell">
@@ -300,16 +310,65 @@ export function ManagerEmployees() {
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
   const [period, setPeriod] = useState("");
-  const employees = data.employees.filter((e) =>
+
+  // funcionários reais vindos do backend
+  const [funcionarios, setFuncionarios] = useState([]);
+  const [carregandoFuncionarios, setCarregandoFuncionarios] = useState(true);
+  const [erroFuncionarios, setErroFuncionarios] = useState("");
+
+  async function buscarFuncionarios() {
+    setCarregandoFuncionarios(true);
+    setErroFuncionarios("");
+    try {
+      const response = await fetch("http://localhost:3000/funcionario");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Não foi possível carregar os funcionários.",
+        );
+      }
+
+      const lista = Array.isArray(result)
+        ? result
+        : result.funcionario || result.funcionarios || [];
+
+      setFuncionarios(
+        lista.map((f) => ({
+          id: f.idFuncionario,
+          name: f.nomeFuncionario,
+          role: f.cargoFuncionario,
+          shift: f.turnoFuncionario,
+          matricula: f.matriculaFuncionario,
+          email: f.emailFuncionario,
+          phone: f.telFuncionario,
+        })),
+      );
+    } catch (error) {
+      setErroFuncionarios(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível conectar ao servidor de funcionários.",
+      );
+    } finally {
+      setCarregandoFuncionarios(false);
+    }
+  }
+
+  useEffect(() => {
+    buscarFuncionarios();
+  }, []);
+
+  const employees = funcionarios.filter((e) =>
     `${e.name} ${e.role}`
       .toLocaleLowerCase()
-      .includes(search.toLocaleLowerCase())
+      .includes(search.toLocaleLowerCase()),
   );
   const deliveries = data.deliveries.filter(
-    (d) => d.employee === selected?.id && inPeriod(d.date, period)
+    (d) => d.employee === selected?.id && inPeriod(d.date, period),
   );
   const tickets = data.tickets.filter(
-    (t) => t.employee === selected?.id && inPeriod(t.date, period)
+    (t) => t.employee === selected?.id && inPeriod(t.date, period),
   );
 
   const [nomeFuncionario, setNomeFuncionario] = useState("");
@@ -346,8 +405,13 @@ export function ManagerEmployees() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Não foi possível cadastrar o funcionário.");
+        throw new Error(
+          result.error || "Não foi possível cadastrar o funcionário.",
+        );
       }
+
+      // busca a lista atualizada para o novo funcionário aparecer na hora
+      await buscarFuncionarios();
 
       setCadastroMensagem("Funcionário cadastrado com sucesso.");
       setNomeFuncionario("");
@@ -389,7 +453,7 @@ export function ManagerEmployees() {
         items={[
           [
             "Profissionais da unidade",
-            data.employees.length,
+            funcionarios.length,
             "Sua equipe de atendimento",
             "people",
           ],
@@ -410,7 +474,7 @@ export function ManagerEmployees() {
       <section className="mgr-panel">
         <div className="mgr-toolbar">
           <h2>
-            Funcionários <Badge>{data.employees.length}</Badge>
+            Funcionários <Badge>{funcionarios.length}</Badge>
           </h2>
           <input
             aria-label="Buscar funcionário"
@@ -420,67 +484,117 @@ export function ManagerEmployees() {
           />
         </div>
         <div className="mgr-employee-grid">
-          {employees.map((e) => (
-            <button
-              className="mgr-employee-card"
-              key={e.id}
-              onClick={() => {
-                setSelected(e);
-                setPeriod("");
-              }}
-            >
-              <span className="mgr-avatar">
-                {e.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join("")}
-              </span>
-              <strong>{e.name}</strong>
-              <span>{e.role}</span>
-              <small>Turno: {e.shift}</small>
-              <span className="mgr-card-link">Ver ficha do funcionário ↗</span>
-            </button>
-          ))}
+          {carregandoFuncionarios && (
+            <p className="mgr-empty">Carregando funcionários…</p>
+          )}
+          {!carregandoFuncionarios &&
+            employees.map((e) => (
+              <button
+                className="mgr-employee-card"
+                key={e.id}
+                onClick={() => {
+                  setSelected(e);
+                  setPeriod("");
+                }}
+              >
+                <span className="mgr-avatar">
+                  {e.name
+                    ?.split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")}
+                </span>
+                <strong>{e.name}</strong>
+                <span>{e.role}</span>
+                <small>Turno: {e.shift}</small>
+                <small>Matrícula: {e.matricula}</small>
+                <span className="mgr-card-link">
+                  Ver ficha do funcionário ↗
+                </span>
+              </button>
+            ))}
         </div>
-        {!employees.length && <Empty />}
+        {erroFuncionarios && <p className="mgr-empty">{erroFuncionarios}</p>}
+        {!carregandoFuncionarios && !erroFuncionarios && !employees.length && (
+          <Empty />
+        )}
       </section>
       {adding && (
-
         // adicionar funcionarios
         <Modal title="Adicionar funcionário" onClose={() => setAdding(false)}>
           <form className="mgr-form" onSubmit={cadastrarFuncionario}>
             <label>
               Nome completo
-              <input name="nomeFuncionario" required maxLength={120} value={nomeFuncionario} onChange={({ target }) => setNomeFuncionario(target.value)} />
+              <input
+                name="nomeFuncionario"
+                required
+                maxLength={120}
+                value={nomeFuncionario}
+                onChange={({ target }) => setNomeFuncionario(target.value)}
+              />
             </label>
             <label>
               CPF
-              <input name="cpfFuncionario" required maxLength={14} value={cpfFuncionario} onChange={({ target }) => setCpfFuncionario(target.value)} />
+              <input
+                name="cpfFuncionario"
+                required
+                maxLength={14}
+                value={cpfFuncionario}
+                onChange={({ target }) => setCpfFuncionario(target.value)}
+              />
             </label>
             <label>
               E-mail
-              <input type="email" name="emailFuncionario" required maxLength={254} value={emailFuncionario} onChange={({ target }) => setEmailFuncionario(target.value)} />
+              <input
+                type="email"
+                name="emailFuncionario"
+                required
+                maxLength={254}
+                value={emailFuncionario}
+                onChange={({ target }) => setEmailFuncionario(target.value)}
+              />
             </label>
             <label>
               Matrícula
-              <input name="matriculaFuncionario" required maxLength={255} value={matriculaFuncionario} onChange={({ target }) => setMatriculaFuncionario(target.value)} />
+              <input
+                name="matriculaFuncionario"
+                required
+                maxLength={255}
+                value={matriculaFuncionario}
+                onChange={({ target }) => setMatriculaFuncionario(target.value)}
+              />
             </label>
             <label>
               Telefone
-              <input type="text" name="telFuncionario" maxLength={20} value={telFuncionario} onChange={({ target }) => setTelFuncionario(target.value)} />
+              <input
+                type="text"
+                name="telFuncionario"
+                maxLength={20}
+                value={telFuncionario}
+                onChange={({ target }) => setTelFuncionario(target.value)}
+              />
             </label>
             <label>
               Cargo
-              <select name="cargoFuncionario" value={cargoFuncionario} onChange={({ target }) => setCargoFuncionario(target.value)}>
+              <select
+                name="cargoFuncionario"
+                value={cargoFuncionario}
+                onChange={({ target }) => setCargoFuncionario(target.value)}
+              >
                 <option value="atendente">Atendente</option>
                 <option value="farmaceutico">Farmacêutico(a)</option>
-                <option value="auxiliar de farmacia">Auxiliar de farmácia</option>
+                <option value="auxiliar de farmacia">
+                  Auxiliar de farmácia
+                </option>
               </select>
             </label>
             <label>
               Turno
-              <select name="turnoFuncionario" value={turnoFuncionario} onChange={({ target }) => setTurnoFuncionario(target.value)}>
+              <select
+                name="turnoFuncionario"
+                value={turnoFuncionario}
+                onChange={({ target }) => setTurnoFuncionario(target.value)}
+              >
                 <option value="manha">Manhã</option>
                 <option value="tarde">Tarde</option>
                 <option value="noite">Noite</option>
@@ -499,6 +613,7 @@ export function ManagerEmployees() {
           <p>
             {selected.role} · {selected.shift}
           </p>
+          <p>Matrícula: {selected.matricula}</p>
           <p>{selected.email}</p>
           <div className="mgr-toolbar">
             <h3>Atividade na unidade</h3>
@@ -517,7 +632,7 @@ export function ManagerEmployees() {
                 deliveries.length,
                 `${deliveries.reduce(
                   (sum, d) => sum + d.quantity,
-                  0
+                  0,
                 )} unidades entregues`,
               ],
             ]}
@@ -562,7 +677,7 @@ export function ManagerPatients() {
           data.medicines.find((m) => m.id === d.medicine)?.name
         }`
           .toLowerCase()
-          .includes(search.toLowerCase())
+          .includes(search.toLowerCase()),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
   return (
@@ -651,7 +766,7 @@ export function ManagerMedicines() {
     (m) =>
       `${m.name} ${m.dose}`.toLowerCase().includes(search.toLowerCase()) &&
       (!scope || m.unit === scope) &&
-      (!status || availability(m).tone === status)
+      (!status || availability(m).tone === status),
   );
   return (
     <>
@@ -728,7 +843,10 @@ export function ManagerMedicines() {
       </section>
       {adding && (
         <Modal title="Cadastrar remédio" onClose={() => setAdding(false)}>
-          <form className="mgr-form" onSubmit={(event) => event.preventDefault()}>
+          <form
+            className="mgr-form"
+            onSubmit={(event) => event.preventDefault()}
+          >
             <p>Unidade: {unit}</p>
             <label>
               Nome do medicamento
@@ -793,7 +911,7 @@ export function ManagerTickets() {
   const scope = params.get("origem") || "unidade";
   const selected = data.tickets.find((t) => t.id === params.get("chamado"));
   const external = data.tickets.filter(
-    (t) => t.unit !== unit && t.status !== "Resolvido"
+    (t) => t.unit !== unit && t.status !== "Resolvido",
   );
   const author = (t) =>
     data.employees.find((e) => e.id === t.employee)?.name ||
@@ -806,7 +924,7 @@ export function ManagerTickets() {
         (!status || t.status === status) &&
         `${t.title} ${author(t)} ${t.unit}`
           .toLowerCase()
-          .includes(search.toLowerCase())
+          .includes(search.toLowerCase()),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
   function close() {
@@ -940,8 +1058,8 @@ export function ManagerTickets() {
                         t.priority === "Alta"
                           ? "red"
                           : t.priority === "Média"
-                          ? "yellow"
-                          : "neutral"
+                            ? "yellow"
+                            : "neutral"
                       }
                     >
                       {t.priority}
@@ -990,25 +1108,16 @@ export function ManagerTickets() {
           {selected.unit === unit ? (
             <div className="mgr-modal-actions">
               {selected.status === "Pendente" && (
-                <button
-                  className="mgr-secondary"
-                  type="button"
-                >
+                <button className="mgr-secondary" type="button">
                   Iniciar atendimento
                 </button>
               )}
               {selected.status !== "Resolvido" ? (
-                <button
-                  className="mgr-primary"
-                  type="button"
-                >
+                <button className="mgr-primary" type="button">
                   Marcar como resolvido
                 </button>
               ) : (
-                <button
-                  className="mgr-secondary"
-                  type="button"
-                >
+                <button className="mgr-secondary" type="button">
                   Reabrir chamado
                 </button>
               )}
@@ -1023,7 +1132,10 @@ export function ManagerTickets() {
       )}
       {adding && (
         <Modal title="Novo chamado" onClose={() => setAdding(false)}>
-          <form className="mgr-form" onSubmit={(event) => event.preventDefault()}>
+          <form
+            className="mgr-form"
+            onSubmit={(event) => event.preventDefault()}
+          >
             <label>
               Assunto
               <input
