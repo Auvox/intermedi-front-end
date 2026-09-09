@@ -1,4 +1,3 @@
-import React from "react";
 import logoIntermedi from "../../assets/logoIntermedi.png";
 import { NavLink } from "react-router-dom";
 
@@ -19,7 +18,7 @@ function Nav({ scrolled, menuOpen, setMenuOpen, activeSection }) {
 
       <div className="lp-nav-actions">
         <NavLink to="/login" className="btn-nav-primary">
-          Entrar <span aria-hidden="true">↗</span>
+          Entrar
         </NavLink>
         
       </div>

@@ -13,8 +13,7 @@
 .lp-footer-intro h2 span { color: #8be4a6; }
 .lp-footer-invitation { max-width: 340px; justify-self: end; }
 .lp-footer-invitation p { color: #bfd2c7; font-size: 13px; line-height: 1.8; margin-bottom: 20px; }
-.lp-footer-cta { display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; padding: 10px 10px 10px 22px; border-radius: 50px; background: #88e5a3; color: #123d2c; font-size: 12px; font-weight: 600; transition: background 0.2s; }
-.lp-footer-cta > span { display: grid; place-items: center; width: 32px; height: 32px; background: #143f30; color: #b3f5c7; border-radius: 50%; font-size: 20px; }
+.lp-footer-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 12px 24px; border-radius: 999px; background: #88e5a3; color: #123d2c; font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; transition: background 0.2s; }
 .lp-footer-cta:hover { background: #b3f5c7; }
 .lp-footer-grid { display: grid; grid-template-columns: 1.5fr 0.8fr 1.1fr 0.9fr; gap: 36px; padding: 42px 0; align-items: start; }
 .lp-footer-brand-link { display: inline-block; }
@@ -26,7 +25,6 @@
 .lp-footer-col h3 { font-size: 12px; font-weight: 600; color: #f2f8ef; margin: 5px 0 18px; }
 .lp-footer-col ul { display: flex; flex-direction: column; gap: 8px; list-style: none; padding: 0; margin: 0; }
 .lp-footer-col a { display: inline-block; padding: 4px 0; color: #bfd2c7; font-size: 12px; line-height: 1.6; transition: color 0.2s; }
-.lp-footer-col a span { margin-left: 5px; color: #8be4a6; }
 .lp-footer-col a:hover { color: #8be4a6; }
 .lp-footer-map-link { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 20px; border: 1px solid #92c9a538; border-radius: 18px; background: #ffffff05; color: #f2f8ef; transition: background 0.2s, border-color 0.2s; }
 .lp-footer-map-link:hover { background: #ffffff0c; border-color: #8be4a6; }
@@ -34,7 +32,6 @@
 .lp-footer-map-icon svg { width: 25px; height: 25px; }
 .lp-footer-map-link strong { font-size: 16px; font-weight: 500; line-height: 1.4; letter-spacing: -0.02em; }
 .lp-footer-map-link > span:last-child { font-size: 10px; color: #9ed5b3; }
-.lp-footer-map-link > span:last-child span { margin-left: 6px; }
 .lp-footer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 0; border-top: 1px solid #ffffff26; color: #aac5b7; font-size: 10px; line-height: 1.7; }
 .lp-footer-bottom a { display: inline-flex; align-items: center; gap: 14px; color: #d0e3d6; padding: 4px 0; }
 .lp-footer-bottom a:hover { color: #8be4a6; }

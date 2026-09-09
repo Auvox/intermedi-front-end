@@ -15,9 +15,7 @@
 .audience-check { display: grid; place-items: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: #e8f5ec; color: #21874a; font-size: 12px; }
 .audience-card--business .audience-check { background: #d7ebdc; }
 .audience-bottom { margin-top: auto; padding-top: 20px; border-top: 1px solid #dce7df; }
-.audience-bottom a { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #1b5b35; text-decoration: none; font-size: 12px; font-weight: 600; }
-.audience-bottom a > span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #cbded0; border-radius: 50%; font-size: 20px; font-weight: 400; transition: background 180ms, color 180ms; }
-.audience-bottom a:hover > span { background: #194d33; color: #fff; }
+.audience-bottom a { display: inline-block; color: #1b5b35; text-decoration: none; font-size: 12px; font-weight: 600; }
 .audience-bottom a:focus-visible { outline: 3px solid #22c55e; outline-offset: 6px; border-radius: 4px; }
 @media (max-width: 1000px) {
   .audience-card { padding: 26px; }

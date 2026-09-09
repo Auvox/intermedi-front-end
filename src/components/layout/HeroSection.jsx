@@ -1,4 +1,3 @@
-import React from "react";
 import Pill3D from "./Pill3D";
 import mancha from "../../assets/mancha.png";
 import fundoCruz from "../../assets/fundoCruz.png";
@@ -23,8 +22,8 @@ function HeroSection() {
           </h1>
           <p className="lp-hero-sub">O medicamento que sua farmácia procura pode estar mais perto do que você imagina. Encontre produtos e conecte-se a fornecedores em um só lugar.</p>
           <div className="lp-hero-actions">
-            <a className="btn-hero-primary" href="#catalogo">Explorar catálogo <span aria-hidden="true">↗</span></a>
-            <a className="btn-hero-outline" href="#como-funciona">Como funciona <span aria-hidden="true">→</span></a>
+            <a className="btn-hero-primary" href="#catalogo">Explorar catálogo</a>
+            <a className="btn-hero-outline" href="#como-funciona">Como funciona</a>
           </div>
           <ul className="hero-benefits" aria-label="Recursos da Intermedi">
             <li>Encontre medicamentos</li>

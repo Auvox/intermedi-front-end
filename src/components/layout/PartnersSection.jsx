@@ -49,7 +49,7 @@ export default function PartnersSection() {
                 ))}
               </ul>
               <div className="audience-bottom">
-                {audience.id === "business" ? <Link to="/login">Conecte sua farmácia <span aria-hidden="true">↗</span></Link> : <a href="#mapa">Ver conexões no mapa <span aria-hidden="true">↗</span></a>}
+                {audience.id === "business" ? <Link to="/login">Conecte sua farmácia</Link> : <a href="#mapa">Ver conexões no mapa</a>}
               </div>
             </article>
           ))}

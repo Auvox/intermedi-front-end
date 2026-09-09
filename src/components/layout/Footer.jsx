@@ -14,7 +14,7 @@ function Footer() {
             </div>
             <div className="lp-footer-invitation">
               <p>Conecte-se a uma rede que aproxima pessoas, farmácias e medicamentos.</p>
-              <Link to="/login" className="lp-footer-cta">Fazer parte da Intermedi <span aria-hidden="true">↗</span></Link>
+              <Link to="/login" className="lp-footer-cta">Fazer parte da Intermedi</Link>
             </div>
           </div>
           <div className="lp-footer-grid">
@@ -35,20 +35,19 @@ function Footer() {
             <nav className="lp-footer-col" aria-label="Acesse a plataforma">
               <h3>Para você</h3>
               <ul>
-                <li><a href="#mapa">Encontre farmácias <span aria-hidden="true">↗</span></a></li>
+                <li><a href="#mapa">Encontre farmácias</a></li>
                 <li><a href="#parceiros">Farmácias e distribuidores</a></li>
-                <li><Link to="/login">Acesse sua conta <span aria-hidden="true">↗</span></Link></li>
+                <li><Link to="/login">Acesse sua conta</Link></li>
               </ul>
             </nav>
             <a href="#mapa" className="lp-footer-map-link">
               <span className="lp-footer-map-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2.5" /></svg></span>
               <strong>O cuidado está<br />mais perto.</strong>
-              <span>Explore nosso mapa <span aria-hidden="true">↗</span></span>
+              <span>Explore nosso mapa</span>
             </a>
           </div>
           <div className="lp-footer-bottom">
             <span>© {new Date().getFullYear()} Intermedi. Todos os direitos reservados.</span>
-            <a href="#inicio">Voltar ao início <span aria-hidden="true">↑</span></a>
           </div>
         </div>
       </div>
