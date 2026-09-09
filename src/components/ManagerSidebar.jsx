@@ -23,17 +23,20 @@ function SidebarIcon({ name }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export default function ManagerSidebar({ unitName, external }) {
+export default function ManagerSidebar({ unitName, external, employee = false, admin = false }) {
+  const menuLinks = admin ? [{ path: 'gerentes', label: 'Gerentes', icon: 'team' }, links[1], links[2], links[4]] : employee ? [links[2], links[1]] : links;
+  const basePath = admin ? '/admin' : employee ? '/funcionario' : '/gerente';
+  const role = admin ? 'admin' : employee ? 'funcionário' : 'gerente';
   return <aside className="manager-sidebar">
     <div className="manager-sidebar-header">
       <Link to="/" className="manager-sidebar-brand"><img src={logo} alt="Intermedi — início" /></Link>
-      <span className="manager-sidebar-role"><span /> Espaço do gerente</span>
+      <span className="manager-sidebar-role"><span /> Espaço do {role}</span>
     </div>
 
     <div className="manager-sidebar-menu">
       <p className="manager-sidebar-caption">PRINCIPAL</p>
-      <nav aria-label="Menu do gerente">
-        {links.map(({ path, label, icon }) => <NavLink key={path} end={!path} to={`/gerente${path ? `/${path}` : ''}`}>
+      <nav aria-label={`Menu do ${role}`}>
+        {menuLinks.map(({ path, label, icon }) => <NavLink key={path} end={!path} to={`${basePath}${path ? `/${path}` : ''}`}>
           <span className="manager-sidebar-icon"><SidebarIcon name={icon} /></span>
           <span className="manager-sidebar-label">{label}</span>
           {path === 'chamados' && external > 0
@@ -45,7 +48,7 @@ export default function ManagerSidebar({ unitName, external }) {
 
     <div className="manager-sidebar-bottom">
       <div className="manager-sidebar-unit">
-        <div className="manager-sidebar-unit-heading"><span className="manager-sidebar-unit-icon"><SidebarIcon name="pharmacy" /></span><span>SUA UNIDADE</span></div>
+        <div className="manager-sidebar-unit-heading"><span className="manager-sidebar-unit-icon"><SidebarIcon name="pharmacy" /></span><span>{admin ? 'SUA PLATAFORMA' : 'SUA UNIDADE'}</span></div>
         <strong>{unitName}</strong>
         <span className="manager-sidebar-unit-detail">Gestão e cuidado em um só lugar.</span>
       </div>

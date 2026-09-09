@@ -1,0 +1,30 @@
+.adm-shell { background: #f5f7f7; }
+.adm-shell .mgr-page-head-featured { background: linear-gradient(115deg, #253335, #3e5355); border-color: #344648; }
+.adm-shell .mgr-page-head-featured p { color: #d0dddd; }
+.adm-shell .mgr-page-head-featured .mgr-eyebrow { color: #b5d6d2; }
+.adm-shell .manager-sidebar-role > span { background: #435c5d; box-shadow: 0 0 0 3px #edf2f2; }
+.adm-shell .manager-sidebar nav a.active { color: #2e4d4d; background: #eaf1f0; border-color: #cfddda; }
+.adm-shell .manager-sidebar nav a.active::before { background: #435c5d; }
+.adm-shell .manager-sidebar nav a.active .manager-sidebar-icon { color: #435c5d; }
+.adm-account { margin-left: auto; }
+.adm-shell .mgr-toolbar h2 .mgr-badge { background: #edf5fd; color: #216daa; }
+.adm-overview { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 20px; margin: 0 0 24px; color: #718181; font-size: 12px; line-height: 1.5; }
+.adm-overview > span { white-space: nowrap; }
+.adm-overview > span + span { border-left: 1px solid #d3dedd; padding-left: 20px; }
+.adm-overview strong { font-size: 20px; line-height: 1; color: #344c4c; margin-right: 5px; font-variant-numeric: tabular-nums; }
+.adm-actions { display: flex; align-items: center; gap: 12px; }
+.adm-danger { border: 1px solid #ecd4d4; border-radius: 8px; padding: 7px 10px; background: #fff8f8; color: #a23d3d; font: inherit; font-size: 11px; cursor: pointer; }
+.adm-danger:hover:not(:disabled) { background: #fbeaea; }
+.adm-danger:disabled { opacity: .45; cursor: default; }
+.adm-confirm { padding: 11px 17px; font-size: 12px; }
+.adm-notice { border: 1px solid #d3e4dc; border-radius: 10px; background: #edf6f0; padding: 12px 16px; font-size: 12px; margin-bottom: 18px; }
+.adm-details { margin-bottom: 24px; }
+.adm-details > div { padding: 12px 0; border-bottom: 1px solid #e6edeb; }
+.adm-details dt { color: #768886; font-size: 11px; margin-bottom: 3px; }
+.adm-details dd { margin: 0; overflow-wrap: anywhere; }
+.adm-hint { font-size: 12px; color: #758582; line-height: 1.7; margin: 14px 0; }
+.adm-shell :is(button, a, input, select):focus-visible, .adm-dialog button:focus-visible { outline: 2px solid #537b75; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .adm-shell .mgr-topbar { flex-wrap: wrap; height: auto; min-height: 64px; padding-block: 14px; gap: 10px; }
+  .adm-actions { gap: 6px; }
+}

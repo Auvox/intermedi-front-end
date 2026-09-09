@@ -19,7 +19,7 @@ const profiles = [
     id: "funcionario" as Role,
     name: "Funcionário",
     description: "Mais agilidade em cada atendimento.",
-    detail: "Consulte medicamentos e atualize o estoque.",
+    detail: "Consulte os pacientes e a equipe da unidade.",
     icon: "employee",
   },
   {
@@ -124,7 +124,7 @@ export default function LoginUser({
 }) {
   const [params] = useSearchParams();
   const [role, setRole] = useState<Role | null>(
-    params.get("perfil") === "gerente" ? "gerente" : null,
+    profiles.find((profile) => profile.id === params.get("perfil"))?.id ?? null,
   );
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -387,6 +387,11 @@ export default function LoginUser({
                   <Icon name="arrow" />
                 </button>
               </form>
+              {(role === "funcionario" || role === "admin") && (
+                <p className="auth-switch">
+                  <Link to={`/${role}`}>Visualizar tela do {role === "admin" ? "admin" : "funcionário"} ↗</Link>
+                </p>
+              )}
               <p className="auth-form-foot">
                 <Icon name="lock" /> Seu espaço para cuidar e conectar.
               </p>
