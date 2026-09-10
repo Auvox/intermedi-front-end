@@ -40,6 +40,33 @@
   padding-left: 22px;
   gap: 10px;
 }
+.mgr-account-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mgr-account-button:hover {
+  background: #edf5ef;
+}
+.mgr-account-button:focus-visible {
+  outline: 2px solid #278050;
+  outline-offset: 3px;
+}
+.mgr-account-button .mgr-account-avatar {
+  flex-shrink: 0;
+}
+.mgr-account-button .mgr-account-person {
+  min-width: 0;
+}
 .mgr-account .mgr-account-avatar {
   display: flex;
   align-items: center;

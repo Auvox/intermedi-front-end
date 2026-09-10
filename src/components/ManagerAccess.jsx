@@ -89,7 +89,9 @@ export function AccountControls({ user }) {
     setLoadingProfile(true);
     setProfileError("");
     try {
+      const signal = AbortSignal.timeout(15000);
       const listResponse = await fetch("http://localhost:3000/gerente", {
+        signal,
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -133,6 +135,7 @@ export function AccountControls({ user }) {
         `http://localhost:3000/gerente/${encodeURIComponent(gerenteId)}`,
         {
           method: "GET",
+          signal,
           headers: { Accept: "application/json" },
         },
       );
@@ -189,7 +192,11 @@ export function AccountControls({ user }) {
       setProfile(fallback);
       setDraft(fallback);
       setProfileError(
-        error instanceof Error
+        error?.name === "TimeoutError"
+          ? "O servidor demorou para responder. Tente novamente."
+          : error instanceof TypeError
+            ? "Não foi possível conectar ao servidor. Verifique se o back-end está disponível em localhost:3000."
+          : error instanceof Error
           ? error.message
           : "Não foi possível carregar o perfil do gerente.",
       );
@@ -199,8 +206,9 @@ export function AccountControls({ user }) {
   }
 
   async function openProfile() {
-    await loadProfile();
     setProfileOpen(true);
+    setEditingField(null);
+    if (!loadingProfile) await loadProfile();
   }
 
   async function saveProfile(event) {
@@ -279,6 +287,7 @@ export function AccountControls({ user }) {
     <>
       <div className="mgr-account">
         <button
+          type="button"
           className="mgr-account-button"
           onClick={openProfile}
           aria-label="Abrir perfil do gerente"
@@ -318,13 +327,13 @@ export function AccountControls({ user }) {
               ×
             </button>
           </div>
-          {loadingProfile && <p className="mgr-empty">Carregando perfil…</p>}
+          {loadingProfile && <p className="mgr-empty" role="status">Carregando perfil…</p>}
           {profileError && (
             <p className="mgr-empty" role="alert">
               {profileError}
             </p>
           )}
-          {profile && draft && (
+          {!loadingProfile && profile && draft && (
             <form className="mgr-form mgr-profile-form" onSubmit={saveProfile}>
               <div className="mgr-profile-fields">
                 {[
