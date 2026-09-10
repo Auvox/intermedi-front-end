@@ -305,7 +305,8 @@ export function AccountControls({ user }) {
             <small>Gerente da unidade</small>
           </span>
         </button>
-        <button className="mgr-text-button" disabled={pending} onClick={logout}>
+        <button type="button" className="account-action account-exit" disabled={pending} onClick={logout}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
           {pending ? "Saindo…" : "Sair"}
         </button>
         {error && <span role="alert">{error}</span>}

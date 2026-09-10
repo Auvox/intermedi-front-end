@@ -226,7 +226,8 @@ export default function Admin() {
               <strong>Admin Local</strong>
               <small>Administrador da plataforma</small>
             </span>
-            <Link className="mgr-text-button" to="/login?perfil=admin">
+            <Link className="account-action account-exit" to="/login?perfil=admin">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
               Sair
             </Link>
           </div>
