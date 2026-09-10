@@ -127,6 +127,36 @@ const normalizeFarmacias = (payload = []) =>
     };
   });
 
+const normalizePacientes = (payload = []) =>
+  payload.map((paciente, index) => {
+    const id = paciente.idPaciente ?? paciente.id ?? String(index + 1);
+    const name =
+      paciente.nomePaciente ??
+      paciente.name ??
+      paciente.nome ??
+      "Paciente sem nome";
+    const email = paciente.emailPaciente ?? paciente.email ?? "";
+    const unit =
+      paciente.unidade ??
+      paciente.unit ??
+      paciente.cidadePaciente ??
+      paciente.enderecoPaciente ??
+      paciente.bairroPaciente ??
+      "Unidade não informada";
+
+    return {
+      id: String(id),
+      name,
+      email,
+      unit,
+      status: paciente.status || "Ativo",
+      createdAt: paciente.createdAt ?? paciente.created_at ?? null,
+      role: paciente.role ?? "Paciente",
+      phone:
+        paciente.telefonePaciente ?? paciente.phone ?? paciente.telefone ?? "",
+    };
+  });
+
 export default function Admin() {
   const [data, setData] = useState(demoData);
   useEffect(() => {
@@ -211,6 +241,7 @@ export function AdminDirectory({ section }) {
   const tickets = section === "chamados";
   const managers = section === "gerentes";
   const pharmacies = section === "farmacias";
+  const patients = section === "pacientes";
 
   useEffect(() => {
     if (section !== "gerentes" && section !== "farmacias") {
@@ -310,6 +341,58 @@ export function AdminDirectory({ section }) {
     }
 
     loadFarmacias();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [section, setData]);
+
+  useEffect(() => {
+    if (section !== "pacientes") {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadPacientes() {
+      try {
+        const response = await fetch("http://localhost:3000/paciente", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Não foi possível buscar os pacientes.");
+        }
+
+        const payload = await response.json();
+        const rawList = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.paciente)
+            ? payload.paciente
+            : Array.isArray(payload?.pacientes)
+              ? payload.pacientes
+              : Array.isArray(payload?.data)
+                ? payload.data
+                : [];
+
+        if (!cancelled) {
+          setData((current) => ({
+            ...current,
+            pacientes: normalizePacientes(rawList),
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar pacientes:", error);
+        if (!cancelled) {
+          setNotice("Não foi possível buscar os pacientes do endpoint.");
+        }
+      }
+    }
+
+    loadPacientes();
 
     return () => {
       cancelled = true;
@@ -434,6 +517,43 @@ export function AdminDirectory({ section }) {
       } catch (error) {
         console.error("Erro ao excluir farmácia:", error);
         setNotice(error.message || "Erro ao excluir farmácia.");
+        setModal(null);
+        return;
+      }
+    }
+
+    if (patients) {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/paciente/${encodeURIComponent(record.id)}`,
+          {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({}));
+          throw new Error(
+            errorPayload.message ||
+              errorPayload.error ||
+              "Erro ao excluir paciente",
+          );
+        }
+
+        setData((current) => ({
+          ...current,
+          pacientes: current.pacientes.filter((item) => item.id !== record.id),
+        }));
+
+        setNotice(`${record.name}: removido com sucesso no banco.`);
+        setModal(null);
+        return;
+      } catch (error) {
+        console.error("Erro ao excluir paciente:", error);
+        setNotice(error.message || "Erro ao excluir paciente.");
         setModal(null);
         return;
       }
