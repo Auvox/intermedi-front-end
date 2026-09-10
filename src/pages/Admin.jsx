@@ -159,6 +159,22 @@ export function AdminDirectory({ section }) {
   const records = data[section];
   const tickets = section === "chamados";
   const managers = section === "gerentes";
+
+  const [dataGerente, setDataGerente] = useState({});
+
+  const [nomeGerente, setNomeGerente] = useState("");
+  const [emailGerente, setEmailGerente] = useState("");
+  const [cpfGerente, setCpfGerente] = useState("");
+  const [crfGerente, setCrfGerente] = useState("");
+  const [senhaGerente, setSenhaGerente] = useState("");
+  const [confirmarSenhaGerente, setConfirmarSenhaGerente] = useState("");
+  const [cepGerente, setCepGerente] = useState("");
+  const [enderecoGerente, setEnderecoGerente] = useState("");
+  const [numeroGerente, setNumeroGerente] = useState("");
+  const [complementoGerente, setComplementoGerente] = useState("");
+  const [bairroGerente, setBairroGerente] = useState("");
+  const [cidadeGerente, setCidadeGerente] = useState("");
+
   const filtered = records.filter(
     (record) =>
       normalize(`${record.name} ${record.unit} ${record.email || ""}`).includes(
@@ -184,46 +200,63 @@ export function AdminDirectory({ section }) {
     setNotice(`${record.name}: ${config.result} nesta demonstração.`);
     setModal(null);
   }
-  function register(event) {
+  async function register(event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const name = form.get("name").trim();
-    const email = form.get("email").trim();
-    const unitName = form.get("unit").trim();
-    const employeeId = form.get("idFuncionario");
-    const confirmation =
-      event.currentTarget.elements.namedItem("confirmPassword");
-    confirmation.setCustomValidity(
-      form.get("senhaGerente") === form.get("confirmPassword")
-        ? ""
-        : "As senhas precisam ser iguais.",
-    );
-    if (
-      !event.currentTarget.reportValidity() ||
-      !name ||
-      !email ||
-      !unitName ||
-      !employeeId
-    )
-      return;
-    // Password is only checked in the form; never stored in demo records.
-    setData((current) => ({
-      ...current,
-      gerentes: [
-        ...current.gerentes,
-        {
-          id: crypto.randomUUID(),
-          name,
-          email,
-          unit: unitName,
-          employeeId,
-          createdAt: new Date().toISOString(),
-          status: "Ativo",
+
+    const gerente = {
+      nomeGerente,
+      emailGerente,
+      cpfGerente,
+      crfGerente,
+      senhaGerente,
+      cepGerente,
+      enderecoGerente,
+      numeroGerente,
+      complementoGerente: complementoGerente || null,
+      bairroGerente,
+      cidadeGerente,
+    };
+
+    console.log("Dados enviados:", gerente);
+
+    try {
+      const response = await fetch("http://localhost:3000/gerente", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ],
-    }));
-    setNotice(`${name}: cadastrado nesta demonstração.`);
-    setModal(null);
+        body: JSON.stringify(gerente),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao cadastrar gerente");
+      }
+
+      console.log("Gerente cadastrado:", result);
+
+      setNotice(`${nomeGerente}: cadastrado com sucesso!`);
+      setModal(null);
+
+      // Limpa os campos depois do cadastro
+      setNomeGerente("");
+      setEmailGerente("");
+      setCpfGerente("");
+      setCrfGerente("");
+      setSenhaGerente("");
+      setConfirmarSenhaGerente("");
+      setCepGerente("");
+      setEnderecoGerente("");
+      setNumeroGerente("");
+      setComplementoGerente("");
+      setBairroGerente("");
+      setCidadeGerente("");
+    } catch (error) {
+      console.error("Erro ao cadastrar gerente:", error);
+
+      setNotice(`Erro ao cadastrar gerente: ${error.message}`);
+    }
   }
   return (
     <>
@@ -362,6 +395,8 @@ export function AdminDirectory({ section }) {
               Nome completo
               <input
                 name="name"
+                value={nomeGerente}
+                onChange={({ target }) => setNomeGerente(target.value)}
                 required
                 minLength={3}
                 maxLength={120}
@@ -373,6 +408,8 @@ export function AdminDirectory({ section }) {
               E-mail
               <input
                 name="email"
+                value={emailGerente}
+                onChange={({ target }) => setEmailGerente(target.value)}
                 type="email"
                 required
                 maxLength={254}
@@ -386,6 +423,8 @@ export function AdminDirectory({ section }) {
                 CPF
                 <input
                   name="cpfGerente"
+                  value={cpfGerente}
+                  onChange={({ target }) => setCpfGerente(target.value)}
                   type="text"
                   required
                   // autoComplete="new-password"
@@ -401,6 +440,8 @@ export function AdminDirectory({ section }) {
                 CRF (Conselho Regional de Farmácia)
                 <input
                   name="crfGerente"
+                  value={crfGerente}
+                  onChange={({ target }) => setCrfGerente(target.value)}
                   type="text"
                   required
                   // autoComplete="new-password"
@@ -415,6 +456,8 @@ export function AdminDirectory({ section }) {
                 Senha
                 <input
                   name="senhaGerente"
+                  value={senhaGerente}
+                  onChange={({ target }) => setSenhaGerente(target.value)}
                   type="password"
                   required
                   autoComplete="new-password"
@@ -430,6 +473,10 @@ export function AdminDirectory({ section }) {
                 Confirmar senha
                 <input
                   name="confirmPassword"
+                  value={confirmarSenhaGerente}
+                  onChange={({ target }) =>
+                    setConfirmarSenhaGerente(target.value)
+                  }
                   type="password"
                   required
                   autoComplete="new-password"
@@ -469,16 +516,34 @@ export function AdminDirectory({ section }) {
               CEP
               <input
                 name="cepGerente"
-                value="Preenchida no cadastro"
-                readOnly
+                value={cepGerente}
+                onChange={({ target }) => setCepGerente(target.value)}
+                type="text"
+                required
+                // autoComplete="new-password"
+                placeholder="Ex. 00000-000"
+                onInput={(event) =>
+                  event.currentTarget.form.elements
+                    .namedItem("confirmPassword")
+                    .setCustomValidity("")
+                }
               />
             </label>
             <label>
               Endereço
               <input
-                name="logradouroGerente"
-                value="Preenchida no cadastro"
-                readOnly
+                name="enderecoGerente"
+                value={enderecoGerente}
+                onChange={({ target }) => setEnderecoGerente(target.value)}
+                type="text"
+                required
+                // autoComplete="new-password"
+                placeholder="Ex. Rua Alcindo Pereira"
+                onInput={(event) =>
+                  event.currentTarget.form.elements
+                    .namedItem("confirmPassword")
+                    .setCustomValidity("")
+                }
               />
             </label>
 
@@ -487,6 +552,8 @@ export function AdminDirectory({ section }) {
                 Nº
                 <input
                   name="numeroGerente"
+                  value={numeroGerente}
+                  onChange={({ target }) => setNumeroGerente(target.value)}
                   type="text"
                   required
                   // autoComplete="new-password"
@@ -502,6 +569,8 @@ export function AdminDirectory({ section }) {
                 Complemento (opcional)
                 <input
                   name="complementoGerente"
+                  value={complementoGerente}
+                  onChange={({ target }) => setComplementoGerente(target.value)}
                   type="text"
                   required
                   // autoComplete="new-password"
@@ -520,6 +589,8 @@ export function AdminDirectory({ section }) {
                 Bairro
                 <input
                   name="bairroGerente"
+                  value={bairroGerente}
+                  onChange={({ target }) => setBairroGerente(target.value)}
                   type="text"
                   required
                   // autoComplete="new-password"
@@ -535,6 +606,8 @@ export function AdminDirectory({ section }) {
                 Cidade
                 <input
                   name="cidadeGerente"
+                  value={cidadeGerente}
+                  onChange={({ target }) => setCidadeGerente(target.value)}
                   type="text"
                   required
                   // autoComplete="new-password"
