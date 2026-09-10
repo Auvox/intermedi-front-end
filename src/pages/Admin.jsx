@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
+import { normalizeGerentes } from "../services/gerenteMapper";
 import { initialData, unit, formatDate } from "./managerData";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
@@ -160,6 +161,58 @@ export function AdminDirectory({ section }) {
   const tickets = section === "chamados";
   const managers = section === "gerentes";
 
+  useEffect(() => {
+    if (section !== "gerentes") {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadGerentes() {
+      try {
+        const response = await fetch("http://localhost:3000/gerente", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Não foi possível buscar os gerentes.");
+        }
+
+        const payload = await response.json();
+        const rawList = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.gerente)
+            ? payload.gerente
+            : Array.isArray(payload?.gerentes)
+              ? payload.gerentes
+              : Array.isArray(payload?.data)
+                ? payload.data
+                : [];
+
+        if (!cancelled) {
+          setData((current) => ({
+            ...current,
+            gerentes: normalizeGerentes(rawList),
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar gerentes:", error);
+        if (!cancelled) {
+          setNotice("Não foi possível buscar os gerentes do endpoint.");
+        }
+      }
+    }
+
+    loadGerentes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [section, setData]);
+
   const [dataGerente, setDataGerente] = useState({});
 
   const [nomeGerente, setNomeGerente] = useState("");
@@ -185,17 +238,53 @@ export function AdminDirectory({ section }) {
   const restricted = records.filter((record) =>
     ["Bloqueado", "Banido"].includes(record.status),
   ).length;
-  function confirmAction() {
+  async function confirmAction() {
     const record = modal.record;
+
+    if (managers) {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/gerente/${encodeURIComponent(record.id)}`,
+          {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({}));
+          throw new Error(
+            errorPayload.message ||
+              errorPayload.error ||
+              "Erro ao excluir gerente",
+          );
+        }
+
+        setData((current) => ({
+          ...current,
+          gerentes: current.gerentes.filter((item) => item.id !== record.id),
+        }));
+
+        setNotice(`${record.name}: excluído com sucesso no banco.`);
+        setModal(null);
+        return;
+      } catch (error) {
+        console.error("Erro ao excluir gerente:", error);
+        setNotice(error.message || "Erro ao excluir gerente.");
+        setModal(null);
+        return;
+      }
+    }
+
     setData((current) => ({
       ...current,
-      [section]: managers
-        ? current[section].filter((item) => item.id !== record.id)
-        : current[section].map((item) =>
-            item.id === record.id
-              ? { ...item, status: tickets ? "Banido" : "Bloqueado" }
-              : item,
-          ),
+      [section]: current[section].map((item) =>
+        item.id === record.id
+          ? { ...item, status: tickets ? "Banido" : "Bloqueado" }
+          : item,
+      ),
     }));
     setNotice(`${record.name}: ${config.result} nesta demonstração.`);
     setModal(null);
