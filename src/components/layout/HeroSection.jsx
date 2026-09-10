@@ -22,7 +22,7 @@ function HeroSection() {
           </h1>
           <p className="lp-hero-sub">O medicamento que sua farmácia procura pode estar mais perto do que você imagina. Encontre produtos e conecte-se a fornecedores em um só lugar.</p>
           <div className="lp-hero-actions">
-            <a className="btn-hero-primary" href="#catalogo">Explorar catálogo</a>
+            <a className="btn-hero-primary" href="#catalogo">Conhecer benefícios</a>
             <a className="btn-hero-outline" href="#como-funciona">Como funciona</a>
           </div>
           <ul className="hero-benefits" aria-label="Recursos da Intermedi">
@@ -67,3 +67,4 @@ function HeroSection() {
 }
 
 export default HeroSection;
+

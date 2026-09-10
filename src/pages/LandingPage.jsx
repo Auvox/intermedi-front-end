@@ -14,18 +14,40 @@ import MapSection from "../components/sections/MapSection.jsx";
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState(() => window.location.hash || "#inicio");
+  const [activeSection, setActiveSection] = useState("#inicio");
 
   useEffect(() => {
-    const onHashChange = () => setActiveSection(window.location.hash || "#inicio");
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    const sections = Array.from(document.querySelectorAll(
+      '#inicio, #catalogo, #como-funciona, #parceiros, #mapa',
+    ));
+    let frame;
+    const updateNavigation = () => {
+      frame = undefined;
+      setScrolled(window.scrollY > 20);
+      const navBottom = document.querySelector('.lp-nav')?.getBoundingClientRect().bottom ?? 100;
+      const marker = Math.min(window.innerHeight * 0.45, navBottom + 100);
+      let current = '#inicio';
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= marker) current = `#${section.id}`;
+      }
+      setActiveSection(current);
+    };
+    const scheduleUpdate = () => {
+      if (frame === undefined) frame = requestAnimationFrame(updateNavigation);
+    };
+    const observer = new ResizeObserver(scheduleUpdate);
+    sections.forEach((section) => observer.observe(section));
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('hashchange', scheduleUpdate);
+    scheduleUpdate();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('hashchange', scheduleUpdate);
+    };
   }, []);
 
   return (

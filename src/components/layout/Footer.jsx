@@ -27,9 +27,9 @@ function Footer() {
               <h3>Explore</h3>
               <ul>
                 <li><a href="#inicio">Início</a></li>
+                <li><a href="#catalogo">Benefícios</a></li>
                 <li><a href="#como-funciona">Como funciona</a></li>
-                <li><a href="#catalogo">Nossas soluções</a></li>
-                <li><a href="#parceiros">Nossos parceiros</a></li>
+                <li><a href="#parceiros">Parceiros</a></li>
               </ul>
             </nav>
             <nav className="lp-footer-col" aria-label="Acesse a plataforma">

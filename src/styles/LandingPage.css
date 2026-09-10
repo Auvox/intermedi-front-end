@@ -43,6 +43,7 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 .lp-logo-img { display: block; height: 68px; width: auto; object-fit: contain; }
 
 .lp-nav-links {
+  position: relative; isolation: isolate;
   display: flex; align-items: center; gap: 4px; list-style: none;
   padding: 5px; background: #f5f8f6; border-radius: 50px;
 }
@@ -53,7 +54,19 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
   transition: color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 .lp-nav-links a:hover { color: #15803d; background: #e8f5ed; }
-.lp-nav-links li.active a { color: #15803d; background: #fff; box-shadow: 0 2px 8px rgba(24,83,58,0.08); }
+.lp-nav-links::before {
+  content: ''; position: absolute; left: 0; top: 0; z-index: -1;
+  width: var(--nav-highlight-width, 0px); height: var(--nav-highlight-height, 0px);
+  transform: translate(var(--nav-highlight-x, 0px), var(--nav-highlight-y, 0px));
+  opacity: var(--nav-highlight-opacity, 0); border-radius: 50px;
+  background: #fff; box-shadow: 0 2px 8px rgba(24,83,58,0.08); pointer-events: none;
+  transition: transform 380ms cubic-bezier(.22, 1, .36, 1), width 380ms cubic-bezier(.22, 1, .36, 1), height 200ms ease, opacity 180ms ease;
+}
+.lp-nav-links li.active a { color: #15803d; background: transparent; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-nav-links::before, .lp-nav-links a { transition: none; }
+  html { scroll-behavior: auto; }
+}
 .lp-nav a:focus-visible, .lp-hamburger:focus-visible, .lp-mobile-menu a:focus-visible { outline: 3px solid var(--green-dark); outline-offset: 4px; }
 
 .btn-nav-primary {

@@ -275,6 +275,12 @@ export default function Employee() {
             <strong>{employeeUnit}</strong>
           </span>
           <div className="mgr-account emp-account">
+            <button
+              type="button"
+              className="mgr-account-button"
+              aria-label="Abrir perfil do funcionário"
+              onClick={openEmployeeProfile}
+            >
             <span className="mgr-account-avatar" aria-hidden="true">
               {employeeInitials}
             </span>
@@ -282,14 +288,6 @@ export default function Employee() {
               <strong>{employeeName}</strong>
               <small>Funcionário da unidade · {employeeUnit}</small>
             </span>
-            <button
-              type="button"
-              className="account-action account-profile"
-              aria-label="Editar perfil do funcionário"
-              onClick={openEmployeeProfile}
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></svg>
-              Perfil
             </button>
             <Link className="account-action account-exit" to="/login?perfil=funcionario">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
