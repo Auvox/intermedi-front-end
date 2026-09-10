@@ -4,9 +4,104 @@ import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createServer } from "node:http";
 import { DatabaseSync } from "node:sqlite";
 import { createAuthServer } from "./auth.mjs";
 import { normalizeGerentes } from "../src/services/gerenteMapper.js";
+
+test("sincroniza o login de gerente ausente no auth.sqlite usando o endpoint fake do gerente", async () => {
+  const directory = mkdtempSync(
+    join(tmpdir(), "intermedi-auth-test-login-sync-"),
+  );
+  const databasePath = join(directory, "test.sqlite");
+  const fake = createServer((req, res) => {
+    const path = new URL(req.url, "http://localhost").pathname;
+    if (path === "/gerente") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          mensagem: "TODOS OS GERENTES CADASTRADOS - GET",
+          gerente: [
+            {
+              idGerente: 77,
+              nomeGerente: "João Silva",
+              emailGerente: "joao.silva@email.com",
+              senhaGerente: "123",
+            },
+          ],
+        }),
+      );
+      return;
+    }
+    if (path === "/farmacia") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          mensagem: "TODAS AS FARMACIAS CADASTRADAS - GET",
+          farmacia: [
+            {
+              idFarmacia: 88,
+              nomeFarmacia: "Farmácia João",
+              idGerente: 77,
+            },
+          ],
+        }),
+      );
+      return;
+    }
+    if (path === "/gerente/77") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          status: "gerente encontrado",
+          resultado: {
+            idGerente: 77,
+            nomeGerente: "João Silva",
+            emailGerente: "joao.silva@email.com",
+            senhaGerente: "123",
+          },
+        }),
+      );
+      return;
+    }
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Rota de teste não encontrada." }));
+  });
+  fake.listen(0, "127.0.0.1");
+  await once(fake, "listening");
+  const auth = createAuthServer({
+    databasePath,
+    gerenteApiBase: `http://127.0.0.1:${fake.address().port}`,
+  });
+  auth.listen(0, "127.0.0.1");
+  await once(auth, "listening");
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${auth.address().port}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://localhost:5173",
+        },
+        body: JSON.stringify({
+          email: "joao.silva@email.com",
+          senha: "123",
+          role: "gerente",
+        }),
+      },
+    );
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.user.email, "joao.silva@email.com");
+    assert.equal(payload.user.role, "gerente");
+  } finally {
+    auth.close();
+    fake.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("cadastro, persistência, isolamento, login, sessão e logout", async () => {
   const directory = mkdtempSync(join(tmpdir(), "intermedi-auth-test-"));

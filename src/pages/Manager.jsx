@@ -8,6 +8,7 @@ import {
 import ManagerSidebar from "../components/ManagerSidebar";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
+import { authRequest } from "../services/auth";
 import {
   availability,
   formatDate,
@@ -149,18 +150,35 @@ function MedicineTable({ medicines }) {
     </div>
   );
 }
-const devManagerUser = {
-  id: "dev-manager",
-  name: "Gerente Local",
-  email: "dev@intermedi.local",
-  role: "gerente",
-  unitId: "dev-unit",
-  unitName: "Unidade Local",
-};
-
 export default function Manager() {
   const outletContext = useOutletContext();
-  const user = outletContext?.user ?? devManagerUser;
+  const [sessionUser, setSessionUser] = useState(null);
+  const [sessionError, setSessionError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function loadSession() {
+      try {
+        const { user } = await authRequest("session", undefined);
+        if (!active) return;
+        setSessionUser(user);
+        setSessionError("");
+      } catch (error) {
+        if (!active) return;
+        setSessionError(
+          error instanceof Error
+            ? error.message
+            : "Sessão do gerente indisponível.",
+        );
+        setSessionUser(null);
+      }
+    }
+    loadSession();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const user = outletContext?.user ?? sessionUser;
   const data = initialData;
   useEffect(() => {
     document.title = "Área do gerente | Intermedi";
@@ -173,13 +191,16 @@ export default function Manager() {
   ).length;
   return (
     <div className="mgr-shell">
-      <ManagerSidebar unitName={user.unitName} external={external} />
+      <ManagerSidebar
+        unitName={user?.unitName || "Minha unidade"}
+        external={external}
+      />
       <div className="mgr-workspace">
         <div className="mgr-topbar">
           <span>
             <span className="mgr-topbar-unit-prefix">Painel de gestão</span>{" "}
             <span className="mgr-topbar-divider">/</span>{" "}
-            <strong>{user.unitName}</strong>
+            <strong>{user?.unitName || "Minha unidade"}</strong>
           </span>
           <Link
             to="/gerente/chamados?origem=rede"
@@ -189,10 +210,29 @@ export default function Manager() {
             <ManagerIcon name="bell" size={17} />
             <b>{external}</b>
           </Link>
-          <AccountControls user={user} />
+          <AccountControls
+            user={
+              user || { id: "", name: "Gerente", email: "", role: "gerente" }
+            }
+          />
         </div>
+        {sessionError && (
+          <p className="mgr-empty" role="alert">
+            {sessionError}
+          </p>
+        )}
         <main className="mgr-main">
-          <Outlet context={{ data, user }} />
+          <Outlet
+            context={{
+              data,
+              user: user || {
+                id: "",
+                name: "Gerente",
+                email: "",
+                role: "gerente",
+              },
+            }}
+          />
         </main>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
@@ -202,16 +242,18 @@ export default function Manager() {
   );
 }
 export function ManagerDashboard() {
-  const { data } = useOutletContext();
+  const { data, user } = useOutletContext();
   const medicines = data.medicines.filter((m) => m.unit === unit);
   const tickets = data.tickets.filter((t) => t.unit === unit);
   const pending = tickets.filter((t) => t.status !== "Resolvido");
+  const managerName = user?.name || "Gerente";
+  const managerUnit = user?.unitName || unit;
   return (
     <>
       <Header
         featured
         eyebrow="SEU CUIDADO COMEÇA AQUI"
-        title="Tudo pronto para cuidar."
+        title={`Olá, ${managerName} · ${managerUnit}`}
         description="Acompanhe sua unidade e mantenha o cuidado em movimento."
         action={
           <Link className="mgr-primary" to="/gerente/chamados">
@@ -305,7 +347,7 @@ export function ManagerDashboard() {
   );
 }
 export function ManagerEmployees() {
-  const { data } = useOutletContext();
+  const { data, user } = useOutletContext();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -321,7 +363,55 @@ export function ManagerEmployees() {
   const [carregandoFuncionarios, setCarregandoFuncionarios] = useState(true);
   const [erroFuncionarios, setErroFuncionarios] = useState("");
 
-  async function buscarFuncionarios() {
+  const [farmacias, setFarmacias] = useState([]);
+  const [carregandoFarmacias, setCarregandoFarmacias] = useState(true);
+  const [erroFarmacias, setErroFarmacias] = useState("");
+  const [farmaciaAtual, setFarmaciaAtual] = useState(null);
+
+  async function buscarFarmacias() {
+    setCarregandoFarmacias(true);
+    setErroFarmacias("");
+    try {
+      const response = await fetch("http://localhost:3000/farmacia", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Não foi possível carregar as farmácias.",
+        );
+      }
+
+      const lista = Array.isArray(result)
+        ? result
+        : Array.isArray(result.farmacia)
+          ? result.farmacia
+          : Array.isArray(result.farmacias)
+            ? result.farmacias
+            : [];
+
+      const mapped = lista.map((farmacia) => ({
+        id: farmacia.idFarmacia ?? farmacia.id,
+        idGerente: farmacia.idGerente ?? farmacia.gerenteId,
+        name: farmacia.nomeFarmacia ?? farmacia.name ?? farmacia.nome,
+      }));
+
+      setFarmacias(mapped);
+      return lista;
+    } catch (error) {
+      setErroFarmacias(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível conectar ao servidor de farmácias.",
+      );
+    } finally {
+      setCarregandoFarmacias(false);
+    }
+  }
+
+  async function buscarFuncionarios(farmaciaId = "") {
     setCarregandoFuncionarios(true);
     setErroFuncionarios("");
     try {
@@ -338,8 +428,16 @@ export function ManagerEmployees() {
         ? result
         : result.funcionario || result.funcionarios || [];
 
+      const filtrada = farmaciaId
+        ? lista.filter(
+            (f) =>
+              String(f.fkIdFarmacia ?? f.idFarmacia ?? "") ===
+              String(farmaciaId),
+          )
+        : lista;
+
       setFuncionarios(
-        lista.map((f) => ({
+        filtrada.map((f) => ({
           id: f.idFuncionario,
           name: f.nomeFuncionario,
           role: f.cargoFuncionario,
@@ -362,8 +460,73 @@ export function ManagerEmployees() {
   }
 
   useEffect(() => {
-    buscarFuncionarios();
-  }, []);
+    async function carregarUnidadeDoGerenteLogado() {
+      try {
+        const farmaciasRaw = await buscarFarmacias();
+        const gerenteResponse = await fetch("http://localhost:3000/gerente", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const gerentePayload = await gerenteResponse.json().catch(() => ({}));
+        if (!gerenteResponse.ok) {
+          throw new Error(
+            gerentePayload.error ||
+              gerentePayload.message ||
+              "Não foi possível localizar o gerente logado.",
+          );
+        }
+
+        const gerentesRaw = Array.isArray(gerentePayload)
+          ? gerentePayload
+          : Array.isArray(gerentePayload?.gerente)
+            ? gerentePayload.gerente
+            : Array.isArray(gerentePayload?.gerentes)
+              ? gerentePayload.gerentes
+              : [];
+
+        const gerente = gerentesRaw.find(
+          (item) =>
+            String(item.emailGerente ?? item.email ?? "")
+              .trim()
+              .toLowerCase() ===
+            String(user?.email || "")
+              .trim()
+              .toLowerCase(),
+        );
+
+        const gerenteId = gerente?.idGerente ?? gerente?.id;
+        const farmacia = Array.isArray(farmaciasRaw)
+          ? farmaciasRaw.find(
+              (item) =>
+                String(item.idGerente ?? item.gerenteId ?? item.gerente) ===
+                String(gerenteId),
+            )
+          : null;
+
+        const farmaciaId = farmacia?.idFarmacia ?? farmacia?.id;
+        const farmaciaName =
+          farmacia?.nomeFarmacia ??
+          farmacia?.name ??
+          farmacia?.nome ??
+          user?.unitName;
+
+        if (farmaciaId) {
+          setFarmaciaAtual({ id: farmaciaId, name: farmaciaName });
+        }
+
+        await buscarFuncionarios(farmaciaId ?? "");
+      } catch (error) {
+        setErroFuncionarios(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar sua unidade.",
+        );
+        setCarregandoFuncionarios(false);
+      }
+    }
+
+    carregarUnidadeDoGerenteLogado();
+  }, [user?.email]);
 
   const employees = funcionarios.filter((e) =>
     `${e.name} ${e.role}`
@@ -384,6 +547,7 @@ export function ManagerEmployees() {
   const [telFuncionario, setTelFuncionario] = useState("");
   const [cargoFuncionario, setCargoFuncionario] = useState("atendente");
   const [turnoFuncionario, setTurnoFuncionario] = useState("manha");
+  const [idFarmaciaFuncionario, setIdFarmaciaFuncionario] = useState("");
   const [cadastroMensagem, setCadastroMensagem] = useState("");
   const [cadastroNotificacao, setCadastroNotificacao] = useState(null);
   const [cadastrando, setCadastrando] = useState(false);
@@ -401,6 +565,8 @@ export function ManagerEmployees() {
       telFuncionario: telFuncionario.trim(),
       cargoFuncionario,
       turnoFuncionario,
+      fkIdFarmacia: idFarmaciaFuncionario,
+      idFarmacia: idFarmaciaFuncionario,
     };
 
     try {
@@ -423,11 +589,16 @@ export function ManagerEmployees() {
       const registro = listaAtualizada?.find((item) =>
         criado.idFuncionario != null
           ? item.idFuncionario === criado.idFuncionario
-          : item.emailFuncionario?.toLowerCase() === funcionario.emailFuncionario,
+          : item.emailFuncionario?.toLowerCase() ===
+            funcionario.emailFuncionario,
       );
       setCadastroNotificacao({
-        nome: registro?.nomeFuncionario || criado.nomeFuncionario || funcionario.nomeFuncionario,
-        matricula: registro?.matriculaFuncionario || criado.matriculaFuncionario || null,
+        nome:
+          registro?.nomeFuncionario ||
+          criado.nomeFuncionario ||
+          funcionario.nomeFuncionario,
+        matricula:
+          registro?.matriculaFuncionario || criado.matriculaFuncionario || null,
       });
       setAdding(false);
       setNomeFuncionario("");
@@ -437,6 +608,7 @@ export function ManagerEmployees() {
       setTelFuncionario("");
       setCargoFuncionario("atendente");
       setTurnoFuncionario("manha");
+      setIdFarmaciaFuncionario("");
     } catch (error) {
       setCadastroMensagem(
         error instanceof Error
@@ -468,15 +640,25 @@ export function ManagerEmployees() {
       );
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || "Não foi possível excluir o funcionário.");
+        throw new Error(
+          result.error || "Não foi possível excluir o funcionário.",
+        );
       }
-      setFuncionarios((current) => current.filter((item) => item.id !== employee.id));
+      setFuncionarios((current) =>
+        current.filter((item) => item.id !== employee.id),
+      );
       setSelected(null);
       setConfirmDelete(false);
       setCadastroNotificacao(null);
-      setDeleteNotice(`${employee.name} · Matrícula: ${employee.matricula || "não informada"}. Funcionário excluído com sucesso.`);
+      setDeleteNotice(
+        `${employee.name} · Matrícula: ${employee.matricula || "não informada"}. Funcionário excluído com sucesso.`,
+      );
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : "Não foi possível conectar ao servidor.");
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível conectar ao servidor.",
+      );
     } finally {
       deletingRef.current = false;
       setDeleting(false);
@@ -506,12 +688,33 @@ export function ManagerEmployees() {
           <div role="status" aria-live="polite">
             <strong>Funcionário cadastrado com sucesso</strong>
             <p>{cadastroNotificacao.nome}</p>
-            <span>Matrícula: <b>{cadastroNotificacao.matricula ?? "Não informada pelo servidor"}</b></span>
+            <span>
+              Matrícula:{" "}
+              <b>
+                {cadastroNotificacao.matricula ?? "Não informada pelo servidor"}
+              </b>
+            </span>
           </div>
-          <button type="button" aria-label="Fechar notificação de cadastro" onClick={() => setCadastroNotificacao(null)}>×</button>
+          <button
+            type="button"
+            aria-label="Fechar notificação de cadastro"
+            onClick={() => setCadastroNotificacao(null)}
+          >
+            ×
+          </button>
         </div>
       )}
-      {deleteNotice && <div className="mgr-registration-notice"><p role="status">{deleteNotice}</p><button aria-label="Fechar notificação de exclusão" onClick={() => setDeleteNotice("")}>×</button></div>}
+      {deleteNotice && (
+        <div className="mgr-registration-notice">
+          <p role="status">{deleteNotice}</p>
+          <button
+            aria-label="Fechar notificação de exclusão"
+            onClick={() => setDeleteNotice("")}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <Stats
         items={[
           [
@@ -642,6 +845,28 @@ export function ManagerEmployees() {
               </select>
             </label>
             <label>
+              Farmácia
+              <select
+                name="idFarmaciaFuncionario"
+                required
+                value={idFarmaciaFuncionario}
+                onChange={({ target }) =>
+                  setIdFarmaciaFuncionario(target.value)
+                }
+                disabled={carregandoFarmacias || !!erroFarmacias}
+              >
+                <option value="">Selecione a farmácia</option>
+                {farmacias.map((farmacia) => (
+                  <option key={farmacia.id} value={farmacia.id}>
+                    {farmacia.name}
+                  </option>
+                ))}
+              </select>
+              {erroFarmacias && (
+                <small className="mgr-form-error">{erroFarmacias}</small>
+              )}
+            </label>
+            <label>
               Turno
               <select
                 name="turnoFuncionario"
@@ -655,7 +880,12 @@ export function ManagerEmployees() {
               </select>
             </label>
             {cadastroMensagem && <p role="status">{cadastroMensagem}</p>}
-            <button className="mgr-primary" disabled={cadastrando}>
+            <button
+              className="mgr-primary"
+              disabled={
+                cadastrando || carregandoFarmacias || !idFarmaciaFuncionario
+              }
+            >
               {cadastrando ? "Cadastrando…" : "Cadastrar funcionário"}
             </button>
           </form>
@@ -670,13 +900,38 @@ export function ManagerEmployees() {
           <p>{selected.email}</p>
           <div className="mgr-delete-area">
             {!confirmDelete ? (
-              <button className="mgr-delete-button" disabled={selected.id == null} onClick={() => setConfirmDelete(true)}>Excluir funcionário</button>
+              <button
+                className="mgr-delete-button"
+                disabled={selected.id == null}
+                onClick={() => setConfirmDelete(true)}
+              >
+                Excluir funcionário
+              </button>
             ) : (
               <>
-                <p>Excluir <strong>{selected.name}</strong> (matrícula {selected.matricula || "não informada"})? Esta ação não pode ser desfeita.</p>
+                <p>
+                  Excluir <strong>{selected.name}</strong> (matrícula{" "}
+                  {selected.matricula || "não informada"})? Esta ação não pode
+                  ser desfeita.
+                </p>
                 <div className="mgr-modal-actions">
-                  <button className="mgr-secondary" disabled={deleting} onClick={() => { setConfirmDelete(false); setDeleteError(""); }}>Cancelar</button>
-                  <button className="mgr-delete-button" disabled={deleting} onClick={deleteEmployee}>{deleting ? "Excluindo…" : "Confirmar exclusão"}</button>
+                  <button
+                    className="mgr-secondary"
+                    disabled={deleting}
+                    onClick={() => {
+                      setConfirmDelete(false);
+                      setDeleteError("");
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="mgr-delete-button"
+                    disabled={deleting}
+                    onClick={deleteEmployee}
+                  >
+                    {deleting ? "Excluindo…" : "Confirmar exclusão"}
+                  </button>
                 </div>
                 {deleteError && <p role="alert">{deleteError}</p>}
               </>

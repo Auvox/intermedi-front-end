@@ -79,6 +79,28 @@
   opacity: 0.45;
   cursor: default;
 }
+.adm-edit-icon {
+  border: 1px solid #ccd7d4;
+  background: #eef6f4;
+  color: #375b58;
+  font-size: 15px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+.adm-edit-icon:hover {
+  background: #244d4e;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
 .adm-confirm {
   padding: 11px 17px;
   font-size: 12px;
@@ -106,6 +128,62 @@
 .adm-details dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+.adm-manager-unit-panel {
+  padding: 16px 0;
+  border-bottom: 1px solid #dbe6e5;
+}
+.adm-manager-panel-title {
+  color: #60746d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.75px;
+  margin-bottom: 8px;
+}
+.adm-manager-unit-card {
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f6fbf6 0%, #dcecea 100%);
+  border: 1px solid #bfd7d2;
+  box-shadow: 0 10px 30px rgba(55, 80, 76, 0.08);
+}
+.adm-manager-unit-name {
+  display: block;
+  color: #244d4e;
+  font-size: 16px;
+  font-weight: 800;
+}
+.adm-manager-unit-meta {
+  display: block;
+  color: #617b76;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.adm-manager-employee-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.adm-manager-employee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef5f3;
+  border: 1px solid #d2e3df;
+}
+.adm-manager-employee-name {
+  color: #244d4e;
+  font-size: 12px;
+  font-weight: 700;
+}
+.adm-manager-employee-role {
+  color: #60746d;
+  font-size: 11px;
 }
 .adm-hint {
   font-size: 12px;

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import phoneMockup from "../assets/intermedi-phones.png";
+import { authRequest } from "../services/auth";
 import "../styles/auth.css";
 
 type Role = "gerente" | "funcionario" | "admin";
@@ -122,13 +123,17 @@ export default function LoginUser({
 }: {
   initialMode?: Mode;
 }) {
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [role, setRole] = useState<Role | null>(
     profiles.find((profile) => profile.id === params.get("perfil"))?.id ?? null,
   );
 
   const [requestedMode, setMode] = useState<Mode>(initialMode);
-  const mode: Mode = role === "gerente" || role === "admin" ? "login" : requestedMode;
+  const mode: Mode =
+    role === "funcionario" || role === "gerente" || role === "admin"
+      ? "login"
+      : requestedMode;
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -150,8 +155,289 @@ export default function LoginUser({
     resetRequest();
     setMode(next);
   }
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    if (role === "funcionario") {
+      const cpf = String(formData.get("cpf") || "")
+        .trim()
+        .replace(/[^\d]/g, "");
+      const matricula = String(formData.get("matricula") || "")
+        .trim()
+        .toLowerCase();
+
+      if (!cpf) {
+        setMessage("Informe o CPF do funcionário.");
+        return;
+      }
+      if (!matricula) {
+        setMessage("Informe a matrícula do funcionário.");
+        return;
+      }
+
+      try {
+        const listResponse = await fetch("http://localhost:3000/funcionario", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const listPayload = await listResponse.json().catch(() => ({}));
+        if (!listResponse.ok) {
+          throw new Error(
+            listPayload.message ||
+              listPayload.error ||
+              "Não foi possível consultar os funcionários.",
+          );
+        }
+
+        const rawList = Array.isArray(listPayload)
+          ? listPayload
+          : Array.isArray(listPayload?.funcionario)
+            ? listPayload.funcionario
+            : Array.isArray(listPayload?.funcionarios)
+              ? listPayload.funcionarios
+              : [];
+
+        const found = rawList.find((item: any) => {
+          const storedCpf = String(item.cpfFuncionario ?? item.cpf ?? "")
+            .trim()
+            .replace(/[^\d]/g, "");
+          const storedMatricula = String(
+            item.matriculaFuncionario ?? item.matricula ?? "",
+          )
+            .trim()
+            .toLowerCase();
+          return storedCpf === cpf && storedMatricula === matricula;
+        });
+
+        if (!found) {
+          setMessage("CPF ou matrícula incorretos.");
+          return;
+        }
+
+        const funcionarioId = found.idFuncionario ?? found.id;
+        if (!funcionarioId) {
+          setMessage("Funcionário sem identificação válida.");
+          return;
+        }
+
+        const detailResponse = await fetch(
+          `http://localhost:3000/funcionario/${encodeURIComponent(funcionarioId)}`,
+          { method: "GET", headers: { Accept: "application/json" } },
+        );
+        const detailPayload = await detailResponse.json().catch(() => ({}));
+        if (!detailResponse.ok) {
+          throw new Error(
+            detailPayload.message ||
+              detailPayload.error ||
+              "Não foi possível consultar o perfil do funcionário.",
+          );
+        }
+
+        const detail = Array.isArray(detailPayload)
+          ? detailPayload[0]
+          : (detailPayload?.resultado ??
+            detailPayload?.funcionario ??
+            detailPayload?.funcionarios ??
+            detailPayload);
+
+        const farmaciaId = String(
+          detail.fkIdFarmacia ??
+            detail.idFarmacia ??
+            found.fkIdFarmacia ??
+            found.idFarmacia ??
+            "",
+        ).trim();
+
+        let unitName = "Unidade não vinculada";
+        if (farmaciaId) {
+          const farmaciaResponse = await fetch(
+            "http://localhost:3000/farmacia",
+            {
+              method: "GET",
+              headers: { Accept: "application/json" },
+            },
+          );
+          const farmaciaPayload = await farmaciaResponse
+            .json()
+            .catch(() => ({}));
+          if (farmaciaResponse.ok) {
+            const farmacias = Array.isArray(farmaciaPayload)
+              ? farmaciaPayload
+              : Array.isArray(farmaciaPayload?.farmacia)
+                ? farmaciaPayload.farmacia
+                : Array.isArray(farmaciaPayload?.farmacias)
+                  ? farmaciaPayload.farmacias
+                  : [];
+            const unidade = farmacias.find((item: any) => {
+              return String(item.idFarmacia ?? item.id) === String(farmaciaId);
+            });
+            if (unidade) {
+              unitName = String(
+                unidade.nomeFarmacia ??
+                  unidade.nome ??
+                  unidade.farmacia ??
+                  "Unidade não vinculada",
+              ).trim();
+            }
+          }
+        }
+
+        const sessionUser = {
+          id: detail.idFuncionario ?? found.idFuncionario ?? funcionarioId,
+          name:
+            detail.nomeFuncionario ??
+            found.nomeFuncionario ??
+            found.name ??
+            "Funcionário",
+          cpf: detail.cpfFuncionario ?? found.cpfFuncionario ?? cpf,
+          matricula:
+            detail.matriculaFuncionario ??
+            found.matriculaFuncionario ??
+            matricula,
+          email: detail.emailFuncionario ?? found.emailFuncionario ?? "",
+          role: "funcionario",
+          unitName,
+          farmaciasId: farmaciaId,
+        };
+
+        sessionStorage.setItem(
+          "intermediEmployeeSession",
+          JSON.stringify(sessionUser),
+        );
+
+        setMessage("");
+        navigate("/funcionario", { replace: true });
+        return;
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível validar o funcionário. Tente novamente.",
+        );
+      }
+      return;
+    }
+
+    if (role !== "gerente") {
+      setMessage("Este fluxo de login é exclusivo para o perfil de gerente.");
+      return;
+    }
+
+    const email = String(formData.get("email") || "")
+      .trim()
+      .toLowerCase();
+    const senha = String(formData.get("senha") || "").trim();
+
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!email) {
+      setMessage("Informe o e-mail do gerente.");
+      return;
+    }
+    if (!emailIsValid) {
+      setMessage("Informe um e-mail válido do gerente.");
+      return;
+    }
+    if (!senha) {
+      setMessage("Informe a senha do gerente.");
+      return;
+    }
+
+    try {
+      const listResponse = await fetch("http://localhost:3000/gerente", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const listPayload = await listResponse.json().catch(() => ({}));
+      if (!listResponse.ok) {
+        throw new Error(
+          listPayload.message ||
+            listPayload.error ||
+            "Não foi possível consultar os gerentes.",
+        );
+      }
+
+      const rawList = Array.isArray(listPayload)
+        ? listPayload
+        : Array.isArray(listPayload?.gerente)
+          ? listPayload.gerente
+          : Array.isArray(listPayload?.gerentes)
+            ? listPayload.gerentes
+            : [];
+
+      const found = rawList.find((item: any) => {
+        const storedEmail = String(item.emailGerente ?? item.email ?? "")
+          .trim()
+          .toLowerCase();
+        return storedEmail === email;
+      });
+
+      if (!found) {
+        setMessage("E-mail ou senha incorretos.");
+        return;
+      }
+
+      const gerenteId = found.idGerente ?? found.id;
+      if (!gerenteId) {
+        setMessage("Gerente sem identificação válida.");
+        return;
+      }
+
+      const detailResponse = await fetch(
+        `http://localhost:3000/gerente/${encodeURIComponent(gerenteId)}`,
+        { method: "GET", headers: { Accept: "application/json" } },
+      );
+      const detailPayload = await detailResponse.json().catch(() => ({}));
+      if (!detailResponse.ok) {
+        throw new Error(
+          detailPayload.message ||
+            detailPayload.error ||
+            "Não foi possível consultar o perfil do gerente.",
+        );
+      }
+
+      const detail = Array.isArray(detailPayload)
+        ? detailPayload[0]
+        : (detailPayload?.gerente ?? detailPayload?.gerentes ?? detailPayload);
+      const storedPassword = String(
+        detail.senhaGerente ??
+          detail.senha ??
+          found.senhaGerente ??
+          found.senha ??
+          "",
+      ).trim();
+
+      if (storedPassword !== senha) {
+        setMessage("E-mail ou senha incorretos.");
+        return;
+      }
+
+      try {
+        await authRequest("login", {
+          email,
+          senha,
+          role: "gerente",
+        });
+      } catch (authError) {
+        setMessage(
+          authError instanceof Error
+            ? authError.message
+            : "Não foi possível iniciar a sessão do gerente.",
+        );
+        return;
+      }
+
+      setMessage("");
+      navigate("/gerente", { replace: true });
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível validar o gerente. Tente novamente.",
+      );
+    }
   }
   return (
     <main className="auth-page">
@@ -205,7 +491,8 @@ export default function LoginUser({
                     onClick={() => {
                       setRole(profile.id);
                       setMessage("");
-                      if (profile.id === "admin" || profile.id === "gerente") setMode("login");
+                      if (profile.id === "admin" || profile.id === "gerente")
+                        setMode("login");
                     }}
                   >
                     <span className="auth-profile-icon">
@@ -254,26 +541,8 @@ export default function LoginUser({
                   : "Vamos nos conectar?"}
               </h1>
               <p className="auth-intro">
-                {mode === "login"
-                  ? "Entre com seus dados para acessar sua conta."
-                  : "Preencha seus dados para começar no Intermedi."}
+                Entre com seus dados para acessar sua conta.
               </p>
-              {role === "funcionario" && (
-                <div className="auth-mode" aria-label="Tipo de acesso">
-                  <button
-                    aria-pressed={mode === "login"}
-                    onClick={() => changeMode("login")}
-                  >
-                    Entrar
-                  </button>
-                  <button
-                    aria-pressed={mode === "cadastro"}
-                    onClick={() => changeMode("cadastro")}
-                  >
-                    Criar conta
-                  </button>
-                </div>
-              )}
               <form
                 key={`${role}-${mode}`}
                 className="auth-form"
@@ -307,43 +576,72 @@ export default function LoginUser({
                     </small>
                   </label>
                 )}
-                <label>
-                  E-mail
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="voce@farmacia.com.br"
-                    maxLength={254}
-                  />
-                </label>
-                <label>
-                  Senha
-                  <span className="auth-password">
-                    <input
-                      name="senha"
-                      type={visible ? "text" : "password"}
-                      autoComplete={
-                        mode === "login" ? "current-password" : "new-password"
-                      }
-                      placeholder={
-                        mode === "login"
-                          ? "Digite sua senha"
-                          : "Crie uma senha com 8 ou mais caracteres"
-                      }
-                      minLength={mode === "cadastro" ? 8 : 1}
-                      maxLength={128}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setVisible(!visible)}
-                      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
-                      aria-pressed={visible}
-                    >
-                      <Icon name={visible ? "hidden" : "eye"} />
-                    </button>
-                  </span>
-                </label>
+                {role === "funcionario" ? (
+                  <>
+                    <label>
+                      CPF
+                      <input
+                        name="cpf"
+                        type="text"
+                        autoComplete="off"
+                        placeholder="Digite seu CPF"
+                        maxLength={14}
+                      />
+                    </label>
+                    <label>
+                      Matrícula
+                      <input
+                        name="matricula"
+                        type="text"
+                        autoComplete="off"
+                        placeholder="Digite sua matrícula"
+                        maxLength={20}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label>
+                      E-mail
+                      <input
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="voce@farmacia.com.br"
+                        maxLength={254}
+                      />
+                    </label>
+                    <label>
+                      Senha
+                      <span className="auth-password">
+                        <input
+                          name="senha"
+                          type={visible ? "text" : "password"}
+                          autoComplete={
+                            mode === "login"
+                              ? "current-password"
+                              : "new-password"
+                          }
+                          placeholder={
+                            mode === "login"
+                              ? "Digite sua senha"
+                              : "Crie sua senha"
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setVisible(!visible)}
+                          aria-label={
+                            visible ? "Ocultar senha" : "Mostrar senha"
+                          }
+                          aria-pressed={visible}
+                        >
+                          <Icon name={visible ? "hidden" : "eye"} />
+                        </button>
+                      </span>
+                    </label>
+                  </>
+                )}
                 {mode === "cadastro" && (
                   <label>
                     Confirmar senha
@@ -352,8 +650,6 @@ export default function LoginUser({
                       type={visible ? "text" : "password"}
                       autoComplete="new-password"
                       placeholder="Digite sua senha novamente"
-                      minLength={8}
-                      maxLength={128}
                     />
                   </label>
                 )}
@@ -390,7 +686,10 @@ export default function LoginUser({
               </form>
               {(role === "funcionario" || role === "admin") && (
                 <p className="auth-switch">
-                  <Link to={`/${role}`}>Visualizar tela do {role === "admin" ? "admin" : "funcionário"} ↗</Link>
+                  <Link to={`/${role}`}>
+                    Visualizar tela do{" "}
+                    {role === "admin" ? "admin" : "funcionário"} ↗
+                  </Link>
                 </p>
               )}
               <p className="auth-form-foot">
