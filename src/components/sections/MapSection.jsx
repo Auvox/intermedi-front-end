@@ -322,7 +322,6 @@ export default function MapSection() {
 
           {/* COLUNA DA DIREITA: Painel Lateral com os Cards */}
           <aside className="map-sidebar" aria-label="Indicadores da rede">
-            <div className="map-network-heading"><span>RESUMO DA REDE</span><small>Nesta visualização</small></div>
             {FEED_TYPES.map((activity) => (
               <div key={activity.id} className={`map-stat-pill map-network-stat map-network-stat--${activity.id}`}>
                 <div className="map-network-stat-top">
