@@ -21,8 +21,12 @@ function Rotas() {
         <Route path="/cadastro" element={<CadastroUser />} />
         <Route path="/admin" element={<Admin />}>
           <Route index element={<Navigate to="gerentes" replace />} />
-          {["gerentes", "funcionarios", "pacientes", "chamados"].map((section) => (
-            <Route key={section} path={section} element={<AdminDirectory key={section} section={section} />} />
+          {["gerentes", "farmacias", "pacientes", "chamados"].map((section) => (
+            <Route
+              key={section}
+              path={section}
+              element={<AdminDirectory key={section} section={section} />}
+            />
           ))}
           <Route path="*" element={<Navigate to="/admin/gerentes" replace />} />
         </Route>
@@ -30,7 +34,10 @@ function Rotas() {
           <Route index element={<Navigate to="pacientes" replace />} />
           <Route path="pacientes" element={<EmployeePatients />} />
           <Route path="funcionarios" element={<EmployeeTeam />} />
-          <Route path="*" element={<Navigate to="/funcionario/pacientes" replace />} />
+          <Route
+            path="*"
+            element={<Navigate to="/funcionario/pacientes" replace />}
+          />
         </Route>
         <Route path="/gerente" element={<Manager />}>
           <Route index element={<ManagerDashboard />} />

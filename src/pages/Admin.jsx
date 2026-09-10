@@ -25,11 +25,29 @@ const demoData = {
       status: "Ativo",
     },
   ],
-  funcionarios: initialData.employees.map((person) => ({
-    ...person,
-    unit,
-    status: "Ativo",
-  })),
+  farmacias: [
+    {
+      id: "f1",
+      name: "Farmácia Central",
+      email: "central@intermedi.com",
+      unit: "Farmácia Central",
+      status: "Ativo",
+    },
+    {
+      id: "f2",
+      name: "Farmácia Jardim",
+      email: "jardim@intermedi.com",
+      unit: "Farmácia Jardim",
+      status: "Ativo",
+    },
+    {
+      id: "f3",
+      name: "Farmácia Vila Verde",
+      email: "vilaverde@intermedi.com",
+      unit: "Farmácia Vila Verde",
+      status: "Ativo",
+    },
+  ],
   pacientes: initialData.patients.map((person) => ({
     ...person,
     unit,
@@ -49,12 +67,12 @@ const sections = {
     action: "Excluir gerente",
     result: "excluído",
   },
-  funcionarios: {
-    label: "Funcionários",
-    title: "Uma rede de profissionais.",
-    description: "Consulte os funcionários e acompanhe o acesso à plataforma.",
-    action: "Bloquear funcionário",
-    result: "bloqueado",
+  farmacias: {
+    label: "Farmácias",
+    title: "Uma rede de farmácias.",
+    description: "Consulte as farmácias e acompanhe as unidades da plataforma.",
+    action: "Excluir farmácia",
+    result: "excluída",
   },
   pacientes: {
     label: "Pacientes",
@@ -76,6 +94,38 @@ const normalize = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+
+const normalizeFarmacias = (payload = []) =>
+  payload.map((farmacia, index) => {
+    const id = farmacia.idFarmacia ?? farmacia.id ?? String(index + 1);
+    const name =
+      farmacia.nomeFarmacia ??
+      farmacia.name ??
+      farmacia.nome ??
+      "Farmácia sem nome";
+    const email = farmacia.emailFarmacia ?? farmacia.email ?? "";
+    const phone = farmacia.telFarmacia ?? farmacia.telefone ?? "";
+    const cnes = farmacia.cnesFarmacia ?? farmacia.cnes ?? "";
+    const managerId = farmacia.idGerente ?? farmacia.gerenteId ?? null;
+    const unit =
+      farmacia.cidadeFarmacia ??
+      farmacia.enderecoFarmacia ??
+      farmacia.bairroFarmacia ??
+      farmacia.unidade ??
+      farmacia.unit ??
+      "Unidade não informada";
+
+    return {
+      id: String(id),
+      name,
+      email,
+      phone,
+      cnes,
+      idGerente: managerId,
+      unit,
+      status: "Ativo",
+    };
+  });
 
 export default function Admin() {
   const [data, setData] = useState(demoData);
@@ -160,9 +210,10 @@ export function AdminDirectory({ section }) {
   const records = data[section];
   const tickets = section === "chamados";
   const managers = section === "gerentes";
+  const pharmacies = section === "farmacias";
 
   useEffect(() => {
-    if (section !== "gerentes") {
+    if (section !== "gerentes" && section !== "farmacias") {
       return undefined;
     }
 
@@ -213,6 +264,58 @@ export function AdminDirectory({ section }) {
     };
   }, [section, setData]);
 
+  useEffect(() => {
+    if (section !== "farmacias") {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadFarmacias() {
+      try {
+        const response = await fetch("http://localhost:3000/farmacia", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Não foi possível buscar as farmácias.");
+        }
+
+        const payload = await response.json();
+        const rawList = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.farmacia)
+            ? payload.farmacia
+            : Array.isArray(payload?.farmacias)
+              ? payload.farmacias
+              : Array.isArray(payload?.data)
+                ? payload.data
+                : [];
+
+        if (!cancelled) {
+          setData((current) => ({
+            ...current,
+            farmacias: normalizeFarmacias(rawList),
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar farmácias:", error);
+        if (!cancelled) {
+          setNotice("Não foi possível buscar as farmácias do endpoint.");
+        }
+      }
+    }
+
+    loadFarmacias();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [section, setData]);
+
   const [dataGerente, setDataGerente] = useState({});
 
   const [nomeGerente, setNomeGerente] = useState("");
@@ -227,6 +330,27 @@ export function AdminDirectory({ section }) {
   const [complementoGerente, setComplementoGerente] = useState("");
   const [bairroGerente, setBairroGerente] = useState("");
   const [cidadeGerente, setCidadeGerente] = useState("");
+
+  const [nomeFarmacia, setNomeFarmacia] = useState("");
+  const [emailFarmacia, setEmailFarmacia] = useState("");
+  const [telFarmacia, setTelFarmacia] = useState("");
+  const [cnesFarmacia, setCnesFarmacia] = useState("");
+  const [senhaFarmacia, setSenhaFarmacia] = useState("");
+  const [cepFarmacia, setCepFarmacia] = useState("");
+  const [enderecoFarmacia, setEnderecoFarmacia] = useState("");
+  const [numeroFarmacia, setNumeroFarmacia] = useState("");
+  const [complementoFarmacia, setComplementoFarmacia] = useState("");
+  const [bairroFarmacia, setBairroFarmacia] = useState("");
+  const [cidadeFarmacia, setCidadeFarmacia] = useState("");
+  const [gerenteSearchFarmacia, setGerenteSearchFarmacia] = useState("");
+  const [gerentesFarmacia, setGerentesFarmacia] = useState([]);
+  const [showGerenteSuggestions, setShowGerenteSuggestions] = useState(false);
+
+  const gerenteOptions = (data.gerentes || []).filter((gerente) =>
+    normalize(`${gerente.name} ${gerente.email || ""}`).includes(
+      normalize(gerenteSearchFarmacia.trim()),
+    ),
+  );
 
   const filtered = records.filter(
     (record) =>
@@ -273,6 +397,43 @@ export function AdminDirectory({ section }) {
       } catch (error) {
         console.error("Erro ao excluir gerente:", error);
         setNotice(error.message || "Erro ao excluir gerente.");
+        setModal(null);
+        return;
+      }
+    }
+
+    if (pharmacies) {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/farmacia/${encodeURIComponent(record.id)}`,
+          {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({}));
+          throw new Error(
+            errorPayload.message ||
+              errorPayload.error ||
+              "Erro ao excluir farmácia",
+          );
+        }
+
+        setData((current) => ({
+          ...current,
+          farmacias: current.farmacias.filter((item) => item.id !== record.id),
+        }));
+
+        setNotice(`${record.name}: excluída com sucesso no banco.`);
+        setModal(null);
+        return;
+      } catch (error) {
+        console.error("Erro ao excluir farmácia:", error);
+        setNotice(error.message || "Erro ao excluir farmácia.");
         setModal(null);
         return;
       }
@@ -347,6 +508,77 @@ export function AdminDirectory({ section }) {
       setNotice(`Erro ao cadastrar gerente: ${error.message}`);
     }
   }
+
+  async function registerFarmacia(event) {
+    event.preventDefault();
+
+    const farmacia = {
+      nomeFarmacia,
+      emailFarmacia,
+      telFarmacia,
+      cnesFarmacia,
+      idGerente: gerentesFarmacia[0] ? Number(gerentesFarmacia[0].id) : null,
+      senhaFarmacia,
+      cepFarmacia,
+      enderecoFarmacia,
+      numeroFarmacia,
+      complementoFarmacia: complementoFarmacia || null,
+      bairroFarmacia,
+      cidadeFarmacia,
+    };
+
+    try {
+      const response = await fetch("http://localhost:3000/farmacia", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(farmacia),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const errorMessage =
+          result.message ||
+          result.error?.message ||
+          result.error?.errstr ||
+          "Erro ao cadastrar farmácia";
+        throw new Error(errorMessage);
+      }
+
+      const nextFarmacia = {
+        id: String(result?.farmacia?.id ?? Date.now()),
+        name: nomeFarmacia,
+        email: emailFarmacia,
+        unit: cidadeFarmacia || enderecoFarmacia || nomeFarmacia,
+        status: "Ativo",
+      };
+
+      setData((current) => ({
+        ...current,
+        farmacias: [...current.farmacias, nextFarmacia],
+      }));
+      setNotice(`${nomeFarmacia}: cadastrada com sucesso!`);
+      setModal(null);
+
+      setNomeFarmacia("");
+      setEmailFarmacia("");
+      setTelFarmacia("");
+      setCnesFarmacia("");
+      setGerenteSearchFarmacia("");
+      setGerentesFarmacia([]);
+      setSenhaFarmacia("");
+      setCepFarmacia("");
+      setEnderecoFarmacia("");
+      setNumeroFarmacia("");
+      setComplementoFarmacia("");
+      setBairroFarmacia("");
+      setCidadeFarmacia("");
+    } catch (error) {
+      console.error("Erro ao cadastrar farmácia:", error);
+      setNotice(`Erro ao cadastrar farmácia: ${error.message}`);
+    }
+  }
   return (
     <>
       <header className="mgr-page-head mgr-page-head-featured">
@@ -361,6 +593,14 @@ export function AdminDirectory({ section }) {
             onClick={() => setModal({ type: "register" })}
           >
             + Cadastrar gerente
+          </button>
+        )}
+        {pharmacies && (
+          <button
+            className="mgr-primary"
+            onClick={() => setModal({ type: "registerFarmacia" })}
+          >
+            + Cadastrar farmácia
           </button>
         )}
       </header>
@@ -477,6 +717,235 @@ export function AdminDirectory({ section }) {
           {filtered.length} de {records.length} registros
         </p>
       </section>
+      {modal?.type === "registerFarmacia" && (
+        <Dialog title="Cadastrar farmácia" onClose={() => setModal(null)}>
+          <form className="mgr-form" onSubmit={registerFarmacia}>
+            <label>
+              Nome da farmácia
+              <input
+                name="nomeFarmacia"
+                value={nomeFarmacia}
+                onChange={({ target }) => setNomeFarmacia(target.value)}
+                required
+                minLength={3}
+                maxLength={120}
+                autoComplete="organization-title"
+                placeholder="Nome da farmácia"
+              />
+            </label>
+            <div className="mgr-form-row">
+              <label>
+                E-mail da farmácia
+                <input
+                  name="emailFarmacia"
+                  value={emailFarmacia}
+                  onChange={({ target }) => setEmailFarmacia(target.value)}
+                  type="email"
+                  required
+                  maxLength={254}
+                  autoComplete="email"
+                  placeholder="farmacia@exemplo.com"
+                />
+              </label>
+              <label>
+                Telefone
+                <input
+                  name="telFarmacia"
+                  value={telFarmacia}
+                  onChange={({ target }) => setTelFarmacia(target.value)}
+                  type="tel"
+                  required
+                  placeholder="(11) 99999-9999"
+                />
+              </label>
+            </div>
+            <div className="mgr-form-row">
+              <label>
+                CNES
+                <input
+                  name="cnesFarmacia"
+                  value={cnesFarmacia}
+                  onChange={({ target }) => setCnesFarmacia(target.value)}
+                  type="text"
+                  required
+                  placeholder="Número CNES"
+                />
+              </label>
+              <label>
+                Senha da farmácia
+                <input
+                  name="senhaFarmacia"
+                  value={senhaFarmacia}
+                  onChange={({ target }) => setSenhaFarmacia(target.value)}
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  placeholder="Crie uma senha"
+                />
+              </label>
+            </div>
+            <div className="adm-gerente-search-wrap">
+              <label className="adm-gerente-search-label">
+                Gerentes da farmácia
+                <input
+                  name="gerenteSearchFarmacia"
+                  value={gerenteSearchFarmacia}
+                  onFocus={() => setShowGerenteSuggestions(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowGerenteSuggestions(false), 150)
+                  }
+                  onChange={({ target }) =>
+                    setGerenteSearchFarmacia(target.value)
+                  }
+                  placeholder="Buscar gerente por nome ou e-mail"
+                  autoComplete="off"
+                  className="adm-gerente-search-input"
+                />
+                {showGerenteSuggestions && (
+                  <div className="adm-gerente-suggestions">
+                    {gerenteOptions.length ? (
+                      gerenteOptions.map((gerente) => (
+                        <button
+                          key={gerente.id}
+                          type="button"
+                          className={`adm-gerente-option ${gerentesFarmacia.some((item) => item.id === gerente.id) ? "active" : ""}`}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            if (
+                              gerentesFarmacia.some(
+                                (item) => item.id === gerente.id,
+                              )
+                            ) {
+                              setGerentesFarmacia((current) =>
+                                current.filter(
+                                  (item) => item.id !== gerente.id,
+                                ),
+                              );
+                            } else {
+                              setGerentesFarmacia((current) => [
+                                ...current,
+                                gerente,
+                              ]);
+                            }
+                            setGerenteSearchFarmacia("");
+                            setShowGerenteSuggestions(false);
+                          }}
+                        >
+                          <span className="adm-gerente-option-name">
+                            {gerente.name}
+                          </span>
+                          <span className="adm-gerente-option-email">
+                            {gerente.email}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <span className="adm-gerente-empty">
+                        Nenhum gerente encontrado
+                      </span>
+                    )}
+                  </div>
+                )}
+              </label>
+              <div className="adm-gerente-selected">
+                <span className="adm-gerente-selected-title">
+                  Selecionados:
+                </span>
+                <span className="adm-gerente-selected-list">
+                  {gerentesFarmacia.length
+                    ? gerentesFarmacia.map((item) => item.name).join(", ")
+                    : "Nenhum"}
+                </span>
+              </div>
+            </div>
+            <div className="mgr-form-row">
+              <label>
+                CEP
+                <input
+                  name="cepFarmacia"
+                  value={cepFarmacia}
+                  onChange={({ target }) => setCepFarmacia(target.value)}
+                  type="text"
+                  required
+                  placeholder="00000-000"
+                />
+              </label>
+              <label>
+                Endereço
+                <input
+                  name="enderecoFarmacia"
+                  value={enderecoFarmacia}
+                  onChange={({ target }) => setEnderecoFarmacia(target.value)}
+                  type="text"
+                  required
+                  placeholder="Rua, avenida..."
+                />
+              </label>
+            </div>
+            <div className="mgr-form-row">
+              <label>
+                Número
+                <input
+                  name="numeroFarmacia"
+                  value={numeroFarmacia}
+                  onChange={({ target }) => setNumeroFarmacia(target.value)}
+                  type="text"
+                  required
+                  placeholder="123"
+                />
+              </label>
+              <label>
+                Complemento (opcional)
+                <input
+                  name="complementoFarmacia"
+                  value={complementoFarmacia}
+                  onChange={({ target }) =>
+                    setComplementoFarmacia(target.value)
+                  }
+                  type="text"
+                  placeholder="Apartamento, bloco..."
+                />
+              </label>
+            </div>
+            <div className="mgr-form-row">
+              <label>
+                Bairro
+                <input
+                  name="bairroFarmacia"
+                  value={bairroFarmacia}
+                  onChange={({ target }) => setBairroFarmacia(target.value)}
+                  type="text"
+                  required
+                  placeholder="Bairro"
+                />
+              </label>
+              <label>
+                Cidade
+                <input
+                  name="cidadeFarmacia"
+                  value={cidadeFarmacia}
+                  onChange={({ target }) => setCidadeFarmacia(target.value)}
+                  type="text"
+                  required
+                  placeholder="Cidade"
+                />
+              </label>
+            </div>
+            <div className="mgr-modal-actions">
+              <button
+                className="mgr-secondary"
+                type="button"
+                onClick={() => setModal(null)}
+              >
+                Cancelar
+              </button>
+              <button className="mgr-primary" type="submit">
+                Cadastrar farmácia
+              </button>
+            </div>
+          </form>
+        </Dialog>
+      )}
       {modal?.type === "register" && (
         <Dialog title="Cadastrar gerente" onClose={() => setModal(null)}>
           <form className="mgr-form" onSubmit={register}>
@@ -760,6 +1229,34 @@ export function AdminDirectory({ section }) {
                 <dt>Turno</dt>
                 <dd>{modal.record.shift}</dd>
               </div>
+            )}
+            {pharmacies && (
+              <>
+                <div>
+                  <dt>Gerente responsável</dt>
+                  <dd>
+                    {(() => {
+                      const manager = data.gerentes.find(
+                        (item) =>
+                          String(item.id) === String(modal.record.idGerente),
+                      );
+                      return manager?.name || "Não informado";
+                    })()}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Telefone</dt>
+                  <dd>{modal.record.phone || "Não informado"}</dd>
+                </div>
+                <div>
+                  <dt>CNES</dt>
+                  <dd>{modal.record.cnes || "Não informado"}</dd>
+                </div>
+                <div>
+                  <dt>E-mail</dt>
+                  <dd>{modal.record.email || "Não informado"}</dd>
+                </div>
+              </>
             )}
             {managers && (
               <>
