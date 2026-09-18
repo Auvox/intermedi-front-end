@@ -1,3 +1,4 @@
+import { apiFetch } from "../services/api";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -146,7 +147,7 @@ export default function LoginUser({
       }
 
       try {
-        const listResponse = await fetch("http://localhost:3000/funcionario", {
+        const listResponse = await apiFetch("/funcionario", {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -190,8 +191,8 @@ export default function LoginUser({
           return;
         }
 
-        const detailResponse = await fetch(
-          `http://localhost:3000/funcionario/${encodeURIComponent(funcionarioId)}`,
+        const detailResponse = await apiFetch(
+          `/funcionario/${encodeURIComponent(funcionarioId)}`,
           { method: "GET", headers: { Accept: "application/json" } },
         );
         const detailPayload = await detailResponse.json().catch(() => ({}));
@@ -220,8 +221,8 @@ export default function LoginUser({
 
         let unitName = "Unidade não vinculada";
         if (farmaciaId) {
-          const farmaciaResponse = await fetch(
-            "http://localhost:3000/farmacia",
+          const farmaciaResponse = await apiFetch(
+            "/farmacia",
             {
               method: "GET",
               headers: { Accept: "application/json" },

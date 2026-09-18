@@ -16,9 +16,9 @@ Se a porta 5173 estiver ocupada, o Vite escolhe a próxima livre e a autenticaç
 
 O cadastro de gerente persiste contas e novas unidades no banco `server/data/auth.sqlite`, ignorado pelo Git. Senhas são derivadas com scrypt e salt aleatório; o banco guarda apenas hashes de senhas e de tokens de sessão. Cookies HttpOnly/SameSite=Strict duram oito horas. A API valida a sessão no servidor, e a rota do gerente exige esse perfil. O botão Sair invalida a sessão. Não há conta ou senha padrão.
 
-O cadastro público cria uma unidade nova e isolada, mesmo quando o nome coincide com outro cadastro; não permite vincular-se a unidades existentes nem criar administradores. Convites e vinculação a farmácias existentes ainda precisam de um fluxo de autorização. Funcionários e administradores mantêm o login PHP legado; seu cadastro não está implementado.
+O cadastro público cria uma unidade nova e isolada, mesmo quando o nome coincide com outro cadastro; não permite vincular-se a unidades existentes nem criar administradores. Convites e vinculação a farmácias existentes ainda precisam de um fluxo de autorização. O login de funcionário consulta CPF/matrícula na API de dados pelo navegador; a área administrativa não tem autenticação de servidor implementada.
 
-O dashboard ainda usa os exemplos da Farmácia Central, explicitamente separados da unidade da conta. As alterações de gestão ficam no `localStorage`, sob `intermedi-manager-demo-v1:<id-do-usuario>`; elas não são sincronizadas com o servidor. Os cadastros de funcionários no painel não criam contas. Notificações são demonstrativas. A integração das APIs de estoque, pacientes, funcionários e chamados, com autorização por unidade em cada operação, permanece pendente.
+O dashboard, estoque, retiradas e chamados ainda usam exemplos de `managerData.js`. Os formulários de medicamentos/chamados e as transições de status não persistem alterações. O cadastro, consulta e exclusão de funcionários usam a API de dados configurada por `VITE_API_BASE_URL`. A integração completa depende do contrato das APIs de estoque, retiradas e chamados, incluindo autorização por unidade em cada operação. Veja o README para o estado atual e configuração.
 
 ## Serviço de autenticação
 

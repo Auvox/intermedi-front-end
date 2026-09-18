@@ -1,15 +1,13 @@
+import { apiFetch } from "../services/api";
 import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import ManagerIcon from "../components/ManagerIcon";
-import { initialData, unit } from "./managerData";
+import { unit } from "./managerData";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
 
-// Visual preview only. Replace these fixtures with intermedi-back-end data
-// when integrating authentication and server-side permissions.
-const { patients, employees } = initialData;
 const normalize = (text) =>
   text
     .normalize("NFD")
@@ -50,7 +48,7 @@ export default function Employee() {
     setProfileError("");
 
     try {
-      const listResponse = await fetch("http://localhost:3000/funcionario", {
+      const listResponse = await apiFetch("/funcionario", {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -83,13 +81,12 @@ export default function Employee() {
             .trim()
             .replace(/[^\d]/g, "");
           return (
-            storedCpf ===
+            Boolean(storedCpf && session?.cpf) && storedCpf ===
             String(session?.cpf ?? "")
               .trim()
               .replace(/[^\d]/g, "")
           );
         }) ??
-        rawList[0] ??
         {};
 
       const funcionarioId = raw.idFuncionario ?? raw.id ?? session?.id;
@@ -97,8 +94,8 @@ export default function Employee() {
         throw new Error("Funcionário não encontrado.");
       }
 
-      const detailResponse = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(funcionarioId)}`,
+      const detailResponse = await apiFetch(
+        `/funcionario/${encodeURIComponent(funcionarioId)}`,
         {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -200,8 +197,8 @@ export default function Employee() {
     };
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(profile.id)}`,
+      const response = await apiFetch(
+        `/funcionario/${encodeURIComponent(profile.id)}`,
         {
           method: "PUT",
           headers: {
@@ -424,7 +421,7 @@ export function EmployeePatients() {
       try {
         setLoading(true);
         setError("");
-        const response = await fetch("http://localhost:3000/paciente", {
+        const response = await apiFetch("/paciente", {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -555,7 +552,7 @@ export function EmployeeTeam() {
       try {
         setLoading(true);
         setError("");
-        const response = await fetch("http://localhost:3000/funcionario", {
+        const response = await apiFetch("/funcionario", {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -597,10 +594,10 @@ export function EmployeeTeam() {
         const sameUnit = mapped.filter((item) => {
           return item.farmaciaId && targetFarmaciaId
             ? item.farmaciaId === targetFarmaciaId
-            : true;
+            : false;
         });
 
-        setEmployees(sameUnit.length ? sameUnit : mapped);
+        setEmployees(sameUnit);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Erro ao carregar funcionários.",

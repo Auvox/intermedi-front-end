@@ -96,9 +96,19 @@ test("sincroniza o login de gerente ausente no auth.sqlite usando o endpoint fak
     const payload = await response.json();
     assert.equal(payload.user.email, "joao.silva@email.com");
     assert.equal(payload.user.role, "gerente");
+    assert.equal(payload.user.unitName, "Farmácia João");
+    const rejected = await fetch(`http://127.0.0.1:${auth.address().port}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "http://localhost:5173" },
+      body: JSON.stringify({ email: "joao.silva@email.com", senha: "incorreta", role: "gerente" }),
+    });
+    assert.equal(rejected.status, 401);
   } finally {
+    const authClosed = once(auth, "close");
+    const fakeClosed = once(fake, "close");
     auth.close();
     fake.close();
+    await Promise.all([authClosed, fakeClosed]);
     rmSync(directory, { recursive: true, force: true });
   }
 });

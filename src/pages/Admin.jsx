@@ -1,58 +1,18 @@
+import { apiFetch } from "../services/api";
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import { normalizeGerentes } from "../services/gerenteMapper";
-import { initialData, unit, formatDate } from "./managerData";
+import { initialData, formatDate } from "./managerData";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/admin.css";
 
-// UI fixtures only: no API, authentication, persistence or server permissions.
+// Chamados aguardam o contrato da API; demais listas são carregadas do servidor.
 const demoData = {
-  gerentes: [
-    {
-      id: "g1",
-      name: "Renata Lima",
-      email: "renata@example.com",
-      unit,
-      status: "Ativo",
-    },
-    {
-      id: "g2",
-      name: "Paulo Martins",
-      email: "paulo@example.com",
-      unit: "Farmácia Jardim",
-      status: "Ativo",
-    },
-  ],
-  farmacias: [
-    {
-      id: "f1",
-      name: "Farmácia Central",
-      email: "central@intermedi.com",
-      unit: "Farmácia Central",
-      status: "Ativo",
-    },
-    {
-      id: "f2",
-      name: "Farmácia Jardim",
-      email: "jardim@intermedi.com",
-      unit: "Farmácia Jardim",
-      status: "Ativo",
-    },
-    {
-      id: "f3",
-      name: "Farmácia Vila Verde",
-      email: "vilaverde@intermedi.com",
-      unit: "Farmácia Vila Verde",
-      status: "Ativo",
-    },
-  ],
-  pacientes: initialData.patients.map((person) => ({
-    ...person,
-    unit,
-    status: "Ativo",
-  })),
+  gerentes: [],
+  farmacias: [],
+  pacientes: [],
   chamados: initialData.tickets.map((ticket) => ({
     ...ticket,
     name: ticket.title,
@@ -294,7 +254,7 @@ export function AdminDirectory({ section }) {
 
     async function loadGerentes() {
       try {
-        const response = await fetch("http://localhost:3000/gerente", {
+        const response = await apiFetch("/gerente", {
           method: "GET",
           headers: {
             Accept: "application/json",
@@ -346,7 +306,7 @@ export function AdminDirectory({ section }) {
 
     async function loadFarmacias() {
       try {
-        const response = await fetch("http://localhost:3000/farmacia", {
+        const response = await apiFetch("/farmacia", {
           method: "GET",
           headers: {
             Accept: "application/json",
@@ -394,7 +354,7 @@ export function AdminDirectory({ section }) {
 
     async function loadFuncionarios() {
       try {
-        const response = await fetch("http://localhost:3000/funcionario", {
+        const response = await apiFetch("/funcionario", {
           method: "GET",
           headers: {
             Accept: "application/json",
@@ -446,7 +406,7 @@ export function AdminDirectory({ section }) {
 
     async function loadPacientes() {
       try {
-        const response = await fetch("http://localhost:3000/paciente", {
+        const response = await apiFetch("/paciente", {
           method: "GET",
           headers: {
             Accept: "application/json",
@@ -489,7 +449,6 @@ export function AdminDirectory({ section }) {
     };
   }, [section, setData]);
 
-  const [dataGerente, setDataGerente] = useState({});
 
   const [nomeGerente, setNomeGerente] = useState("");
   const [emailGerente, setEmailGerente] = useState("");
@@ -558,8 +517,8 @@ export function AdminDirectory({ section }) {
 
     if (managers) {
       try {
-        const response = await fetch(
-          `http://localhost:3000/gerente/${encodeURIComponent(record.id)}`,
+        const response = await apiFetch(
+          `/gerente/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -595,8 +554,8 @@ export function AdminDirectory({ section }) {
 
     if (pharmacies) {
       try {
-        const response = await fetch(
-          `http://localhost:3000/farmacia/${encodeURIComponent(record.id)}`,
+        const response = await apiFetch(
+          `/farmacia/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -632,8 +591,8 @@ export function AdminDirectory({ section }) {
 
     if (patients) {
       try {
-        const response = await fetch(
-          `http://localhost:3000/paciente/${encodeURIComponent(record.id)}`,
+        const response = await apiFetch(
+          `/paciente/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -698,7 +657,7 @@ export function AdminDirectory({ section }) {
     console.log("Dados enviados:", gerente);
 
     try {
-      const response = await fetch("http://localhost:3000/gerente", {
+      const response = await apiFetch("/gerente", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -782,8 +741,8 @@ export function AdminDirectory({ section }) {
     };
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/farmacia/${encodeURIComponent(modal.record.id)}`,
+      const response = await apiFetch(
+        `/farmacia/${encodeURIComponent(modal.record.id)}`,
         {
           method: "PUT",
           headers: {
@@ -872,7 +831,7 @@ export function AdminDirectory({ section }) {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/farmacia", {
+      const response = await apiFetch("/farmacia", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -54,10 +54,13 @@ export default function MapSection() {
   const [feed, setFeed] = useState([]);
   const [lines, setLines] = useState([]);
   const [pulses, setPulses] = useState([]);
-  const [cities, setCities] = useState([]);
+  const [cities] = useState(() => CITIES.map((city) => {
+    const isShort = Math.random() > 0.5;
+    return { ...city, isShort, color: isShort ? "#f97316" : "#22c55e" };
+  }));
 
   const idRef = useRef(0);
-  const citiesRef = useRef([]);
+  const citiesRef = useRef(cities);
   const sectionRef = useRef(null);
 
   // Efeito de revelação ao rolar o scroll
@@ -77,20 +80,6 @@ export default function MapSection() {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
-
-  // Inicialização e atribuição das cores das farmácias
-  useEffect(() => {
-    const assigned = CITIES.map((c) => {
-      const isShort = Math.random() > 0.5;
-      return {
-        ...c,
-        isShort,
-        color: isShort ? "#f97316" : "#22c55e",
-      };
-    });
-    citiesRef.current = assigned;
-    setCities(assigned);
   }, []);
 
   // Controle de conexões e animações em tempo real (Sem Warnings)

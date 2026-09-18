@@ -1,16 +1,31 @@
-# React + Vite
+# Intermedi — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação React 19 + Vite, com áreas de administrador, gerente e funcionário. Requer Node.js 24 ou superior por usar SQLite nativo na autenticação.
 
-Currently, two official plugins are available:
+## Executar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Instale as dependências com `npm ci`.
+2. Copie `.env.example` para `.env.local` e configure `VITE_API_BASE_URL` com o endereço da API de dados.
+3. Execute `npm run dev` e abra o endereço mostrado pelo Vite.
 
-## React Compiler
+A autenticação do gerente é atendida pelo próprio Vite em `/api/auth`. A API de dados é um serviço separado e não está incluída neste repositório. O padrão é `http://localhost:3000`; o backend precisa permitir a origem do frontend quando estiver em outro domínio/porta. Requisições de dados têm limite de 15 segundos.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+O servidor de autenticação usa `API_BASE_URL` do ambiente do processo Node para sincronizar gerentes da API externa. No PowerShell, defina `$env:API_BASE_URL='http://localhost:3000'` antes de iniciar o Vite ou `npm run dev:auth`. Arquivos `.env.local` do Vite não configuram automaticamente essa variável do processo Node.
 
-## Expanding the ESLint configuration
+## Verificar
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `npm run lint`: ESLint nos arquivos JS/JSX; não verifica tipos TypeScript.
+- `npm run test:auth`: testes de autenticação, persistência e integração com o Vite, usando bancos temporários e uma API simulada em porta livre.
+- `npm run build`: gera o frontend em `dist`.
+
+## Estado da integração
+
+As telas existentes consultam e alteram gerentes, farmácias, funcionários e pacientes pelos endpoints já usados no projeto. O frontend usa uma configuração central em `src/services/api.js`. As listas administrativas desses cadastros começam vazias, sem exemplos apresentados como registros reais. Funcionários são filtrados pela unidade; o frontend não substitui autorização no backend.
+
+O dashboard do gerente, estoque, histórico de retiradas e chamados ainda usam dados demonstrativos de `managerData.js`. Os formulários de medicamentos e chamados e as transições de status não persistem na API. A conclusão depende do contrato do backend: rotas, métodos, campos, relacionamentos e autenticação. A API de dados real não foi validada nesta revisão.
+
+A autenticação de funcionário ainda usa a consulta de CPF/matrícula no frontend, e a área administrativa ainda não possui autenticação de servidor. Não são fluxos prontos para produção.
+
+## Implantação
+
+O build estático não inclui a autenticação. Consulte `MANAGER.md` para configurar o serviço Node, proxy de mesma origem, HTTPS, `AUTH_ORIGINS` e armazenamento persistente do SQLite.
