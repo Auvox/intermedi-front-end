@@ -30,9 +30,11 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-main { display: flex; flex-direction: column; padding: 34px 44px 28px; min-width: 0; }
 .auth-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .auth-header img { display: block; width: 112px; height: auto; }
-.auth-home { display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--auth-border); background: var(--auth-soft); color: var(--auth-green) !important; border-radius: 30px; font-size: 11px; white-space: nowrap; }
-.auth-home svg { width: 14px; height: 14px; }
-.auth-home:hover { filter: brightness(.96); }
+.auth-return { width: 100%; max-width: 550px; margin: 28px auto 0; }
+.auth-page .auth-home { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--auth-border); border-radius: 12px; background: var(--auth-soft); color: #006b46; box-shadow: 0 2px 5px #173b2508; font-size: 14px; font-weight: 600; transition: background-color .2s, border-color .2s, box-shadow .2s; }
+.auth-home svg { width: 20px; height: 20px; flex-shrink: 0; stroke-width: 2; }
+.auth-page .auth-home:hover { background: #dff4e9; border-color: #82c7a8; box-shadow: 0 4px 10px #173b2510; }
+.auth-page .auth-home:active { background: #cfeedd; box-shadow: none; }
 .auth-content { width: 100%; max-width: 550px; margin: auto; padding: 24px 0; }
 .auth-page h1 { font-family: 'Sora', sans-serif; font-size: clamp(28px, 2.8vw, 39px); line-height: 1.24; letter-spacing: -1.6px; font-weight: 600; margin: 0 0 16px; color: var(--auth-ink); }
 .auth-page h1 em { color: var(--auth-green); font-style: normal; }
@@ -60,11 +62,18 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-story-copy p { font-size: 12px; line-height: 1.85; color: #2c6553; margin: 0; }
 .auth-art-stage { display: flex; align-items: center; justify-content: center; min-height: 200px; height: 285px; margin: 12px -10px; flex: 1; }
 .auth-phone-mockup { display: block; width: 100%; height: 100%; max-height: 300px; object-fit: contain; filter: drop-shadow(0 18px 12px #12382926); }
-.auth-theme-gerente .auth-story { --story-accent: #bcebd5; --story-text: #e0f2e9; background: radial-gradient(ellipse at 0 0, #269b76, transparent 60%), linear-gradient(140deg, #00895e, #005a3e); }
+.auth-theme-gerente .auth-story { --story-accent: #bcebd5; --story-text: #e0f2e9; }
 .auth-theme-funcionario { --auth-green: #0869d7; --auth-soft: #eff6ff; --auth-border: #cadff7; }
-.auth-theme-funcionario .auth-story { --story-accent: #c6e2ff; --story-text: #e3effc; background: radial-gradient(ellipse at 0 0, #3486cc, transparent 60%), linear-gradient(140deg, #096ac5, #004b9e); }
+.auth-theme-funcionario .auth-story { --story-accent: #c6e2ff; --story-text: #e3effc; }
 .auth-theme-admin { --auth-green: #283b47; --auth-soft: #f2f5f6; --auth-border: #d4dfe4; }
-.auth-theme-admin .auth-story { --story-accent: #bdcdd9; --story-text: #dce4eb; background: radial-gradient(ellipse at 0 0, #50616c, transparent 65%), linear-gradient(140deg, #263640, #17242c); }
+.auth-theme-admin .auth-story { --story-accent: #bdcdd9; --story-text: #dce4eb; }
+.auth-story-themes { position: absolute; inset: 0; z-index: -2; pointer-events: none; }
+.auth-story-theme { position: absolute; inset: 0; opacity: 0; transition: opacity .7s cubic-bezier(.4, 0, .2, 1); }
+.auth-story-theme.is-active { opacity: 1; }
+.auth-story-theme-gerente { background: radial-gradient(ellipse at 0 0, #269b76, transparent 60%), linear-gradient(140deg, #00895e, #005a3e); }
+.auth-story-theme-funcionario { background: radial-gradient(ellipse at 0 0, #3486cc, transparent 60%), linear-gradient(140deg, #096ac5, #004b9e); }
+.auth-story-theme-admin { background: radial-gradient(ellipse at 0 0, #50616c, transparent 65%), linear-gradient(140deg, #263640, #17242c); }
+.auth-story-copy h2, .auth-story-copy h2 em, .auth-story-copy p { transition: color .7s cubic-bezier(.4, 0, .2, 1); }
 .auth-page:not(.auth-theme-welcome) .auth-story-copy h2 { color: #fff; }
 .auth-page:not(.auth-theme-welcome) .auth-story-copy h2 em { color: var(--story-accent); }
 .auth-page:not(.auth-theme-welcome) .auth-story-copy p { color: var(--story-text); }
@@ -91,8 +100,6 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-back { display: flex; justify-content: center; align-items: center; gap: 9px; width: 100%; padding: 10px; border: 1px solid var(--auth-border); border-radius: 9px; background: #fff; color: var(--auth-green); font-size: 12px !important; }
 .auth-back:hover { background: var(--auth-soft); }
 .auth-back svg { width: 16px; height: 16px; }
-.auth-form-foot { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 18px 0 0; color: #748894; font-size: 10px; }
-.auth-form-foot svg { width: 12px; height: 12px; }
 .auth-admin-note { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 8px; background: var(--auth-soft); color: #536872; font-size: 11px; margin: 0; }
 .auth-admin-note svg { width: 18px; flex-shrink: 0; }
 .auth-message { padding: 12px; background: #fff6e7; border: 1px solid #ecdaba; border-radius: 8px; color: #805d2a; font-size: 12px; margin: 0; }
@@ -120,7 +127,6 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 @media (max-width: 430px) {
   .auth-main { padding: 24px 20px; }
   .auth-header img { width: 98px; }
-  .auth-home { padding: 8px 10px; font-size: 10px; }
   .auth-page h1 { font-size: 29px; }
   .auth-profiles { grid-template-columns: 1fr; gap: 10px; margin-top: 24px; }
   .auth-profile { flex-direction: row; align-items: center; padding: 16px; gap: 16px; border-radius: 18px; }
@@ -155,7 +161,6 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-register .auth-form input { padding-top: 9px; padding-bottom: 9px; }
 .auth-register .auth-mode { margin-bottom: 12px; }
 .auth-register .auth-divider { margin-top: 12px; margin-bottom: 10px; }
-.auth-register .auth-form-foot { margin-top: 10px; }
 
 /* Gentle arrival from the site and between access steps. */
 .auth-content { animation: auth-content-enter .48s cubic-bezier(.22, 1, .36, 1) both; }

@@ -10,8 +10,21 @@ import HowSection from "../components/layout/HowSection";
 import PartnersSection from "../components/layout/PartnersSection";
 import Footer from "../components/layout/Footer";
 import MapSection from "../components/sections/MapSection.jsx";
+import "../styles/landingTheme.css";
 
 export default function LandingPage() {
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem("intermedi-site-theme");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch { /* Storage may be unavailable in private browsing. */ }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    try { localStorage.setItem("intermedi-site-theme", next); } catch { /* Keep the toggle usable without storage. */ }
+  };
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("#inicio");
@@ -51,10 +64,10 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="lp-root">
+    <div className="lp-root" data-theme={theme}>
 
       {/* ══════════ NAV ══════════ */}
-      <Nav scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} activeSection={activeSection} />
+      <Nav scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} activeSection={activeSection} theme={theme} toggleTheme={toggleTheme} />
 
       {/* ══════════ MOBILE MENU ══════════ */}
       <MobileMenu menuOpen={menuOpen} setMenuOpen={setMenuOpen} activeSection={activeSection} />

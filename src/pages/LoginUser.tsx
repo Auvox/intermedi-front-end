@@ -28,6 +28,7 @@ const profiles = [
 ];
 function Icon({ name, className = "" }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
+    back: <path d="m10 6-6 6 6 6M4 12h16" />,
     shield: (
       <>
         <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
@@ -343,12 +344,15 @@ export default function LoginUser({
           <Link to="/" aria-label="Intermedi — página inicial">
             <img src={logo} alt="Intermedi" />
           </Link>
-          {!selected && (
+        </header>
+        {!selected && (
+          <nav className="auth-return" aria-label="Voltar à página inicial">
             <Link className="auth-home" to="/">
+              <Icon name="back" />
               Voltar ao site
             </Link>
-          )}
-        </header>
+          </nav>
+        )}
         <div
           key={`${role ?? "welcome"}-${mode}`}
           className={`auth-content${
@@ -555,9 +559,6 @@ export default function LoginUser({
               <button className="auth-back" disabled={submitting} onClick={() => { resetRequest(); setRole(null); }}>
                 Trocar perfil
               </button>
-              <p className="auth-form-foot">
-                <Icon name="lock" /> Seu espaço para cuidar e conectar.
-              </p>
             </>
           )}
         </div>
@@ -569,6 +570,14 @@ export default function LoginUser({
         </footer>
       </section>
       <aside className="auth-story" aria-label="Conectando farmácias e pessoas">
+        <div className="auth-story-themes" aria-hidden="true">
+          {profiles.map((profile) => (
+            <div
+              key={profile.id}
+              className={`auth-story-theme auth-story-theme-${profile.id}${role === profile.id ? " is-active" : ""}`}
+            />
+          ))}
+        </div>
         <div className="auth-story-copy">
           <h2>
             Mais conexões.

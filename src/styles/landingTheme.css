@@ -1,0 +1,77 @@
+/* Theme is scoped to the public site, keeping dashboard palettes independent. */
+.lp-root { color-scheme: light; background: #fff; }
+.lp-nav-actions { display: flex; align-items: center; gap: 12px; }
+.lp-theme-toggle { position: relative; display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid #dce9e1; border-radius: 50%; background: #f3f8f5; color: #236b44; cursor: pointer; transition: background-color .3s, border-color .3s, color .3s; }
+.lp-theme-toggle:hover { background: #e1f3e8; border-color: #87cba1; }
+.lp-theme-toggle:focus-visible { outline: 3px solid #22c55e; outline-offset: 4px; }
+.lp-theme-toggle svg { position: absolute; width: 22px; height: 22px; transition: transform .45s ease, opacity .3s ease; }
+.theme-sun { opacity: 0; transform: rotate(-90deg) scale(.5); }
+.theme-moon { opacity: 1; transform: rotate(0) scale(1); }
+.lp-root[data-theme="dark"] { --text: #edf5f0; --text-h: #edf5f0; --text-muted: #a4b9ac; --text-secondary: #a4b9ac; --black: #edf5f0; --white: #0e1915; --border: #2b4437; --gray: #17271f; --gray2: #2b4437; --gray3: #385443; color-scheme: dark; background: #0e1915; color: var(--text); }
+.lp-root[data-theme="dark"] .theme-sun { opacity: 1; transform: rotate(0) scale(1); }
+.lp-root[data-theme="dark"] .theme-moon { opacity: 0; transform: rotate(90deg) scale(.5); }
+.lp-root[data-theme="dark"] .lp-theme-toggle { background: #20362a; border-color: #385443; color: #b6ebcd; }
+.lp-root[data-theme="dark"] .lp-theme-toggle:hover { background: #2c4938; }
+.lp-root[data-theme="dark"] .lp-nav { background: #13221ced; border-color: #314c3d; box-shadow: 0 8px 30px #0003; }
+.lp-root[data-theme="dark"] .lp-nav-links { background: #1b2e24; }
+.lp-root[data-theme="dark"] .lp-hamburger { background: #203329; }
+.lp-root[data-theme="dark"] .lp-nav-links::before { background: #2b4937; box-shadow: none; }
+.lp-root[data-theme="dark"] .lp-mobile-menu a[aria-current="location"] { background: #2b4937; box-shadow: none; }
+.lp-root[data-theme="dark"] .lp-nav-links a:hover { background: #284231; }
+.lp-root[data-theme="dark"] .lp-nav-links li.active a:hover { background: transparent; }
+.lp-root[data-theme="dark"] :is(.lp-nav-links a:hover, .lp-nav-links li.active a, .lp-mobile-menu a[aria-current="location"]) { color: #91eab1; }
+.lp-root[data-theme="dark"] .lp-mobile-menu { background: #13221c; }
+.lp-root[data-theme="dark"] .lp-mobile-menu a:not(.btn-nav-primary):hover { background: #203329; }
+/* Use the existing transparent light logo on dark navigation. */
+.lp-root[data-theme="dark"] .lp-logo { background: transparent; }
+.lp-root[data-theme="dark"] .lp-hero-logo-i { filter: invert(1); }
+.lp-root[data-theme="dark"] .lp-hero { background: radial-gradient(ellipse at 86% 36%, #1b4932 0%, transparent 48%), radial-gradient(ellipse at 4% 92%, #152d21 0%, transparent 38%), #0e1915; }
+.lp-root[data-theme="dark"] :is(.lp-hero-sub, .hero-benefits li) { color: #b1c4b8; }
+.lp-root[data-theme="dark"] .lp-hero-mancha { opacity: .24; }
+.lp-root[data-theme="dark"] .lp-float-card { background: #1b3028eb; border-color: #3a5546; }
+.lp-root[data-theme="dark"] :is(.lp-why, .lp-partners) { background: #13221c; }
+.lp-root[data-theme="dark"] :is(.lp-how, .mapsection, .lp-footer) { background: #0e1915; }
+.lp-root[data-theme="dark"] .benefit-card { --card-ink: #edf5ee; --card-accent: #a0c8ad; --card-body: #b4cbbb; --stage-color: #2a4835; --card-rule: #abcdb32b; background: #1b3025; border-color: #35513e; }
+.lp-root[data-theme="dark"] .benefit-card--security { background: #103e2e; }
+.lp-root[data-theme="dark"] .benefit-card--delivery { background: #233c2c; }
+.lp-root[data-theme="dark"] .journey-copy h3 { color: #e3f1e8; }
+.lp-root[data-theme="dark"] .journey-copy p { color: #a8bfb0; }
+.lp-root[data-theme="dark"] :is(.journey-number, .journey-step:last-child .journey-number) { background: #243c2d; color: #b4ddbe; border-color: #3c5742; }
+.lp-root[data-theme="dark"] .journey-road { stroke: #253e2e; }
+.lp-root[data-theme="dark"] .journey-steps::before { background: #253e2e; }
+.lp-root[data-theme="dark"] .journey-stop { background: #203c2b; color: #a4e5b6; border-color: #45684c; box-shadow: 0 0 0 7px #16291e; }
+.lp-root[data-theme="dark"] .audience-card { --audience-ink: #e6f3e9; --audience-muted: #b2cbb9; background: #203628; border-color: #375540; }
+.lp-root[data-theme="dark"] .audience-card--business { background: #143f2e; }
+.lp-root[data-theme="dark"] .audience-card h3 em { color: #a5d992; }
+.lp-root[data-theme="dark"] .neighborhood-label { color: #183e2b; }
+.lp-root[data-theme="dark"] .mapsection { --map-ink: #dfefe3; --map-muted: #adc3b2; --map-border: #334a3b; }
+.lp-root[data-theme="dark"] .map-section-title { color: #edf5f0; }
+.lp-root[data-theme="dark"] :is(.map-main-content, .map-network-stat) { background: #1b3023; border-color: #344c39; }
+.lp-root[data-theme="dark"] .map-network-stat--match { background: #173f2e; }
+.lp-root[data-theme="dark"] .map-network-stat--shipping { background: #302e23; }
+.lp-root[data-theme="dark"] :is(.map-network-stat, .map-feed-item) { --activity-color: #a4d9b0; --activity-bg: #2a4432; }
+.lp-root[data-theme="dark"] :is(.map-network-stat--shipping, .map-feed-item--shipping) { --activity-color: #dfcb99; --activity-bg: #49422c; }
+.lp-root[data-theme="dark"] .map-network-icon { background: var(--activity-bg); }
+.lp-root[data-theme="dark"] .map-network-heading small { color: #adc3b2; }
+.lp-root[data-theme="dark"] .map-network-description { border-color: #526a453d; }
+.lp-root[data-theme="dark"] :is(.map-badge, .map-region-mark) { background: #29422e; color: #b6dfb5; }
+.lp-root .map-feed-item { background: transparent; border: 0; border-bottom: 1px solid var(--map-border); border-radius: 0; box-shadow: none; }
+.lp-root .map-feed-item:hover { background: transparent; border-color: var(--map-border); }
+.lp-root[data-theme="dark"] .map-feed-item { color: #adc3b2; }
+.lp-root[data-theme="dark"] .map-feed-dot { background: transparent; border: 1px solid var(--map-border); border-radius: 12px; }
+.lp-root[data-theme="dark"] .lp-footer-panel { background: #123326; }
+/* Color alone defines these cards, in both themes and hover states. */
+.lp-root :is(.benefit-card, .audience-card, .map-network-stat),
+.lp-root :is(.benefit-card, .audience-card, .map-network-stat):hover {
+  border: 0;
+  box-shadow: none;
+}
+.lp-root .map-network-icon { border: 0; }
+@media (max-width: 992px) {
+  .lp-root .lp-nav { gap: 12px; }
+  .lp-root .lp-nav-actions { display: flex; margin-left: auto; }
+  .lp-root .lp-nav-actions .btn-nav-primary { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-theme-toggle, .lp-theme-toggle svg { transition: none; }
+}
