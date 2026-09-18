@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { authRequest } from "../services/auth";
+import { normalizeGerentes } from "../services/gerenteMapper";
 
 export default function ManagerAccess() {
   const [state, setState] = useState({ loading: true });

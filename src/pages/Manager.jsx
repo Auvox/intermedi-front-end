@@ -1,4 +1,3 @@
-import { apiFetch } from "../services/api";
 import { useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -365,15 +364,15 @@ export function ManagerEmployees() {
   const [erroFuncionarios, setErroFuncionarios] = useState("");
 
   const [farmacias, setFarmacias] = useState([]);
-  const [farmaciaAtualId, setFarmaciaAtualId] = useState("");
   const [carregandoFarmacias, setCarregandoFarmacias] = useState(true);
   const [erroFarmacias, setErroFarmacias] = useState("");
+  const [farmaciaAtual, setFarmaciaAtual] = useState(null);
 
   async function buscarFarmacias() {
     setCarregandoFarmacias(true);
     setErroFarmacias("");
     try {
-      const response = await apiFetch("/farmacia", {
+      const response = await fetch("http://localhost:3000/farmacia", {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -416,7 +415,7 @@ export function ManagerEmployees() {
     setCarregandoFuncionarios(true);
     setErroFuncionarios("");
     try {
-      const response = await apiFetch("/funcionario");
+      const response = await fetch("http://localhost:3000/funcionario");
       const result = await response.json();
 
       if (!response.ok) {
@@ -435,7 +434,7 @@ export function ManagerEmployees() {
               String(f.fkIdFarmacia ?? f.idFarmacia ?? "") ===
               String(farmaciaId),
           )
-        : [];
+        : lista;
 
       setFuncionarios(
         filtrada.map((f) => ({
@@ -464,7 +463,7 @@ export function ManagerEmployees() {
     async function carregarUnidadeDoGerenteLogado() {
       try {
         const farmaciasRaw = await buscarFarmacias();
-        const gerenteResponse = await apiFetch("/gerente", {
+        const gerenteResponse = await fetch("http://localhost:3000/gerente", {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -505,10 +504,17 @@ export function ManagerEmployees() {
           : null;
 
         const farmaciaId = farmacia?.idFarmacia ?? farmacia?.id;
+        const farmaciaName =
+          farmacia?.nomeFarmacia ??
+          farmacia?.name ??
+          farmacia?.nome ??
+          user?.unitName;
 
-        if (!farmaciaId) throw new Error("Nenhuma farmácia vinculada ao gerente. Verifique o vínculo no cadastro da unidade.");
-        setFarmaciaAtualId(farmaciaId);
-        await buscarFuncionarios(farmaciaId);
+        if (farmaciaId) {
+          setFarmaciaAtual({ id: farmaciaId, name: farmaciaName });
+        }
+
+        await buscarFuncionarios(farmaciaId ?? "");
       } catch (error) {
         setErroFuncionarios(
           error instanceof Error
@@ -564,7 +570,7 @@ export function ManagerEmployees() {
     };
 
     try {
-      const response = await apiFetch("/funcionario", {
+      const response = await fetch("http://localhost:3000/funcionario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(funcionario),
@@ -578,7 +584,7 @@ export function ManagerEmployees() {
       }
 
       // busca a lista atualizada para o novo funcionário aparecer na hora
-      const listaAtualizada = await buscarFuncionarios(farmaciaAtualId);
+      const listaAtualizada = await buscarFuncionarios();
       const criado = result.funcionario || result;
       const registro = listaAtualizada?.find((item) =>
         criado.idFuncionario != null
@@ -628,8 +634,8 @@ export function ManagerEmployees() {
     setDeleting(true);
     setDeleteError("");
     try {
-      const response = await apiFetch(
-        `/funcionario/${encodeURIComponent(employee.id)}`,
+      const response = await fetch(
+        `http://localhost:3000/funcionario/${encodeURIComponent(employee.id)}`,
         { method: "DELETE" },
       );
       if (!response.ok) {

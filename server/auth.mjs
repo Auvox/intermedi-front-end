@@ -20,7 +20,6 @@ const cookieName = "intermedi_session";
 export function createAuthServer({
   databasePath = fileURLToPath(new URL("./data/auth.sqlite", import.meta.url)),
   secure = false,
-  gerenteApiBase = process.env.API_BASE_URL || "http://localhost:3000",
   origins = ["http://localhost:5173", "http://127.0.0.1:5173"],
 } = {}) {
   if (databasePath !== ":memory:")
@@ -101,10 +100,9 @@ export function createAuthServer({
   }
   async function syncGerenteFromFakeServer(email, password) {
     try {
-      const listResponse = await fetch(`${gerenteApiBase.replace(/\/$/, "")}/gerente`, {
+      const listResponse = await fetch("http://localhost:3000/gerente", {
         method: "GET",
         headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(15000),
       });
       if (!listResponse.ok) return null;
       const listPayload = await listResponse.json().catch(() => ({}));
@@ -118,7 +116,7 @@ export function createAuthServer({
       if (!found) return null;
       const gerenteId = found.idGerente ?? found.id;
       const detailResponse = await fetch(
-        `${gerenteApiBase.replace(/\/$/, "")}/gerente/${encodeURIComponent(gerenteId)}`,
+        `http://localhost:3000/gerente/${encodeURIComponent(gerenteId)}`,
         { method: "GET", headers: { Accept: "application/json" } },
       );
       if (!detailResponse.ok) return null;
@@ -132,10 +130,9 @@ export function createAuthServer({
           "",
       ).trim();
       if (storedPassword !== password) return null;
-      const pharmacyResponse = await fetch(`${gerenteApiBase.replace(/\/$/, "")}/farmacia`, {
+      const pharmacyResponse = await fetch("http://localhost:3000/farmacia", {
         method: "GET",
         headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(15000),
       });
       const pharmacyPayload = await pharmacyResponse.json().catch(() => ({}));
       const rawFarmacies = listFromFarmaciasPayload(pharmacyPayload);
