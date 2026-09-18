@@ -48,7 +48,7 @@ export default function PartnersSection() {
         <div className="audience-copy"><p className="audience-name">{audience.name}</p><h3>{audience.title}</h3><p className="audience-description">{audience.description}</p></div>
         {audience.id === 'business' ? <NetworkArt /> : <NeighborhoodArt />}
         <ul className="audience-benefits">{audience.benefits.map((benefit) => <li key={benefit}><span className="audience-check" aria-hidden="true">✓</span>{benefit}</li>)}</ul>
-        <div className="audience-bottom">{audience.id === 'business' ? <Link to="/login">Conecte sua farmácia <AudienceIcon name="arrow" /></Link> : <a href="#mapa">Explore as farmácias <AudienceIcon name="arrow" /></a>}</div>
+        <div className="audience-bottom">{audience.id === 'business' ? <Link to="/login">Conecte sua farmácia</Link> : <a href="#mapa">Explore as farmácias</a>}</div>
       </article>)}</div>
     </div>
   </section>;

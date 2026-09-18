@@ -113,6 +113,17 @@ export default function LoginUser({
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setMessage("");
+    try {
+      await processSubmit(event);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function processSubmit(event: FormEvent<HTMLFormElement>) {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -314,7 +325,6 @@ export default function LoginUser({
         return;
       }
     }
-    setSubmitting(true);
     setMessage("");
     try {
       await authRequest(mode === "cadastro" ? "register" : "login", {
@@ -324,8 +334,6 @@ export default function LoginUser({
       navigate("/gerente", { replace: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível concluir o acesso. Tente novamente.");
-    } finally {
-      setSubmitting(false);
     }
   }
   return (
@@ -342,6 +350,7 @@ export default function LoginUser({
           )}
         </header>
         <div
+          key={`${role ?? "welcome"}-${mode}`}
           className={`auth-content${
             selected && mode === "cadastro" ? " auth-register" : ""
           }`}
@@ -404,6 +413,7 @@ export default function LoginUser({
                 key={`${role}-${mode}`}
                 className="auth-form"
                 onSubmit={submit}
+                aria-busy={submitting}
               >
                 {mode === "cadastro" && (
                   <label>
@@ -534,14 +544,15 @@ export default function LoginUser({
                     {message}
                   </p>
                 )}
-                <button className="auth-submit" type="submit" disabled={submitting}>
-                  {submitting ? "Aguarde…" : mode === "login"
+                <button className={`auth-submit${submitting ? " is-loading" : ""}`} type="submit" disabled={submitting}>
+                  {submitting && <span className="auth-spinner" aria-hidden="true" />}
+                  <span role="status" aria-live="polite">{submitting ? (mode === "login" ? "Entrando…" : "Criando conta…") : mode === "login"
                     ? "Entrar"
-                    : "Criar minha conta"}
+                    : "Criar minha conta"}</span>
                 </button>
               </form>
               <div className="auth-divider"><span>ou</span></div>
-              <button className="auth-back" onClick={() => { resetRequest(); setRole(null); }}>
+              <button className="auth-back" disabled={submitting} onClick={() => { resetRequest(); setRole(null); }}>
                 Trocar perfil
               </button>
               <p className="auth-form-foot">
