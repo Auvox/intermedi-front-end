@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import phoneMockup from "../assets/intermedi-phones.png";
 import { authRequest } from "../services/auth";
+import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
 
 type Role = "gerente" | "funcionario" | "admin";
@@ -12,66 +13,21 @@ const profiles = [
   {
     id: "gerente" as Role,
     name: "Gerente",
-    description: "Sua farmácia sob uma nova perspectiva.",
-    detail: "Estoque, relatórios e gestão da equipe.",
-    icon: "manager",
+    description: "Acompanhe relatórios e gestão da equipe.",
   },
   {
     id: "funcionario" as Role,
     name: "Funcionário",
-    description: "Mais agilidade em cada atendimento.",
-    detail: "Consulte os pacientes e a equipe da unidade.",
-    icon: "employee",
+    description: "Atendimento e rotina da unidade.",
   },
   {
     id: "admin" as Role,
     name: "Admin",
-    description: "Tudo conectado. Tudo sob controle.",
-    detail: "Gerencie usuários e a plataforma.",
-    icon: "administrator",
+    description: "Gerencie usuários e a plataforma.",
   },
 ];
 function Icon({ name, className = "" }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
-    arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
-    back: <path d="M19 12H5m6-6-6 6 6 6" />,
-    manager: (
-      <>
-        <path
-          d="M4 21v-3a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v3Z"
-          fill="currentColor"
-          fillOpacity=".12"
-        />
-        <circle cx="12" cy="6.5" r="3.5" />
-        <path d="m9 12 3 3 3-3m-3 3-1.5 4L12 21l1.5-2-1.5-4M7.5 18v3m9-3v3" />
-      </>
-    ),
-    employee: (
-      <>
-        <circle cx="10" cy="6.5" r="3.5" />
-        <path d="M3 21v-3a6 6 0 0 1 6-6h2a6 6 0 0 1 5 2.5M7 18v3" />
-        <rect
-          x="13"
-          y="14"
-          width="8"
-          height="7"
-          rx="1.5"
-          fill="currentColor"
-          fillOpacity=".15"
-        />
-        <path d="M17 12.5V15m-1.5 2.5h3" />
-      </>
-    ),
-    administrator: (
-      <>
-        <path
-          d="m12 2.5 8 3.2v6.1c0 4.6-4.4 7.9-8 9.7-3.6-1.8-8-5.1-8-9.7V5.7Z"
-          fill="currentColor"
-          fillOpacity=".12"
-        />
-        <path d="m12 7 1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5Z" />
-      </>
-    ),
     shield: (
       <>
         <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
@@ -93,7 +49,6 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     hidden: (
       <path d="m3 3 18 18M9 5.5c7-2 13 6.5 13 6.5s-1 2-3 4M6 6c-2.5 2-4 6-4 6s3.5 7 10 7c1.5 0 3-.4 4-1" />
     ),
-    plus: <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z" />,
     pin: (
       <>
         <path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0Z" />
@@ -131,10 +86,11 @@ export default function LoginUser({
 
   const [requestedMode, setMode] = useState<Mode>(initialMode);
   const mode: Mode =
-    role === "funcionario" || role === "gerente" || role === "admin"
+    role === "funcionario" || role === "admin"
       ? "login"
       : requestedMode;
   const [visible, setVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   const selected = profiles.find((profile) => profile.id === role);
@@ -329,7 +285,7 @@ export default function LoginUser({
     const email = String(formData.get("email") || "")
       .trim()
       .toLowerCase();
-    const senha = String(formData.get("senha") || "").trim();
+    const senha = String(formData.get("senha") || "");
 
     const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!email) {
@@ -345,204 +301,105 @@ export default function LoginUser({
       return;
     }
 
+    const nome = String(formData.get("nome") || "").trim();
+    const unidade = String(formData.get("unidade") || "").trim();
+    const confirmarSenha = String(formData.get("confirmarSenha") || "");
+    if (mode === "cadastro") {
+      if (nome.length < 3 || unidade.length < 3) {
+        setMessage("Informe seu nome e o nome da nova unidade (mínimo de 3 caracteres).");
+        return;
+      }
+      if (senha !== confirmarSenha) {
+        setMessage("As senhas não coincidem.");
+        return;
+      }
+    }
+    setSubmitting(true);
+    setMessage("");
     try {
-      const listResponse = await fetch("http://localhost:3000/gerente", {
-        method: "GET",
-        headers: { Accept: "application/json" },
+      await authRequest(mode === "cadastro" ? "register" : "login", {
+        email, senha, role: "gerente",
+        ...(mode === "cadastro" ? { nome, unidade, confirmarSenha } : {}),
       });
-      const listPayload = await listResponse.json().catch(() => ({}));
-      if (!listResponse.ok) {
-        throw new Error(
-          listPayload.message ||
-            listPayload.error ||
-            "Não foi possível consultar os gerentes.",
-        );
-      }
-
-      const rawList = Array.isArray(listPayload)
-        ? listPayload
-        : Array.isArray(listPayload?.gerente)
-          ? listPayload.gerente
-          : Array.isArray(listPayload?.gerentes)
-            ? listPayload.gerentes
-            : [];
-
-      const found = rawList.find((item: any) => {
-        const storedEmail = String(item.emailGerente ?? item.email ?? "")
-          .trim()
-          .toLowerCase();
-        return storedEmail === email;
-      });
-
-      if (!found) {
-        setMessage("E-mail ou senha incorretos.");
-        return;
-      }
-
-      const gerenteId = found.idGerente ?? found.id;
-      if (!gerenteId) {
-        setMessage("Gerente sem identificação válida.");
-        return;
-      }
-
-      const detailResponse = await fetch(
-        `http://localhost:3000/gerente/${encodeURIComponent(gerenteId)}`,
-        { method: "GET", headers: { Accept: "application/json" } },
-      );
-      const detailPayload = await detailResponse.json().catch(() => ({}));
-      if (!detailResponse.ok) {
-        throw new Error(
-          detailPayload.message ||
-            detailPayload.error ||
-            "Não foi possível consultar o perfil do gerente.",
-        );
-      }
-
-      const detail = Array.isArray(detailPayload)
-        ? detailPayload[0]
-        : (detailPayload?.gerente ?? detailPayload?.gerentes ?? detailPayload);
-      const storedPassword = String(
-        detail.senhaGerente ??
-          detail.senha ??
-          found.senhaGerente ??
-          found.senha ??
-          "",
-      ).trim();
-
-      if (storedPassword !== senha) {
-        setMessage("E-mail ou senha incorretos.");
-        return;
-      }
-
-      try {
-        await authRequest("login", {
-          email,
-          senha,
-          role: "gerente",
-        });
-      } catch (authError) {
-        setMessage(
-          authError instanceof Error
-            ? authError.message
-            : "Não foi possível iniciar a sessão do gerente.",
-        );
-        return;
-      }
-
-      setMessage("");
       navigate("/gerente", { replace: true });
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível validar o gerente. Tente novamente.",
-      );
+      setMessage(error instanceof Error ? error.message : "Não foi possível concluir o acesso. Tente novamente.");
+    } finally {
+      setSubmitting(false);
     }
   }
   return (
-    <main className="auth-page">
+    <main className={`auth-page auth-theme-${role ?? "welcome"}`}>
       <section className="auth-main" aria-label="Acesso ao Intermedi">
         <header className="auth-header">
           <Link to="/" aria-label="Intermedi — página inicial">
             <img src={logo} alt="Intermedi" />
           </Link>
-          <Link className="auth-home" to="/">
-            <Icon name="back" /> Voltar ao site
-          </Link>
+          {!selected && (
+            <Link className="auth-home" to="/">
+              Voltar ao site
+            </Link>
+          )}
         </header>
         <div
           className={`auth-content${
             selected && mode === "cadastro" ? " auth-register" : ""
           }`}
         >
-          <div
-            className="auth-steps"
-            aria-label={
-              role ? "Etapa 2 de 2: sua conta" : "Etapa 1 de 2: seu perfil"
-            }
-          >
-            <span className="is-active">
-              <i>{role ? "✓" : "1"}</i> Seu perfil
-            </span>
-            <span className="auth-step-line" />
-            <span className={role ? "is-active" : ""}>
-              <i>2</i> Sua conta
-            </span>
-          </div>
           {!selected ? (
             <>
-              <span className="auth-eyebrow">BEM-VINDO AO INTERMEDI</span>
               <h1>
-                Seu próximo acesso.
+                Bem-vindo(a)!
                 <br />
-                <em>Mais possibilidades.</em>
+                <em>Escolha seu perfil.</em>
               </h1>
               <p className="auth-intro">
-                Cada pessoa faz a diferença no cuidado.
+                Para continuar, selecione o perfil que corresponde
                 <br />
-                Escolha seu perfil para{" "}
-                {mode === "cadastro" ? "criar sua conta" : "continuar"}.
+                ao seu acesso na plataforma.
               </p>
               <div className="auth-profiles">
-                {profiles.map((profile) => (
+                {[profiles[2], profiles[0], profiles[1]].map((profile) => (
                   <button
                     key={profile.id}
                     className={`auth-profile profile-${profile.id}`}
                     onClick={() => {
                       setRole(profile.id);
                       setMessage("");
-                      if (profile.id === "admin" || profile.id === "gerente")
+                      if (profile.id !== "gerente")
                         setMode("login");
                     }}
                   >
                     <span className="auth-profile-icon">
-                      <Icon name={profile.icon} />
+                      <PersonaIcon role={profile.id} />
                     </span>
                     <span className="auth-profile-text">
                       <strong>{profile.name}</strong>
                       <span>{profile.description}</span>
-                      <small>{profile.detail}</small>
                     </span>
-                    <Icon name="arrow" className="auth-profile-arrow" />
                   </button>
                 ))}
               </div>
-              <p className="auth-switch">
-                {mode === "login"
-                  ? "Sua primeira vez por aqui?"
-                  : "Já faz parte da nossa rede?"}{" "}
-                <button
-                  onClick={() =>
-                    changeMode(mode === "login" ? "cadastro" : "login")
-                  }
-                >
-                  {mode === "login" ? "Criar uma conta" : "Entrar na conta"}{" "}
-                  <span aria-hidden="true">↗</span>
-                </button>
-              </p>
             </>
           ) : (
             <>
-              <button
-                className="auth-back"
-                onClick={() => {
-                  resetRequest();
-                  setRole(null);
-                }}
-              >
-                <Icon name="back" /> Trocar perfil
-              </button>
-              <span className={`auth-selected profile-${role}`}>
-                <Icon name={selected.icon} /> {selected.name}
-              </span>
+              <div className="auth-persona-heading">
+                <span className={`auth-selected profile-${role}`}><PersonaIcon role={selected.id} /></span>
+                <div>
               <h1 ref={heading} tabIndex={-1} className="auth-form-title">
-                {mode === "login"
-                  ? "Bom ter você de volta."
-                  : "Vamos nos conectar?"}
+                {selected.name}
               </h1>
               <p className="auth-intro">
-                Entre com seus dados para acessar sua conta.
+                {selected.description}
               </p>
+                </div>
+              </div>
+              {role === "gerente" && (
+                <div className="auth-mode" aria-label="Tipo de acesso">
+                  <button type="button" aria-pressed={mode === "login"} disabled={submitting} onClick={() => changeMode("login")}>Entrar</button>
+                  <button type="button" aria-pressed={mode === "cadastro"} disabled={submitting} onClick={() => changeMode("cadastro")}>Criar conta</button>
+                </div>
+              )}
               <form
                 key={`${role}-${mode}`}
                 className="auth-form"
@@ -677,21 +534,16 @@ export default function LoginUser({
                     {message}
                   </p>
                 )}
-                <button className="auth-submit" type="submit">
-                  {mode === "login"
-                    ? "Entrar na minha conta"
+                <button className="auth-submit" type="submit" disabled={submitting}>
+                  {submitting ? "Aguarde…" : mode === "login"
+                    ? "Entrar"
                     : "Criar minha conta"}
-                  <Icon name="arrow" />
                 </button>
               </form>
-              {(role === "funcionario" || role === "admin") && (
-                <p className="auth-switch">
-                  <Link to={`/${role}`}>
-                    Visualizar tela do{" "}
-                    {role === "admin" ? "admin" : "funcionário"} ↗
-                  </Link>
-                </p>
-              )}
+              <div className="auth-divider"><span>ou</span></div>
+              <button className="auth-back" onClick={() => { resetRequest(); setRole(null); }}>
+                Trocar perfil
+              </button>
               <p className="auth-form-foot">
                 <Icon name="lock" /> Seu espaço para cuidar e conectar.
               </p>
@@ -728,15 +580,6 @@ export default function LoginUser({
             width="1312"
             height="1199"
           />
-        </div>
-        <div className="auth-story-bottom">
-          <span className="auth-story-badge">
-            <Icon name="plus" />
-          </span>
-          <p>
-            <strong>O cuidado vai mais longe quando nos conectamos.</strong>
-            <span>Uma nova forma de fazer parte da saúde.</span>
-          </p>
         </div>
       </aside>
     </main>

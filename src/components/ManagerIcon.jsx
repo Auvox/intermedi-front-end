@@ -1,4 +1,6 @@
+import PersonaIcon from "./PersonaIcon";
 export default function ManagerIcon({ name, size = 22 }) {
+  if (name === "heart") return <PersonaIcon role="paciente" size={size} />;
   const paths = {
     ticket: <><path d="M4 5h16a1 1 0 0 1 1 1v4a2 2 0 0 0 0 4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a2 2 0 0 0 0-4V6a1 1 0 0 1 1-1Z" /><path d="M15 5v3m0 3v2m0 3v3" /></>,
     pill: <><path d="m9 4-5 5a6.4 6.4 0 0 0 9 9l5-5a6.4 6.4 0 0 0-9-9Z" /><path d="m7 7 9 9m-2-9 2 2" /></>,

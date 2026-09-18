@@ -1,3 +1,4 @@
+import PersonaIcon from "./PersonaIcon";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import "../styles/managerSidebar.css";
@@ -11,6 +12,7 @@ const links = [
 ];
 
 function SidebarIcon({ name }) {
+  if (["heart", "team", "manager"].includes(name)) return <PersonaIcon role={name === "heart" ? "paciente" : name === "manager" ? "gerente" : "funcionario"} size={22} />;
   const paths = {
     dashboard: (
       <>
@@ -76,7 +78,7 @@ export default function ManagerSidebar({
   admin = false,
 }) {
   const adminLinks = [
-    { path: "gerentes", label: "Gerentes", icon: "team" },
+    { path: "gerentes", label: "Gerentes", icon: "manager" },
     { path: "farmacias", label: "Farmácias", icon: "pharmacy" },
     links[2],
     links[4],
