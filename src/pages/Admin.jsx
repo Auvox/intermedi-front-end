@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, Outlet, useOutletContext } from "react-router-dom";
+import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { initialData, unit, formatDate } from "./managerData";
@@ -198,8 +198,19 @@ const normalizeFuncionarios = (payload = []) =>
     };
   });
 
+// Apenas rotulo visual da trilha no topo (nao altera rotas nem dados).
+const breadcrumbLabels = {
+  gerentes: "Gerentes",
+  farmacias: "Unidades",
+  pacientes: "Pacientes",
+  chamados: "Solicitações",
+};
+
 export default function Admin() {
   const [data, setData] = useState(demoData);
+  const { pathname } = useLocation();
+  const currentSection = pathname.replace(/^\/admin\/?/, "").split("/")[0];
+  const currentLabel = breadcrumbLabels[currentSection] || "Dashboard";
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -216,7 +227,7 @@ export default function Admin() {
               Painel de administração
             </span>{" "}
             <span className="mgr-topbar-divider">/</span>{" "}
-            <strong>Rede Intermedi</strong>
+            <strong>{currentLabel}</strong>
           </span>
           <div className="mgr-account adm-account">
             <span className="mgr-account-avatar" aria-hidden="true">

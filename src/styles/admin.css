@@ -2,8 +2,14 @@
   background: #f5f7f7;
 }
 .adm-shell .mgr-page-head-featured {
-  background: linear-gradient(115deg, #253335, #3e5355);
-  border-color: #344648;
+  background:
+    radial-gradient(
+      620px 260px at 88% -30%,
+      rgba(45, 171, 100, 0.16),
+      rgba(45, 171, 100, 0) 70%
+    ),
+    #000000;
+  border-color: #000000;
 }
 .adm-shell .mgr-page-head-featured p {
   color: #d0dddd;
@@ -299,4 +305,99 @@
   .adm-actions {
     gap: 6px;
   }
+}
+
+/* Itens do menu ainda sem tela (seguem a referencia visual). */
+.adm-shell .manager-sidebar-soon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: none;
+  color: #9aaaa0;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: not-allowed;
+}
+.adm-shell .manager-sidebar-soon .manager-sidebar-icon {
+  color: #a9b7ae;
+}
+.adm-shell .manager-sidebar-soon .manager-sidebar-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+.adm-shell .manager-sidebar-soon-tag {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.adm-shell .manager-sidebar-soon:hover {
+  background: #f6f9f7;
+}
+@media (max-width: 760px) {
+  .adm-shell .manager-sidebar-soon {
+    flex-shrink: 0;
+    width: auto;
+    min-height: 43px;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 9px;
+  }
+  .adm-shell .manager-sidebar-soon .manager-sidebar-label {
+    font-size: 11px;
+  }
+  .adm-shell .manager-sidebar-soon-tag {
+    display: none;
+  }
+}
+
+/* Cabecalho (topbar) escuro no espaco do admin. */
+.adm-shell .mgr-topbar {
+  background: #000000;
+  border-bottom-color: #000000;
+  color: #93a89c;
+}
+.adm-shell .mgr-topbar .mgr-topbar-unit-prefix {
+  color: #93a89c;
+}
+.adm-shell .mgr-topbar-divider {
+  color: #55675d;
+}
+.adm-shell .mgr-topbar strong {
+  color: #f3f8f5;
+}
+.adm-shell .adm-account {
+  border-left-color: #2c3d35;
+}
+.adm-shell .mgr-account-person strong {
+  color: #f3f8f5;
+}
+.adm-shell .mgr-account-person small {
+  color: #8da296;
+}
+.adm-shell .mgr-account .mgr-account-avatar {
+  border-color: #000000;
+  outline-color: #35473e;
+  background: #22a35d;
+  color: #ffffff;
+}
+.adm-shell .mgr-topbar .account-exit {
+  background: #21302a;
+  border-color: #35473e;
+  color: #d3e3da;
+}
+.adm-shell .mgr-topbar .account-exit:hover {
+  background: #2b3d35;
+  border-color: #46594f;
+  color: #ffffff;
 }

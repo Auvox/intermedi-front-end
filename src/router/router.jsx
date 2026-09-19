@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Employee, { EmployeePatients, EmployeeTeam } from "../pages/Employee";
 import Admin, { AdminDirectory } from "../pages/Admin";
+import AdminDashboard from "../pages/AdminDashboard";
 import LoginUser from "../pages/LoginUser";
 import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
@@ -20,7 +21,7 @@ function Rotas() {
         <Route path="/login" element={<LoginUser />} />
         <Route path="/cadastro" element={<CadastroUser />} />
         <Route path="/admin" element={<Admin />}>
-          <Route index element={<Navigate to="gerentes" replace />} />
+          <Route index element={<AdminDashboard />} />
           {["gerentes", "farmacias", "pacientes", "chamados"].map((section) => (
             <Route
               key={section}
@@ -28,7 +29,7 @@ function Rotas() {
               element={<AdminDirectory key={section} section={section} />}
             />
           ))}
-          <Route path="*" element={<Navigate to="/admin/gerentes" replace />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
         <Route path="/funcionario" element={<Employee />}>
           <Route index element={<Navigate to="pacientes" replace />} />

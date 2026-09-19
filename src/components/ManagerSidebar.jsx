@@ -52,6 +52,25 @@ function SidebarIcon({ name }) {
         <path d="M10 21v-5h4v5M12 6v6m-3-3h6" />
       </>
     ),
+    truck: (
+      <>
+        <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" />
+        <circle cx="7" cy="18" r="1.8" />
+        <circle cx="17" cy="18" r="1.8" />
+      </>
+    ),
+    report: (
+      <>
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M8 16v-4m4 4V8m4 8v-6" />
+      </>
+    ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.9 12a7.9 7.9 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7.7 7.7 0 0 0-2-1.2L15.1 3h-4l-.4 2.7a7.7 7.7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7.7 7.7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7.7 7.7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.07-.4.1-.8.1-1.2Z" />
+      </>
+    ),
     arrow: <path d="m9 5 7 7-7 7" />,
   };
   return (
@@ -77,11 +96,18 @@ export default function ManagerSidebar({
   employee = false,
   admin = false,
 }) {
+  // Itens marcados com `soon` ainda nao possuem rota/tela: aparecem no menu
+  // seguindo a referencia, mas sem navegacao ate o back entregar.
   const adminLinks = [
+    { path: "", label: "Dashboard", icon: "dashboard" },
+    { path: "medicamentos", label: "Medicamentos", icon: "pill", soon: true },
+    { path: "farmacias", label: "Unidades", icon: "pharmacy" },
     { path: "gerentes", label: "Gerentes", icon: "manager" },
-    { path: "farmacias", label: "Farmácias", icon: "pharmacy" },
-    links[2],
-    links[4],
+    { path: "pacientes", label: "Pacientes", icon: "heart" },
+    { path: "chamados", label: "Solicitações", icon: "ticket" },
+    { path: "rotas", label: "Rotas e Distribuição", icon: "truck", soon: true },
+    { path: "relatorios", label: "Relatórios", icon: "report", soon: true },
+    { path: "configuracoes", label: "Configurações", icon: "settings", soon: true },
   ];
   const menuLinks = admin
     ? adminLinks
@@ -104,7 +130,22 @@ export default function ManagerSidebar({
       <div className="manager-sidebar-menu">
         <p className="manager-sidebar-caption">PRINCIPAL</p>
         <nav aria-label={`Menu do ${role}`}>
-          {menuLinks.map(({ path, label, icon }) => (
+          {menuLinks.map(({ path, label, icon, soon }) =>
+            soon ? (
+              <button
+                key={path}
+                type="button"
+                className="manager-sidebar-soon"
+                aria-disabled="true"
+                title="Em breve"
+              >
+                <span className="manager-sidebar-icon">
+                  <SidebarIcon name={icon} />
+                </span>
+                <span className="manager-sidebar-label">{label}</span>
+                <span className="manager-sidebar-soon-tag">Em breve</span>
+              </button>
+            ) : (
             <NavLink
               key={path}
               end={!path}
@@ -127,7 +168,8 @@ export default function ManagerSidebar({
                 </span>
               )}
             </NavLink>
-          ))}
+            ),
+          )}
         </nav>
       </div>
 
