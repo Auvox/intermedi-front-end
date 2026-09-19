@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
+import PersonaIcon from "../components/PersonaIcon";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { initialData, unit, formatDate } from "./managerData";
 import "../styles/manager.css";
@@ -94,6 +95,37 @@ const normalize = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+
+// Paleta usada só para colorir os avatares de iniciais nas listagens novas
+// (Gerentes/Unidades/Pacientes). Puramente visual, não vem do back.
+const avatarBgPalette = [
+  "#e7f7ee",
+  "#e7f1fc",
+  "#fdf3da",
+  "#fdeceb",
+  "#f1ecfb",
+  "#e6f7f4",
+];
+const avatarTextPalette = [
+  "#1c8747",
+  "#2b72b8",
+  "#a4700b",
+  "#c4443f",
+  "#6a4fc4",
+  "#0f8f7a",
+];
+function avatarTone(seed = "") {
+  const sum = [...seed].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = seed ? sum % avatarBgPalette.length : 0;
+  return { background: avatarBgPalette[index], color: avatarTextPalette[index] };
+}
+function initialsOf(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "—";
+  const first = parts[0][0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+}
 
 const normalizeFarmacias = (payload = []) =>
   payload.map((farmacia, index) => {
@@ -206,6 +238,59 @@ const breadcrumbLabels = {
   chamados: "Solicitações",
 };
 
+function Icon({ name, size = 17 }) {
+  const paths = {
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.4-3.4" />
+      </>
+    ),
+    bell: (
+      <path d="M18 8a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14 18 8ZM13.7 19a2 2 0 0 1-3.4 0" />
+    ),
+    chevronDown: <path d="m6 9 6 6 6-6" />,
+    sliders: (
+      <>
+        <path d="M4 6h10m4 0h2M4 12h4m4 0h10M4 18h14m4 0h-2" />
+        <circle cx="16" cy="6" r="2" />
+        <circle cx="10" cy="12" r="2" />
+        <circle cx="20" cy="18" r="2" />
+      </>
+    ),
+    refresh: (
+      <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5" />
+    ),
+    dots: (
+      <>
+        <circle cx="5" cy="12" r="1.6" />
+        <circle cx="12" cy="12" r="1.6" />
+        <circle cx="19" cy="12" r="1.6" />
+      </>
+    ),
+    download: (
+      <path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" />
+    ),
+    chevronLeft: <path d="m14 6-6 6 6 6" />,
+    chevronRight: <path d="m10 6 6 6-6 6" />,
+  };
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
 export default function Admin() {
   const [data, setData] = useState(demoData);
   const { pathname } = useLocation();
@@ -287,6 +372,9 @@ export function AdminDirectory({ section }) {
   const { data, setData } = useOutletContext();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [unitFilter, setUnitFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [openRowMenu, setOpenRowMenu] = useState(null);
   const [modal, setModal] = useState(null);
   const [notice, setNotice] = useState("");
   const config = sections[section];
@@ -295,6 +383,13 @@ export function AdminDirectory({ section }) {
   const managers = section === "gerentes";
   const pharmacies = section === "farmacias";
   const patients = section === "pacientes";
+  const crud = managers || pharmacies || patients;
+  const pageSize = 8;
+
+  useEffect(() => {
+    setPage(1);
+    setOpenRowMenu(null);
+  }, [search, status, unitFilter, section]);
 
   useEffect(() => {
     if (section !== "gerentes" && section !== "farmacias") {
@@ -541,11 +636,49 @@ export function AdminDirectory({ section }) {
       normalize(`${record.name} ${record.unit} ${record.email || ""}`).includes(
         normalize(search.trim()),
       ) &&
-      (!status || record.status === status),
+      (!status || record.status === status) &&
+      (!unitFilter || record.unit === unitFilter),
   );
   const restricted = records.filter((record) =>
     ["Bloqueado", "Banido"].includes(record.status),
   ).length;
+  const activeCount = records.filter((record) => record.status === "Ativo")
+    .length;
+  const unitOptions = Array.from(
+    new Set((records || []).map((record) => record.unit).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = crud
+    ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : filtered;
+  const pageStart = filtered.length ? (currentPage - 1) * pageSize + 1 : 0;
+  const pageEnd = Math.min(filtered.length, currentPage * pageSize);
+
+  function exportCsv() {
+    const header = ["Nome", "Unidade", "Situação"];
+    const rows = filtered.map((record) => [
+      record.name,
+      record.unit,
+      record.status,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(";"),
+      )
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${section}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const managerFarmacias = (data.farmacias || []).filter(
     (farmacia) => String(farmacia.idGerente) === String(modal?.record?.id),
@@ -922,155 +1055,424 @@ export function AdminDirectory({ section }) {
       setNotice(`Erro ao cadastrar farmácia: ${error.message}`);
     }
   }
+  const statNoun = {
+    gerentes: { total: "gerentes", active: "Gerentes ativos" },
+    farmacias: { total: "farmácias", active: "Farmácias ativas" },
+    pacientes: { total: "pacientes", active: "Pacientes ativos" },
+  }[section] || { total: config.label.toLowerCase(), active: "Ativos" };
+
+  const rowActionLabel = managers ? "Excluir" : tickets ? "Banir" : "Bloquear";
+
   return (
     <>
-      <header className="mgr-page-head mgr-page-head-featured">
-        <div>
-          <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
-          <h1>{config.title}</h1>
-          <p>{config.description}</p>
-        </div>
-        {managers && (
-          <button
-            className="mgr-primary"
-            onClick={() => setModal({ type: "register" })}
-          >
-            + Cadastrar gerente
-          </button>
-        )}
-        {pharmacies && (
-          <button
-            className="mgr-primary"
-            onClick={() => setModal({ type: "registerFarmacia" })}
-          >
-            + Cadastrar farmácia
-          </button>
-        )}
-      </header>
-      <div className="adm-overview">
-        <span>
-          <strong>{records.length}</strong> {config.label.toLowerCase()} na rede
-        </span>
-        <span>
-          {managers ? (
-            "Gestão de responsáveis"
-          ) : (
-            <>
-              <strong>{restricted}</strong> {tickets ? "banidos" : "bloqueados"}
-            </>
+      {crud ? (
+        <>
+          <header className="mgr-page-head mgr-page-head-featured adm-hero2">
+            <div>
+              <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
+              <h1>{config.label}</h1>
+              <p>{config.description}</p>
+            </div>
+            <div className="adm-hero2-actions">
+              <button
+                type="button"
+                className="adm-hero2-export"
+                onClick={exportCsv}
+              >
+                <Icon name="download" size={15} /> Exportar
+              </button>
+              {managers && (
+                <button
+                  className="mgr-primary"
+                  onClick={() => setModal({ type: "register" })}
+                >
+                  + Cadastrar Gerente
+                </button>
+              )}
+              {pharmacies && (
+                <button
+                  className="mgr-primary"
+                  onClick={() => setModal({ type: "registerFarmacia" })}
+                >
+                  + Cadastrar Farmácia
+                </button>
+              )}
+            </div>
+          </header>
+
+          <div className="adm-stats-row">
+            <div className="adm-stat-card">
+              <span className="adm-stat-icon" aria-hidden="true">
+                <PersonaIcon
+                  role={
+                    managers ? "gerente" : patients ? "paciente" : "funcionario"
+                  }
+                  size={20}
+                />
+              </span>
+              <div>
+                <p>Total de {statNoun.total}</p>
+                <strong>{records.length}</strong>
+              </div>
+            </div>
+            <div className="adm-stat-card">
+              <span className="adm-stat-icon is-check" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
+              </span>
+              <div>
+                <p>{statNoun.active}</p>
+                <strong>{activeCount}</strong>
+              </div>
+            </div>
+          </div>
+
+          {notice && (
+            <p className="adm-notice" role="status">
+              {notice}
+            </p>
           )}
-        </span>
-      </div>
-      {notice && (
-        <p className="adm-notice" role="status">
-          {notice}
-        </p>
-      )}
-      <section className="mgr-panel" aria-labelledby="adm-list-title">
-        <div className="mgr-toolbar">
-          <h2 id="adm-list-title">
-            {config.label} <span className="mgr-badge">{records.length}</span>
-          </h2>
-          <input
-            type="search"
-            aria-label={`Buscar ${config.label.toLowerCase()}`}
-            placeholder={
-              tickets ? "Buscar chamado ou unidade…" : "Buscar nome ou unidade…"
-            }
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select
-            aria-label="Filtrar por situação"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="">Todas as situações</option>
-            {(tickets
-              ? ["Pendente", "Em andamento", "Resolvido", "Banido"]
-              : managers
-                ? ["Ativo"]
-                : ["Ativo", "Bloqueado"]
-            ).map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">{tickets ? "Chamado" : "Nome"}</th>
-                <th scope="col">Unidade</th>
-                <th scope="col">Situação</th>
-                <th scope="col">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((record) => (
-                <tr key={record.id}>
-                  <td>
-                    <strong>{record.name}</strong>
-                    <small>
-                      {tickets
-                        ? formatDate(record.date)
-                        : record.email || `Código: ${record.id.toUpperCase()}`}
-                    </small>
-                  </td>
-                  <td>{record.unit}</td>
-                  <td>
-                    <span
-                      className={`mgr-badge ${["Bloqueado", "Banido"].includes(record.status) ? "red" : record.status === "Pendente" ? "yellow" : "green"}`}
-                    >
-                      {record.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="adm-actions">
+
+          <section className="mgr-panel adm-panel2" aria-labelledby="adm-list-title">
+            <div className="adm-toolbar2">
+              <label className="adm-search2">
+                <Icon name="search" size={15} />
+                <input
+                  type="search"
+                  aria-label={`Buscar ${config.label.toLowerCase()}`}
+                  placeholder="Buscar por nome, e-mail ou unidade…"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+              <select
+                aria-label="Filtrar por unidade"
+                value={unitFilter}
+                onChange={(event) => setUnitFilter(event.target.value)}
+              >
+                <option value="">Todas as unidades</option>
+                {unitOptions.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Filtrar por situação"
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="">Todos os status</option>
+                {(managers ? ["Ativo"] : ["Ativo", "Bloqueado"]).map(
+                  (value) => (
+                    <option key={value}>{value}</option>
+                  ),
+                )}
+              </select>
+              <button
+                type="button"
+                className="adm-icon-btn"
+                disabled
+                title="Filtros avançados — em breve"
+              >
+                <Icon name="sliders" size={16} />
+              </button>
+              <button
+                type="button"
+                className="adm-icon-btn"
+                disabled
+                title="Atualizar — em breve"
+              >
+                <Icon name="refresh" size={16} />
+              </button>
+              <button
+                type="button"
+                className="adm-icon-btn"
+                disabled
+                title="Mais opções — em breve"
+              >
+                <Icon name="dots" size={16} />
+              </button>
+            </div>
+            <div className="mgr-table-wrap">
+              <table className="adm-table2">
+                <thead>
+                  <tr>
+                    <th scope="col">Nome</th>
+                    <th scope="col">Unidade</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Último acesso</th>
+                    <th scope="col">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginated.map((record) => {
+                    const tone = avatarTone(record.name);
+                    const blocked = ["Bloqueado", "Banido"].includes(
+                      record.status,
+                    );
+                    return (
+                      <tr key={record.id}>
+                        <td>
+                          <div className="adm-name-cell">
+                            <span
+                              className="adm-avatar-circle"
+                              style={{
+                                background: tone.background,
+                                color: tone.color,
+                              }}
+                              aria-hidden="true"
+                            >
+                              {initialsOf(record.name)}
+                            </span>
+                            <span>
+                              <strong>{record.name}</strong>
+                              <small>
+                                {record.email ||
+                                  `Código: ${record.id.toUpperCase()}`}
+                              </small>
+                            </span>
+                          </div>
+                        </td>
+                        <td>{record.unit}</td>
+                        <td>
+                          <span
+                            className={`mgr-badge ${blocked ? "red" : "green"}`}
+                          >
+                            {record.status}
+                          </span>
+                        </td>
+                        <td className="adm-muted-cell">—</td>
+                        <td>
+                          <div className="adm-row-menu-wrap">
+                            <button
+                              type="button"
+                              className="adm-row-menu-trigger"
+                              aria-label={`Mais ações: ${record.name}`}
+                              aria-expanded={openRowMenu === record.id}
+                              onClick={() =>
+                                setOpenRowMenu((current) =>
+                                  current === record.id ? null : record.id,
+                                )
+                              }
+                            >
+                              <Icon name="dots" size={16} />
+                            </button>
+                            {openRowMenu === record.id && (
+                              <>
+                                <div
+                                  className="adm-menu-backdrop"
+                                  onClick={() => setOpenRowMenu(null)}
+                                />
+                                <div className="adm-row-menu" role="menu">
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      setModal({ type: "details", record });
+                                      setOpenRowMenu(null);
+                                    }}
+                                  >
+                                    Consultar
+                                  </button>
+                                  {pharmacies && (
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => {
+                                        openEditFarmacia(record);
+                                        setOpenRowMenu(null);
+                                      }}
+                                    >
+                                      Editar
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="is-danger"
+                                    disabled={blocked}
+                                    onClick={() => {
+                                      setModal({ type: "confirm", record });
+                                      setOpenRowMenu(null);
+                                    }}
+                                  >
+                                    {rowActionLabel}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {!filtered.length && (
+              <p className="mgr-empty">
+                Nenhum registro encontrado. Tente outra busca ou situação.
+              </p>
+            )}
+            <div className="adm-pagination">
+              <p className="mgr-table-note" role="status">
+                {pageStart}–{pageEnd} de {filtered.length} registros
+              </p>
+              {totalPages > 1 && (
+                <div className="adm-pager">
+                  <button
+                    type="button"
+                    className="adm-pager-btn"
+                    disabled={currentPage === 1}
+                    aria-label="Página anterior"
+                    onClick={() => setPage((value) => Math.max(1, value - 1))}
+                  >
+                    <Icon name="chevronLeft" size={15} />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                    (number) => (
                       <button
-                        className="mgr-text-button"
-                        aria-label={`Consultar ${record.name}`}
-                        onClick={() => setModal({ type: "details", record })}
+                        key={number}
+                        type="button"
+                        className={`adm-pager-btn${number === currentPage ? " is-active" : ""}`}
+                        aria-current={number === currentPage ? "page" : undefined}
+                        onClick={() => setPage(number)}
                       >
-                        Consultar
+                        {number}
                       </button>
-                      {pharmacies && (
-                        <button
-                          className="adm-edit-icon"
-                          type="button"
-                          aria-label={`Editar ${record.name}`}
-                          title="Editar farmácia"
-                          onClick={() => openEditFarmacia(record)}
+                    ),
+                  )}
+                  <button
+                    type="button"
+                    className="adm-pager-btn"
+                    disabled={currentPage === totalPages}
+                    aria-label="Próxima página"
+                    onClick={() =>
+                      setPage((value) => Math.min(totalPages, value + 1))
+                    }
+                  >
+                    <Icon name="chevronRight" size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <header className="mgr-page-head mgr-page-head-featured">
+            <div>
+              <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
+              <h1>{config.title}</h1>
+              <p>{config.description}</p>
+            </div>
+          </header>
+          <div className="adm-overview">
+            <span>
+              <strong>{records.length}</strong> {config.label.toLowerCase()} na
+              rede
+            </span>
+            <span>
+              <strong>{restricted}</strong> {tickets ? "banidos" : "bloqueados"}
+            </span>
+          </div>
+          {notice && (
+            <p className="adm-notice" role="status">
+              {notice}
+            </p>
+          )}
+          <section className="mgr-panel" aria-labelledby="adm-list-title">
+            <div className="mgr-toolbar">
+              <h2 id="adm-list-title">
+                {config.label}{" "}
+                <span className="mgr-badge">{records.length}</span>
+              </h2>
+              <input
+                type="search"
+                aria-label={`Buscar ${config.label.toLowerCase()}`}
+                placeholder="Buscar chamado ou unidade…"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <select
+                aria-label="Filtrar por situação"
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="">Todas as situações</option>
+                {["Pendente", "Em andamento", "Resolvido", "Banido"].map(
+                  (value) => (
+                    <option key={value}>{value}</option>
+                  ),
+                )}
+              </select>
+            </div>
+            <div className="mgr-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Chamado</th>
+                    <th scope="col">Unidade</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((record) => (
+                    <tr key={record.id}>
+                      <td>
+                        <strong>{record.name}</strong>
+                        <small>{formatDate(record.date)}</small>
+                      </td>
+                      <td>{record.unit}</td>
+                      <td>
+                        <span
+                          className={`mgr-badge ${["Bloqueado", "Banido"].includes(record.status) ? "red" : record.status === "Pendente" ? "yellow" : "green"}`}
                         >
-                          ✎
-                        </button>
-                      )}
-                      <button
-                        className="adm-danger"
-                        disabled={["Bloqueado", "Banido"].includes(
-                          record.status,
-                        )}
-                        aria-label={`${config.action}: ${record.name}`}
-                        onClick={() => setModal({ type: "confirm", record })}
-                      >
-                        {managers ? "Excluir" : tickets ? "Banir" : "Bloquear"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!filtered.length && (
-          <p className="mgr-empty">
-            Nenhum registro encontrado. Tente outra busca ou situação.
-          </p>
-        )}
-        <p className="mgr-table-note" role="status">
-          {filtered.length} de {records.length} registros
-        </p>
-      </section>
+                          {record.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="adm-actions">
+                          <button
+                            className="mgr-text-button"
+                            aria-label={`Consultar ${record.name}`}
+                            onClick={() =>
+                              setModal({ type: "details", record })
+                            }
+                          >
+                            Consultar
+                          </button>
+                          <button
+                            className="adm-danger"
+                            disabled={["Bloqueado", "Banido"].includes(
+                              record.status,
+                            )}
+                            aria-label={`${config.action}: ${record.name}`}
+                            onClick={() =>
+                              setModal({ type: "confirm", record })
+                            }
+                          >
+                            Banir
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!filtered.length && (
+              <p className="mgr-empty">
+                Nenhum registro encontrado. Tente outra busca ou situação.
+              </p>
+            )}
+            <p className="mgr-table-note" role="status">
+              {filtered.length} de {records.length} registros
+            </p>
+          </section>
+        </>
+      )}
       {modal?.type === "editFarmacia" && (
         <Dialog title="Editar farmácia" onClose={() => setModal(null)}>
           <form className="mgr-form" onSubmit={updateFarmacia}>

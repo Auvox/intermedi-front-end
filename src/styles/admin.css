@@ -401,3 +401,300 @@
   border-color: #46594f;
   color: #ffffff;
 }
+
+.adm-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  background: transparent;
+}
+
+/* ============================================================
+   Card de cabeçalho (hero) das telas Gerentes/Unidades/Pacientes
+   ============================================================ */
+.adm-hero2 {
+  align-items: flex-start;
+}
+.adm-hero2-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.adm-hero2-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 11px 17px;
+  border: 1px solid #e3f0e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #223b2c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(18, 57, 34, 0.08);
+}
+.adm-hero2-export:hover {
+  background: #f4faf6;
+}
+
+/* ============================================================
+   Cartões de estatística (Total / Ativos)
+   ============================================================ */
+.adm-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin: 20px 0 24px;
+}
+.adm-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  border: 1px solid #e6ece8;
+  border-radius: 14px;
+  background: #fff;
+}
+.adm-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eaf6ee;
+  color: #1c8747;
+}
+.adm-stat-icon.is-check {
+  background: #22a35d;
+  color: #fff;
+}
+.adm-stat-card p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #7c8d83;
+}
+.adm-stat-card strong {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #1c3a28;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Barra de ferramentas nova (busca + unidade + status + ícones)
+   ============================================================ */
+.adm-toolbar2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #edf1ed;
+}
+.adm-search2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1 1 260px;
+  min-width: 220px;
+  height: 40px;
+  padding: 0 13px;
+  border: 1px solid #dce5df;
+  border-radius: 9px;
+  background: #fff;
+  color: #94a49a;
+}
+.adm-search2 input {
+  flex: 1;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #2c3b32;
+  font: inherit;
+  font-size: 12.5px;
+}
+.adm-search2 input:focus {
+  outline: none;
+}
+.adm-toolbar2 select {
+  height: 40px;
+}
+.adm-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid #dce5df;
+  border-radius: 9px;
+  background: #fff;
+  color: #6d7d73;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ============================================================
+   Tabela nova (avatar de iniciais + coluna extra + menu "...")
+   ============================================================ */
+.adm-table2 td,
+.adm-table2 th {
+  vertical-align: middle;
+}
+.adm-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.adm-avatar-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+.adm-muted-cell {
+  color: #96a49b;
+}
+.adm-row-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.adm-row-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dce5df;
+  border-radius: 9px;
+  background: #fff;
+  color: #4c5d53;
+  cursor: pointer;
+}
+.adm-row-menu-trigger:hover {
+  background: #f5f8f6;
+}
+.adm-row-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  width: 160px;
+  border: 1px solid #e5e9e6;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(20, 40, 30, 0.14);
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+}
+.adm-row-menu button {
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #2c3b32;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.adm-row-menu button:hover:not(:disabled) {
+  background: #f0f5f1;
+}
+.adm-row-menu button.is-danger {
+  color: #a23d3d;
+}
+.adm-row-menu button.is-danger:hover:not(:disabled) {
+  background: #fdf3f2;
+}
+.adm-row-menu button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ============================================================
+   Paginação
+   ============================================================ */
+.adm-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 22px 18px;
+}
+.adm-pagination .mgr-table-note {
+  padding: 0;
+  border-top: 0;
+}
+.adm-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.adm-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 4px;
+  border: 1px solid #dce5df;
+  border-radius: 8px;
+  background: #fff;
+  color: #4c5d53;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.adm-pager-btn:hover:not(:disabled) {
+  background: #f5f8f6;
+}
+.adm-pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.adm-pager-btn.is-active {
+  border-color: #1c8747;
+  background: #1c8747;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .adm-topbar2 {
+    padding-inline: 18px;
+    gap: 12px;
+  }
+  .adm-topbar2-search {
+    max-width: none;
+  }
+  .adm-account-trigger span:not(.adm-avatar-round) {
+    display: none;
+  }
+  .adm-stats-row {
+    grid-template-columns: 1fr;
+  }
+  .adm-hero2-actions {
+    width: 100%;
+  }
+  .adm-hero2-export,
+  .adm-hero2-actions .mgr-primary {
+    flex: 1;
+    justify-content: center;
+  }
+}
