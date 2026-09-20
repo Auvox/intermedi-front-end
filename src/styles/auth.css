@@ -91,7 +91,6 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-password input { padding-right: 48px; }
 .auth-password button { position: absolute; right: 4px; top: 4px; bottom: 4px; display: grid; place-items: center; width: 38px; border: 0; border-radius: 6px; background: transparent; color: var(--auth-green); }
 .auth-password button svg { width: 18px; }
-.auth-forgot { justify-self: end; padding: 0; border: 0; background: transparent; color: var(--auth-green); font-size: 11px !important; }
 .auth-submit { display: flex; justify-content: center; align-items: center; gap: 13px; padding: 13px; border: 0; border-radius: 9px; background: var(--auth-green); color: #fff; font-weight: 600 !important; transition: filter .2s; }
 .auth-submit:hover { filter: brightness(.9); }
 .auth-submit svg { width: 18px; height: 18px; }

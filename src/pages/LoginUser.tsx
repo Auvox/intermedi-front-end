@@ -524,19 +524,6 @@ export default function LoginUser({
                     />
                   </label>
                 )}
-                {mode === "login" && (
-                  <button
-                    type="button"
-                    className="auth-forgot"
-                    onClick={() =>
-                      setMessage(
-                        "Para recuperar seu acesso, entre em contato com o responsável pela sua farmácia. A recuperação online ainda não está disponível.",
-                      )
-                    }
-                  >
-                    Esqueci minha senha
-                  </button>
-                )}
                 {role === "admin" && (
                   <p className="auth-admin-note">
                     <Icon name="shield" /> Acesso exclusivo para administradores

@@ -1,9 +1,8 @@
 import logoIntermedi from "../../assets/logoIntermedi.png";
-import logoLight from "../../assets/logoFooter.png";
 import { NavLink } from "react-router-dom";
 import { useLayoutEffect, useRef } from "react";
 
-function Nav({ scrolled, menuOpen, setMenuOpen, activeSection, theme, toggleTheme }) {
+function Nav({ scrolled, menuOpen, setMenuOpen, activeSection }) {
   const linksRef = useRef(null);
   useLayoutEffect(() => {
     const menu = linksRef.current;
@@ -30,7 +29,7 @@ function Nav({ scrolled, menuOpen, setMenuOpen, activeSection, theme, toggleThem
   return (
     <nav className={`lp-nav${scrolled ? " scrolled" : ""}`} aria-label="Navegação principal">
       <a href="#inicio" className="lp-logo" aria-label="Intermedi — início">
-        <img src={theme === "dark" ? logoLight : logoIntermedi} alt="Intermedi" className="lp-logo-img" />
+        <img src={logoIntermedi} alt="Intermedi" className="lp-logo-img" />
       </a>
 
       <ul className="lp-nav-links" ref={linksRef}>
@@ -42,21 +41,6 @@ function Nav({ scrolled, menuOpen, setMenuOpen, activeSection, theme, toggleThem
       </ul>
 
       <div className="lp-nav-actions">
-        <button
-          type="button"
-          className="lp-theme-toggle"
-          onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
-          title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
-        >
-          <svg className="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" />
-          </svg>
-          <svg className="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20.5 13a8.5 8.5 0 0 1-9.5-9.5A8.5 8.5 0 1 0 20.5 13Z" />
-          </svg>
-        </button>
         <NavLink to="/login" className="btn-nav-primary">
           Entrar
         </NavLink>

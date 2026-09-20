@@ -49,7 +49,7 @@ const FEED_TYPES = [
   { id: "resolved", label: "Chamado resolvido", path: "m8 12 3 3 5-6M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9Z" },
 ];
 
-export default function MapSection() {
+export default function MapSection({ paused = false }) {
   const [activityCounts, setActivityCounts] = useState({ match: 0, shipping: 0, resolved: 0 });
   const [feed, setFeed] = useState([]);
   const [lines, setLines] = useState([]);
@@ -95,9 +95,16 @@ export default function MapSection() {
 
   // Controle de conexões e animações em tempo real (Sem Warnings)
   useEffect(() => {
+    if (paused) return;
     const activeIntervals = [];
     const activeTimeouts = [];
     let isMounted = true;
+
+    // Discard interrupted routes before starting a fresh animation cycle.
+    activeTimeouts.push(setTimeout(() => {
+      setLines([]);
+      setPulses([]);
+    }, 0));
 
     const fireMatch = () => {
       if (!isMounted) return;
@@ -203,7 +210,7 @@ export default function MapSection() {
       activeIntervals.forEach(clearInterval);
       activeTimeouts.forEach(clearTimeout);
     };
-  }, []);
+  }, [paused]);
 
   return (
     <section className="section mapsection" id="mapa" ref={sectionRef}>

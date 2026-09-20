@@ -9,7 +9,6 @@ function Footer() {
         <div className="lp-footer-inner">
           <div className="lp-footer-intro">
             <div>
-              <span className="lp-footer-eyebrow">CONEXÕES QUE CUIDAM</span>
               <h2>Mais perto de você.<br /><span>Mais acesso à saúde.</span></h2>
             </div>
             <div className="lp-footer-invitation">
@@ -21,7 +20,6 @@ function Footer() {
             <div className="lp-footer-brand">
               <a href="#inicio" aria-label="Intermedi — início" className="lp-footer-brand-link"><img src={logoFooter} alt="Intermedi" className="lp-footer-logo" /></a>
               <p>Interligando medicamentos.<br />Aproximando quem precisa de quem cuida.</p>
-              <span className="lp-footer-brand-note"><span aria-hidden="true">+</span> Juntos, o cuidado vai mais longe.</span>
             </div>
             <nav className="lp-footer-col" aria-label="Explore a Intermedi">
               <h3>Explore</h3>
