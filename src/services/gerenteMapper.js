@@ -5,6 +5,7 @@ export function normalizeGerentes(payload = []) {
       manager.nomeGerente ?? manager.name ?? manager.nome ?? "Gerente";
     const email = manager.emailGerente ?? manager.email ?? "";
     const unit =
+      manager.nomeFarmacia ??
       manager.unidade ??
       manager.unit ??
       manager.unidadeGerente ??
@@ -18,6 +19,8 @@ export function normalizeGerentes(payload = []) {
       id: String(id),
       name,
       email,
+      farmaciaId: manager.fkIdFarmacia ?? manager.idFarmacia ?? null,
+      idEndereco: manager.idEndereco ?? null,
       unit,
       status: manager.status || "Ativo",
     };
