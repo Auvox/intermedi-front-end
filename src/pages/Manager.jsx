@@ -1079,7 +1079,7 @@ export function ManagerPatients() {
   );
  }
 export function ManagerMedicines() {
-  const { data, user } = useOutletContext();
+  const { user } = useOutletContext();
 
   // Controle de parâmetros da URL (?busca=di)
   const [searchParams] = useSearchParams();
@@ -1093,8 +1093,7 @@ export function ManagerMedicines() {
 
   // Estados dos medicamentos do Backend
   const [medicamentosBackend, setMedicamentosBackend] = useState([]);
-  const [apiConsultada, setApiConsultada] = useState(false);
-  const [carregando, setCarregando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
   const [erroBackend, setErroBackend] = useState("");
   // Consulta a API enquanto o usuário digita. O atraso curto evita uma chamada
   // para cada tecla e o AbortController impede respostas antigas de sobrescreverem
@@ -1108,8 +1107,10 @@ export function ManagerMedicines() {
       setErroBackend("");
 
       try {
-        const queryBusca = termo ? `?busca=${encodeURIComponent(termo)}` : "";
-        const response = await fetch(`http://localhost:3000/remedios${queryBusca}`, {
+        const endpoint = termo
+          ? `http://localhost:3000/remedios?busca=${encodeURIComponent(termo)}`
+          : "http://localhost:3000/remedios";
+        const response = await fetch(endpoint, {
           signal: controller.signal,
         });
         const result = await response.json();
@@ -1120,22 +1121,26 @@ export function ManagerMedicines() {
 
         const lista = Array.isArray(result)
           ? result
-          : result.resultados || result.remedios || [];
+          : result?.resultados || result?.remedios || result?.data;
+
+        if (!Array.isArray(lista)) {
+          throw new Error("O servidor não retornou uma lista de medicamentos.");
+        }
 
         const adaptados = lista.map((item) => ({
           id: item.idRemedio || item.id_remedio || item.id,
           name: item.nomeRemedio || item.nome || item.name || "Medicamento sem nome",
           dose: item.dosagemRemedio || item.dosagem || item.dose || "",
-          unit: item.nomeFarmacia || item.fabricanteRemedio || item.unit || user?.unitName || "—",
+          unit: item.nomeFarmacia || item.fabricanteRemedio || item.fabricante || item.unit || user?.unitName || "—",
           quantity: item.quantidade ?? item.quantity ?? 0,
           minimum: item.estoque_minimo ?? item.minimum ?? 5,
           expiry: item.validade || item.expiry || new Date().toISOString(),
         }));
 
-        setMedicamentosBackend(adaptados);
-        setApiConsultada(true);
+        if (!controller.signal.aborted) setMedicamentosBackend(adaptados);
       } catch (err) {
-        if (err.name !== "AbortError") {
+        if (!controller.signal.aborted) {
+          setMedicamentosBackend([]);
           setErroBackend(err instanceof Error ? err.message : "Erro ao conectar ao servidor.");
         }
       } finally {
@@ -1143,14 +1148,16 @@ export function ManagerMedicines() {
       }
     }
 
-    const debounce = setTimeout(carregarMedicamentos, 250);
+    // Carrega todos imediatamente ao abrir a tela ou limpar a busca.
+    const debounce = termo ? setTimeout(carregarMedicamentos, 250) : null;
+    if (!termo) carregarMedicamentos();
     return () => {
       clearTimeout(debounce);
       controller.abort();
     };
   }, [inputSearch, user?.unitName]);
   // Aplica filtros adicionais de escopo e disponibilidade
-  const baseLista = apiConsultada ? medicamentosBackend : (data?.medicines || []);
+  const baseLista = medicamentosBackend;
   
   const medicines = baseLista.filter((m) => {
     const matchesScope = !scope || m.unit === scope;
@@ -1217,7 +1224,7 @@ export function ManagerMedicines() {
         {carregando && <p className="mgr-empty">Buscando no servidor…</p>}
         {erroBackend && <p className="mgr-empty" style={{ color: "red" }}>{erroBackend}</p>}
 
-        {!carregando && <MedicineTable medicines={medicines} />}
+        {!carregando && !erroBackend && <MedicineTable medicines={medicines} />}
 
         <p className="mgr-table-note">
           Crítico: quantidade ≤ mínimo · Quase acabando: quantidade ≤ 2× mínimo · Disponível: quantidade &gt; 2× mínimo.
