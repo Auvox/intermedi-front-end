@@ -130,7 +130,7 @@ function MedicineTable({ medicines }) {
             <tr key={m.id}>
               <td>
                 <strong>{m.name}</strong>
-                <small>{m.dose}</small>
+                {m.dose && <small>{m.dose}</small>}
               </td>
               <td>{m.unit}</td>
               <td>
@@ -1082,7 +1082,7 @@ export function ManagerMedicines() {
   const { data, user } = useOutletContext();
 
   // Controle de parâmetros da URL (?busca=di)
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const buscaUrl = searchParams.get("busca") || "";
 
   // Estados locais
@@ -1093,23 +1093,25 @@ export function ManagerMedicines() {
 
   // Estados dos medicamentos do Backend
   const [medicamentosBackend, setMedicamentosBackend] = useState([]);
+  const [apiConsultada, setApiConsultada] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erroBackend, setErroBackend] = useState("");
-
-  // Sincroniza o input com a URL quando ela muda
+  // Consulta a API enquanto o usuário digita. O atraso curto evita uma chamada
+  // para cada tecla e o AbortController impede respostas antigas de sobrescreverem
+  // a lista mais recente.
   useEffect(() => {
-    setInputSearch(buscaUrl);
-  }, [buscaUrl]);
+    const controller = new AbortController();
+    const termo = inputSearch.trim();
 
-  // Busca na API do Backend sempre que a URL (?busca=) alterar
-  useEffect(() => {
     async function carregarMedicamentos() {
       setCarregando(true);
       setErroBackend("");
 
       try {
-        const queryBusca = buscaUrl ? `?busca=${encodeURIComponent(buscaUrl)}` : "";
-        const response = await fetch(`http://localhost:3000/remedios${queryBusca}`);
+        const queryBusca = termo ? `?busca=${encodeURIComponent(termo)}` : "";
+        const response = await fetch(`http://localhost:3000/remedios${queryBusca}`, {
+          signal: controller.signal,
+        });
         const result = await response.json();
 
         if (!response.ok) {
@@ -1120,30 +1122,35 @@ export function ManagerMedicines() {
           ? result
           : result.resultados || result.remedios || [];
 
-        // Mapeia para o formato esperado pelo front-end
         const adaptados = lista.map((item) => ({
-          id: item.id_remedio || item.id,
-          name: item.nome || item.name,
-          dose: item.dosagem || item.dose || "",
-          unit: item.nomeFarmacia || item.unit || user?.unitName || "Minha Unidade",
+          id: item.idRemedio || item.id_remedio || item.id,
+          name: item.nomeRemedio || item.nome || item.name || "Medicamento sem nome",
+          dose: item.dosagemRemedio || item.dosagem || item.dose || "",
+          unit: item.nomeFarmacia || item.fabricanteRemedio || item.unit || user?.unitName || "—",
           quantity: item.quantidade ?? item.quantity ?? 0,
           minimum: item.estoque_minimo ?? item.minimum ?? 5,
           expiry: item.validade || item.expiry || new Date().toISOString(),
         }));
 
         setMedicamentosBackend(adaptados);
+        setApiConsultada(true);
       } catch (err) {
-        setErroBackend(err instanceof Error ? err.message : "Erro ao conectar ao servidor.");
+        if (err.name !== "AbortError") {
+          setErroBackend(err instanceof Error ? err.message : "Erro ao conectar ao servidor.");
+        }
       } finally {
-        setCarregando(false);
+        if (!controller.signal.aborted) setCarregando(false);
       }
     }
 
-    carregarMedicamentos();
-  }, [buscaUrl, user?.unitName]);
-
+    const debounce = setTimeout(carregarMedicamentos, 250);
+    return () => {
+      clearTimeout(debounce);
+      controller.abort();
+    };
+  }, [inputSearch, user?.unitName]);
   // Aplica filtros adicionais de escopo e disponibilidade
-  const baseLista = medicamentosBackend.length > 0 ? medicamentosBackend : (data?.medicines || []);
+  const baseLista = apiConsultada ? medicamentosBackend : (data?.medicines || []);
   
   const medicines = baseLista.filter((m) => {
     const matchesScope = !scope || m.unit === scope;
@@ -1154,19 +1161,6 @@ export function ManagerMedicines() {
   const unitsList = useMemo(() => {
     return [...new Set(baseLista.map((m) => m.unit))];
   }, [baseLista]);
-
-  // Ao pressionar Enter no Input, atualiza a URL
-  function handleKeyDownSearch(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const termo = inputSearch.trim();
-      if (termo) {
-        setSearchParams({ busca: termo });
-      } else {
-        setSearchParams({});
-      }
-    }
-  }
 
   return (
     <>
@@ -1190,13 +1184,11 @@ export function ManagerMedicines() {
 
       <section className="mgr-panel">
         <div className="mgr-toolbar">
-          {/* Input com disparo por Enter para a URL */}
           <input
             aria-label="Buscar remédio"
-            placeholder="Digite e pressione Enter..."
+            placeholder="Buscar remédio..."
             value={inputSearch}
             onChange={(e) => setInputSearch(e.target.value)}
-            onKeyDown={handleKeyDownSearch}
           />
 
           <select
