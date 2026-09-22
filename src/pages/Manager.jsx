@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Link,
   Outlet,
@@ -130,7 +130,7 @@ function MedicineTable({ medicines }) {
             <tr key={m.id}>
               <td>
                 <strong>{m.name}</strong>
-                <small>{m.dose}</small>
+                {m.dose && <small>{m.dose}</small>}
               </td>
               <td>{m.unit}</td>
               <td>
@@ -1077,75 +1077,138 @@ export function ManagerPatients() {
       </section>
     </>
   );
-}
+ }
 export function ManagerMedicines() {
-  const { data } = useOutletContext();
-  const [search, setSearch] = useState("");
+  const { user } = useOutletContext();
+
+  // Controle de parâmetros da URL (?busca=di)
+  const [searchParams] = useSearchParams();
+  const buscaUrl = searchParams.get("busca") || "";
+
+  // Estados locais
+  const [inputSearch, setInputSearch] = useState(buscaUrl);
   const [scope, setScope] = useState("");
   const [status, setStatus] = useState("");
   const [adding, setAdding] = useState(false);
-  const medicines = data.medicines.filter(
-    (m) =>
-      `${m.name} ${m.dose}`.toLowerCase().includes(search.toLowerCase()) &&
-      (!scope || m.unit === scope) &&
-      (!status || availability(m).tone === status),
-  );
+
+  // Estados dos medicamentos do Backend
+  const [medicamentosBackend, setMedicamentosBackend] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroBackend, setErroBackend] = useState("");
+  // Consulta a API enquanto o usuário digita. O atraso curto evita uma chamada
+  // para cada tecla e o AbortController impede respostas antigas de sobrescreverem
+  // a lista mais recente.
+  useEffect(() => {
+    const controller = new AbortController();
+    const termo = inputSearch.trim();
+
+    async function carregarMedicamentos() {
+      setCarregando(true);
+      setErroBackend("");
+
+      try {
+        const endpoint = termo
+          ? `http://localhost:3000/remedios?busca=${encodeURIComponent(termo)}`
+          : "http://localhost:3000/remedios";
+        const response = await fetch(endpoint, {
+          signal: controller.signal,
+        });
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || result.message || "Erro ao carregar medicamentos.");
+        }
+
+        const lista = Array.isArray(result)
+          ? result
+          : result?.resultados || result?.remedios || result?.data;
+
+        if (!Array.isArray(lista)) {
+          throw new Error("O servidor não retornou uma lista de medicamentos.");
+        }
+
+        const adaptados = lista.map((item) => ({
+          id: item.idRemedio || item.id_remedio || item.id,
+          name: item.nomeRemedio || item.nome || item.name || "Medicamento sem nome",
+          dose: item.dosagemRemedio || item.dosagem || item.dose || "",
+          unit: item.nomeFarmacia || item.fabricanteRemedio || item.fabricante || item.unit || user?.unitName || "—",
+          quantity: item.quantidade ?? item.quantity ?? 0,
+          minimum: item.estoque_minimo ?? item.minimum ?? 5,
+          expiry: item.validade || item.expiry || new Date().toISOString(),
+        }));
+
+        if (!controller.signal.aborted) setMedicamentosBackend(adaptados);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setMedicamentosBackend([]);
+          setErroBackend(err instanceof Error ? err.message : "Erro ao conectar ao servidor.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setCarregando(false);
+      }
+    }
+
+    // Carrega todos imediatamente ao abrir a tela ou limpar a busca.
+    const debounce = termo ? setTimeout(carregarMedicamentos, 250) : null;
+    if (!termo) carregarMedicamentos();
+    return () => {
+      clearTimeout(debounce);
+      controller.abort();
+    };
+  }, [inputSearch, user?.unitName]);
+  // Aplica filtros adicionais de escopo e disponibilidade
+  const baseLista = medicamentosBackend;
+  
+  const medicines = baseLista.filter((m) => {
+    const matchesScope = !scope || m.unit === scope;
+    const matchesStatus = !status || availability(m).tone === status;
+    return matchesScope && matchesStatus;
+  });
+
+  const unitsList = useMemo(() => {
+    return [...new Set(baseLista.map((m) => m.unit))];
+  }, [baseLista]);
+
   return (
     <>
       <Header
         title="Estoque sob cuidado."
         description="Consulte medicamentos da rede e cadastre itens na sua unidade."
         action={
-          <button
-            className="mgr-primary"
-            onClick={() => {
-              setAdding(true);
-            }}
-          >
+          <button className="mgr-primary" onClick={() => setAdding(true)}>
             + Cadastrar remédio
           </button>
         }
       />
+
       <Stats
         items={[
-          [
-            "Itens no catálogo",
-            medicines.length,
-            "Conforme os filtros selecionados",
-            "pill",
-          ],
-          [
-            "Estoque disponível",
-            medicines.filter((m) => availability(m).tone === "green").length,
-            "Acima de duas vezes o mínimo",
-            "check",
-          ],
-          [
-            "Precisam de atenção",
-            medicines.filter((m) => availability(m).tone !== "green").length,
-            "Estoque baixo ou crítico",
-            "alert",
-          ],
+          ["Itens no catálogo", medicines.length, "Conforme os filtros", "pill"],
+          ["Estoque disponível", medicines.filter((m) => availability(m).tone === "green").length, "Disponíveis", "check"],
+          ["Precisam de atenção", medicines.filter((m) => availability(m).tone !== "green").length, "Atenção necessária", "alert"],
         ]}
       />
+
       <section className="mgr-panel">
         <div className="mgr-toolbar">
           <input
             aria-label="Buscar remédio"
-            placeholder="Buscar medicamento…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar remédio..."
+            value={inputSearch}
+            onChange={(e) => setInputSearch(e.target.value)}
           />
+
           <select
             aria-label="Filtrar unidade"
             value={scope}
             onChange={(e) => setScope(e.target.value)}
           >
             <option value="">Todas as unidades</option>
-            {[...new Set(data.medicines.map((m) => m.unit))].map((u) => (
-              <option key={u}>{u}</option>
+            {unitsList.map((u) => (
+              <option key={u} value={u}>{u}</option>
             ))}
           </select>
+
           <select
             aria-label="Filtrar disponibilidade"
             value={status}
@@ -1157,70 +1220,16 @@ export function ManagerMedicines() {
             <option value="red">Crítico</option>
           </select>
         </div>
-        <MedicineTable medicines={medicines} />
+
+        {carregando && <p className="mgr-empty">Buscando no servidor…</p>}
+        {erroBackend && <p className="mgr-empty" style={{ color: "red" }}>{erroBackend}</p>}
+
+        {!carregando && !erroBackend && <MedicineTable medicines={medicines} />}
+
         <p className="mgr-table-note">
-          Crítico: quantidade ≤ mínimo · Quase acabando: quantidade ≤ 2× mínimo
-          · Disponível: quantidade &gt; 2× mínimo.
+          Crítico: quantidade ≤ mínimo · Quase acabando: quantidade ≤ 2× mínimo · Disponível: quantidade &gt; 2× mínimo.
         </p>
       </section>
-      {adding && (
-        <Modal title="Cadastrar remédio" onClose={() => setAdding(false)}>
-          <form
-            className="mgr-form"
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <p>Unidade: {unit}</p>
-            <label>
-              Nome do medicamento
-              <input name="name" required maxLength={120} />
-            </label>
-            <label>
-              Dosagem e apresentação
-              <input
-                name="dose"
-                placeholder="Ex.: 500 mg · comprimidos"
-                required
-                maxLength={80}
-              />
-            </label>
-            <div className="mgr-form-row">
-              <label>
-                Quantidade (unidades)
-                <input
-                  name="quantity"
-                  type="number"
-                  min="0"
-                  max="1000000"
-                  step="1"
-                  required
-                />
-              </label>
-              <label>
-                Estoque mínimo
-                <input
-                  name="minimum"
-                  type="number"
-                  min="1"
-                  max="1000000"
-                  step="1"
-                  required
-                />
-              </label>
-            </div>
-            <label>
-              Validade
-              <input
-                name="expiry"
-                type="date"
-                min={new Date().toISOString().slice(0, 10)}
-                max="2100-12-31"
-                required
-              />
-            </label>
-            <button className="mgr-primary">Cadastrar remédio</button>
-          </form>
-        </Modal>
-      )}
     </>
   );
 }
