@@ -23,7 +23,7 @@ export default function useAccessibility(rootRef) {
       frame = undefined;
       root.classList.add("a11y-measuring");
       modified.forEach(element => element.style.removeProperty("--accessible-font-size"));
-      modified = Array.from(root.querySelectorAll("*:not(.accessibility, .accessibility *)")).filter(element => Array.from(element.childNodes).some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim()));
+      modified = Array.from(root.querySelectorAll("*:not(.accessibility, .accessibility *)")).filter(element => element.matches("input, textarea, select") || Array.from(element.childNodes).some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim()));
       const sizes = modified.map(element => parseFloat(getComputedStyle(element).fontSize) * 1.25);
       modified.forEach((element, index) => element.style.setProperty("--accessible-font-size", `${sizes[index]}px`));
       // Commit the new sizes before restoring transitions, including on resize.

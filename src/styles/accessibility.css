@@ -30,7 +30,7 @@
 .accessibility-reset:hover { background: #f2f7f3; }
 .accessibility-reset svg { width: 15px; height: 15px; }
 @media (prefers-reduced-motion: reduce) { .accessibility *, .accessibility *::before, .accessibility *::after { transition: none !important; } }
-.lp-root [style*="--accessible-font-size"] { font-size: var(--accessible-font-size) !important; }
+.a11y-text [style*="--accessible-font-size"] { font-size: var(--accessible-font-size) !important; }
 .a11y-measuring * { transition: none !important; }
 .a11y-image-letter { display: none; }
 .a11y-links a { text-decoration: underline !important; text-decoration-thickness: 3px !important; text-underline-offset: 4px; outline: 2px solid #075f39; outline-offset: 3px; }
@@ -57,6 +57,33 @@ html:has(.a11y-motion) { scroll-behavior: auto !important; }
 .a11y-cursor, .a11y-cursor * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M5 3v36l10-10 8 15 7-4-8-14h15Z' fill='black' stroke='white' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E") 5 3, auto !important; }
 .a11y-text .lp-nav, .a11y-spacing .lp-nav { height: auto; min-height: 88px; }
 .a11y-text :is(.lp-hero-title, .section-title), .a11y-spacing :is(.lp-hero-title, .section-title) { overflow-wrap: anywhere; }
+/* Internal panels use their own colors, independent of the landing page tokens. */
+.persona-accessibility.a11y-contrast .mgr-shell,
+.persona-accessibility.a11y-contrast .mgr-shell :not(svg, svg *, img, picture) {
+  color: #111827 !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border-color: #526057 !important;
+  text-shadow: none !important;
+}
+.persona-accessibility.a11y-contrast .mgr-shell :is(a, button) {
+  color: #064e3b !important;
+}
+.persona-accessibility.a11y-contrast .mgr-shell :is(input, textarea)::placeholder {
+  color: #374151 !important;
+  opacity: 1;
+}
+.persona-accessibility.a11y-contrast .mgr-shell :is([aria-current="page"], [aria-selected="true"]) {
+  outline: 2px solid #064e3b;
+  outline-offset: -2px;
+  font-weight: 700;
+}
+.persona-accessibility:is(.a11y-text, .a11y-spacing) .mgr-topbar {
+  height: auto;
+  min-height: 82px;
+  flex-wrap: wrap;
+  padding-block: 16px;
+}
 @media (max-width: 600px) {
   .accessibility-trigger { right: 12px; width: 48px; height: 48px; }
   .accessibility-panel { right: 16px; }

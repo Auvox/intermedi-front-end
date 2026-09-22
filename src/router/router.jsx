@@ -5,6 +5,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import LoginUser from "../pages/LoginUser";
 import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
+import AccessibleArea from "../components/layout/AccessibleArea";
 import Manager, {
   ManagerDashboard,
   ManagerEmployees,
@@ -20,7 +21,7 @@ function Rotas() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginUser />} />
         <Route path="/cadastro" element={<CadastroUser />} />
-        <Route path="/admin" element={<Admin />}>
+        <Route path="/admin" element={<AccessibleArea><Admin /></AccessibleArea>}>
           <Route index element={<AdminDashboard />} />
           {["gerentes", "farmacias", "pacientes", "chamados"].map((section) => (
             <Route
@@ -31,7 +32,7 @@ function Rotas() {
           ))}
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
-        <Route path="/funcionario" element={<Employee />}>
+        <Route path="/funcionario" element={<AccessibleArea><Employee /></AccessibleArea>}>
           <Route index element={<Navigate to="pacientes" replace />} />
           <Route path="pacientes" element={<EmployeePatients />} />
           <Route path="funcionarios" element={<EmployeeTeam />} />
@@ -40,7 +41,7 @@ function Rotas() {
             element={<Navigate to="/funcionario/pacientes" replace />}
           />
         </Route>
-        <Route path="/gerente" element={<Manager />}>
+        <Route path="/gerente" element={<AccessibleArea><Manager /></AccessibleArea>}>
           <Route index element={<ManagerDashboard />} />
           <Route path="funcionarios" element={<ManagerEmployees />} />
           <Route path="pacientes" element={<ManagerPatients />} />
