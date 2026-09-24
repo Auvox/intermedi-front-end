@@ -1,9 +1,12 @@
+import PersonaAvatar from "../components/PersonaAvatar";
+import { DirectoryStats, TeamTable } from "../components/Directory";
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Link,
   Outlet,
   useOutletContext,
   useSearchParams,
+  useLocation,
 } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import ManagerIcon from "../components/ManagerIcon";
@@ -84,33 +87,7 @@ function Header({ eyebrow, title, description, action, featured = false }) {
   );
 }
 function Stats({ items }) {
-  return (
-    <div className="mgr-stats">
-      {items.map(([label, value, detail, icon]) => (
-        <article key={label}>
-          <div>
-            <span>{label}</span>
-            <i>
-              <ManagerIcon
-                name={
-                  icon ||
-                  (/paciente/i.test(label)
-                    ? "heart"
-                    : /chamado/i.test(label)
-                      ? "ticket"
-                      : /retirada/i.test(label)
-                        ? "clock"
-                        : "box")
-                }
-              />
-            </i>
-          </div>
-          <strong>{value}</strong>
-          <small>{detail}</small>
-        </article>
-      ))}
-    </div>
-  );
+  return <DirectoryStats items={items.map(([label, value, , icon]) => [label, value, icon])} />;
 }
 function MedicineTable({ medicines }) {
   return (
@@ -151,6 +128,7 @@ function MedicineTable({ medicines }) {
   );
 }
 export default function Manager() {
+  const location = useLocation();
   const outletContext = useOutletContext();
   const [sessionUser, setSessionUser] = useState(null);
   const [sessionError, setSessionError] = useState("");
@@ -221,7 +199,7 @@ export default function Manager() {
             {sessionError}
           </p>
         )}
-        <main className="mgr-main">
+        <main className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
           <Outlet
             context={{
               data,
@@ -321,9 +299,7 @@ export function ManagerDashboard() {
         </div>
         {pending.map((t) => (
           <div className="mgr-ticket-line" key={t.id}>
-            <span className="mgr-avatar">
-              {data.employees.find((e) => e.id === t.employee)?.name[0]}
-            </span>
+            <PersonaAvatar className="mgr-avatar" role="funcionario" photo={data.employees.find(e => e.id === t.employee)?.photo} />
             <div>
               <strong>{t.title}</strong>
               <small>
@@ -440,6 +416,7 @@ export function ManagerEmployees() {
         filtrada.map((f) => ({
           id: f.idFuncionario,
           name: f.nomeFuncionario,
+          photo: f.fotoPerfilFuncionario ?? f.photo,
           role: f.cargoFuncionario,
           shift: f.turnoFuncionario,
           matricula: f.matriculaFuncionario,
@@ -668,7 +645,7 @@ export function ManagerEmployees() {
   return (
     <>
       <Header
-        title="Sua equipe, conectada."
+        title="Funcionários"
         description="Conheça os profissionais que fazem o cuidado acontecer."
         action={
           <button
@@ -749,37 +726,9 @@ export function ManagerEmployees() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="mgr-employee-grid">
-          {carregandoFuncionarios && (
-            <p className="mgr-empty">Carregando funcionários…</p>
-          )}
-          {!carregandoFuncionarios &&
-            employees.map((e) => (
-              <button
-                className="mgr-employee-card"
-                key={e.id}
-                onClick={() => {
-                  setSelected(e);
-                  setPeriod("");
-                }}
-              >
-                <span className="mgr-avatar">
-                  {e.name
-                    ?.split(" ")
-                    .map((n) => n[0])
-                    .slice(0, 2)
-                    .join("")}
-                </span>
-                <strong>{e.name}</strong>
-                <span>{e.role}</span>
-                <small>Turno: {e.shift}</small>
-                <small>Matrícula: {e.matricula}</small>
-                <span className="mgr-card-link">
-                  Ver ficha do funcionário ↗
-                </span>
-              </button>
-            ))}
-        </div>
+        {carregandoFuncionarios && <p className="mgr-empty">Carregando funcionários…</p>}
+        <TeamTable employees={employees} onSelect={employee => { setSelected(employee); setPeriod(""); }} />
+        <p className="mgr-table-note">{employees.length} de {funcionarios.length} registros</p>
         {erroFuncionarios && <p className="mgr-empty">{erroFuncionarios}</p>}
         {!carregandoFuncionarios && !erroFuncionarios && !employees.length && (
           <Empty />
@@ -1005,7 +954,7 @@ export function ManagerPatients() {
   return (
     <>
       <Header
-        title="Cuidado com história."
+        title="Pacientes"
         description="Consulte os pacientes e acompanhe cada retirada na sua unidade."
       />
       <Stats
@@ -1172,7 +1121,7 @@ export function ManagerMedicines() {
   return (
     <>
       <Header
-        title="Estoque sob cuidado."
+        title="Medicamentos"
         description="Consulte medicamentos da rede e cadastre itens na sua unidade."
         action={
           <button className="mgr-primary" onClick={() => setAdding(true)}>

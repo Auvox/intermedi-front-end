@@ -112,7 +112,7 @@ export default function ManagerSidebar({
   const menuLinks = admin
     ? adminLinks
     : employee
-      ? [links[2], links[1]]
+      ? [links[2], links[1], { path: "servicos", label: "Serviços", icon: "ticket" }]
       : links;
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";

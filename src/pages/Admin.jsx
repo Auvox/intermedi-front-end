@@ -1,3 +1,4 @@
+import PersonaAvatar from "../components/PersonaAvatar";
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
@@ -120,13 +121,7 @@ function avatarTone(seed = "") {
   const index = seed ? sum % avatarBgPalette.length : 0;
   return { background: avatarBgPalette[index], color: avatarTextPalette[index] };
 }
-function initialsOf(name = "") {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "—";
-  const first = parts[0][0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-}
+
 
 const normalizeFarmacias = (payload = []) =>
   payload.map((farmacia, index) => {
@@ -189,6 +184,7 @@ const normalizePacientes = (payload = []) =>
       name,
       email,
       unit,
+      photo: paciente.fotoPerfilPaciente ?? paciente.photo,
       status: paciente.status || "Ativo",
       createdAt: paciente.createdAt ?? paciente.created_at ?? null,
       role: paciente.role ?? "Paciente",
@@ -220,6 +216,7 @@ const normalizeFuncionarios = (payload = []) =>
       name,
       email,
       unit,
+      photo: funcionario.fotoPerfilFuncionario ?? funcionario.photo,
       role: funcionario.cargoFuncionario ?? funcionario.role ?? "Funcionario",
       shift: funcionario.turnoFuncionario ?? funcionario.shift ?? "",
       status: "Ativo",
@@ -240,6 +237,7 @@ const breadcrumbLabels = {
 
 function Icon({ name, size = 17 }) {
   const paths = {
+    pharmacy: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M12 6v6m-3-3h6M10 21v-5h4v5" /></>,
     search: (
       <>
         <circle cx="11" cy="11" r="7" />
@@ -315,9 +313,7 @@ export default function Admin() {
             <strong>{currentLabel}</strong>
           </span>
           <div className="mgr-account adm-account">
-            <span className="mgr-account-avatar" aria-hidden="true">
-              AL
-            </span>
+            <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
               <strong>Admin Local</strong>
               <small>Administrador da plataforma</small>
@@ -1209,16 +1205,16 @@ export function AdminDirectory({ section }) {
                       <tr key={record.id}>
                         <td>
                           <div className="adm-name-cell">
-                            <span
-                              className="adm-avatar-circle"
+                            {pharmacies ? <span
+                              className="adm-avatar-circle pharmacy-avatar"
                               style={{
                                 background: tone.background,
                                 color: tone.color,
                               }}
                               aria-hidden="true"
                             >
-                              {initialsOf(record.name)}
-                            </span>
+                              <Icon name="pharmacy" size={20} />
+                            </span> : <PersonaAvatar role={managers ? "gerente" : patients ? "paciente" : "funcionario"} photo={record.photo} />}
                             <span>
                               <strong>{record.name}</strong>
                               <small>

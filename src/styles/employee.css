@@ -1,4 +1,18 @@
 .emp-shell { background: #f5f8fc; }
+.emp-service-form { padding: 24px; }
+.emp-service-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 20px; }
+.emp-service-medicines { border: 1px solid #dfe8e1; border-radius: 12px; padding: 18px; min-width: 0; display: grid; gap: 16px; }
+.emp-service-medicines legend { padding: 0 8px; font-size: 14px; font-weight: 600; color: #395242; }
+.emp-service-item { display: grid; grid-template-columns: minmax(0, 1fr) 110px auto; gap: 12px; align-items: end; }
+.emp-service-form textarea { border: 1px solid #dfe8e1; }
+.emp-service-form input[readonly] { background: #edf5fd; }
+.emp-service-form button:disabled, .emp-shell .mgr-page-head button:disabled { opacity: .55; cursor: not-allowed; }
+.emp-service-success { padding: 16px 20px; border: 1px solid #cadfd1; background: #edf5ef; color: #217343; border-radius: 12px; margin-bottom: 20px; }
+@media (max-width: 760px) {
+  .emp-service-form { padding: 16px; }
+  .emp-service-item { grid-template-columns: minmax(0, 1fr); }
+  .emp-service-medicines { padding: 12px; }
+}
 .emp-shell .mgr-page-head-featured { background: linear-gradient(115deg, #205e94, #2f80c4); border-color: #2874b2; }
 .emp-shell .mgr-page-head-featured .mgr-eyebrow { color: #c6e6ff; }
 .emp-shell .mgr-page-head-featured p { color: #deedfa; }

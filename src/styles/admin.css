@@ -5,26 +5,26 @@
   background:
     radial-gradient(
       620px 260px at 88% -30%,
-      rgba(45, 171, 100, 0.16),
-      rgba(45, 171, 100, 0) 70%
+      rgba(139, 139, 139, 0.16),
+      rgba(139, 139, 139, 0) 70%
     ),
     #000000;
   border-color: #000000;
 }
 .adm-shell .mgr-page-head-featured p {
-  color: #d0dddd;
+  color: #dadada;
 }
 .adm-shell .mgr-page-head-featured .mgr-eyebrow {
-  color: #b5d6d2;
+  color: #cfcfcf;
 }
 .adm-shell .manager-sidebar-role > span {
   background: #435c5d;
-  box-shadow: 0 0 0 3px #edf2f2;
+  box-shadow: 0 0 0 3px #f1f1f1;
 }
 .adm-shell .manager-sidebar nav a.active {
-  color: #2e4d4d;
-  background: #eaf1f0;
-  border-color: #cfddda;
+  color: #464646;
+  background: #efefef;
+  border-color: #dadada;
 }
 .adm-shell .manager-sidebar nav a.active::before {
   background: #435c5d;
@@ -45,7 +45,7 @@
   align-items: baseline;
   gap: 10px 20px;
   margin: 0 0 24px;
-  color: #718181;
+  color: #7e7e7e;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -53,13 +53,13 @@
   white-space: nowrap;
 }
 .adm-overview > span + span {
-  border-left: 1px solid #d3dedd;
+  border-left: 1px solid #dcdcdc;
   padding-left: 20px;
 }
 .adm-overview strong {
   font-size: 20px;
   line-height: 1;
-  color: #344c4c;
+  color: #474747;
   margin-right: 5px;
   font-variant-numeric: tabular-nums;
 }
@@ -86,9 +86,9 @@
   cursor: default;
 }
 .adm-edit-icon {
-  border: 1px solid #ccd7d4;
-  background: #eef6f4;
-  color: #375b58;
+  border: 1px solid #d4d4d4;
+  background: #f4f4f4;
+  color: #535353;
   font-size: 15px;
   width: 34px;
   height: 34px;
@@ -112,9 +112,9 @@
   font-size: 12px;
 }
 .adm-notice {
-  border: 1px solid #d3e4dc;
+  border: 1px solid #e0e0e0;
   border-radius: 10px;
-  background: #edf6f0;
+  background: #f4f4f4;
   padding: 12px 16px;
   font-size: 12px;
   margin-bottom: 18px;
@@ -124,10 +124,10 @@
 }
 .adm-details > div {
   padding: 12px 0;
-  border-bottom: 1px solid #e6edeb;
+  border-bottom: 1px solid #ebebeb;
 }
 .adm-details dt {
-  color: #768886;
+  color: #848484;
   font-size: 11px;
   margin-bottom: 3px;
 }
@@ -137,10 +137,10 @@
 }
 .adm-manager-unit-panel {
   padding: 16px 0;
-  border-bottom: 1px solid #dbe6e5;
+  border-bottom: 1px solid #e4e4e4;
 }
 .adm-manager-panel-title {
-  color: #60746d;
+  color: #6f6f6f;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.75px;
@@ -149,9 +149,9 @@
 .adm-manager-unit-card {
   border-radius: 14px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #f6fbf6 0%, #dcecea 100%);
-  border: 1px solid #bfd7d2;
-  box-shadow: 0 10px 30px rgba(55, 80, 76, 0.08);
+  background: linear-gradient(135deg, #fafafa 0%, #e8e8e8 100%);
+  border: 1px solid #d2d2d2;
+  box-shadow: 0 10px 30px rgba(74, 74, 74, 0.08);
 }
 .adm-manager-unit-name {
   display: block;
@@ -161,7 +161,7 @@
 }
 .adm-manager-unit-meta {
   display: block;
-  color: #617b76;
+  color: #757575;
   font-size: 11px;
   margin-top: 4px;
 }
@@ -179,8 +179,8 @@
   gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #eef5f3;
-  border: 1px solid #d2e3df;
+  background: #f3f3f3;
+  border: 1px solid #dfdfdf;
 }
 .adm-manager-employee-name {
   color: #244d4e;
@@ -188,12 +188,12 @@
   font-weight: 700;
 }
 .adm-manager-employee-role {
-  color: #60746d;
+  color: #6f6f6f;
   font-size: 11px;
 }
 .adm-hint {
   font-size: 12px;
-  color: #758582;
+  color: #818181;
   line-height: 1.7;
   margin: 14px 0;
 }
@@ -206,7 +206,7 @@
   position: relative;
   display: grid;
   gap: 8px;
-  color: #60746d;
+  color: #6f6f6f;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.7px;
@@ -216,9 +216,9 @@
   min-height: 40px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #ccd8d7;
+  border: 1px solid #d5d5d5;
   background: #fff;
-  color: #283b3b;
+  color: #373737;
   font: inherit;
   font-size: 12px;
 }
@@ -234,9 +234,9 @@
   z-index: 4;
   width: min(420px, 92vw);
   border-radius: 14px;
-  border: 1px solid #d4e4df;
+  border: 1px solid #e0e0e0;
   background: #ffffff;
-  box-shadow: 0 16px 40px rgba(45, 70, 66, 0.16);
+  box-shadow: 0 16px 40px rgba(64, 64, 64, 0.16);
   padding: 8px;
   display: grid;
   gap: 4px;
@@ -251,7 +251,7 @@
   border-radius: 10px;
   border: 1px solid transparent;
   background: #f8fbf9;
-  color: #324b4a;
+  color: #464646;
   font: inherit;
   font-size: 11px;
   text-align: left;
@@ -259,8 +259,8 @@
 }
 .adm-gerente-option:hover,
 .adm-gerente-option.active {
-  background: #dcecea;
-  border-color: #a5c4bd;
+  background: #e8e8e8;
+  border-color: #bdbdbd;
   color: #244d4e;
 }
 .adm-gerente-option-name {
@@ -268,19 +268,19 @@
 }
 .adm-gerente-option-email {
   font-size: 10px;
-  color: #60746d;
+  color: #6f6f6f;
 }
 .adm-gerente-empty {
   display: block;
   padding: 12px;
-  color: #718181;
+  color: #7e7e7e;
   font-size: 11px;
 }
 .adm-gerente-selected {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #60746d;
+  color: #6f6f6f;
   font-size: 11px;
 }
 .adm-gerente-selected-title {
@@ -291,7 +291,7 @@
 }
 .adm-shell :is(button, a, input, select):focus-visible,
 .adm-dialog button:focus-visible {
-  outline: 2px solid #537b75;
+  outline: 2px solid #727272;
   outline-offset: 3px;
 }
 @media (max-width: 760px) {
@@ -319,14 +319,14 @@
   border: 1px solid transparent;
   border-radius: 12px;
   background: none;
-  color: #9aaaa0;
+  color: #a6a6a6;
   font: inherit;
   text-align: left;
   white-space: nowrap;
   cursor: not-allowed;
 }
 .adm-shell .manager-sidebar-soon .manager-sidebar-icon {
-  color: #a9b7ae;
+  color: #b3b3b3;
 }
 .adm-shell .manager-sidebar-soon .manager-sidebar-label {
   font-size: 13px;
@@ -365,40 +365,40 @@
 .adm-shell .mgr-topbar {
   background: #000000;
   border-bottom-color: #000000;
-  color: #93a89c;
+  color: #a3a3a3;
 }
 .adm-shell .mgr-topbar .mgr-topbar-unit-prefix {
-  color: #93a89c;
+  color: #a3a3a3;
 }
 .adm-shell .mgr-topbar-divider {
-  color: #55675d;
+  color: #626262;
 }
 .adm-shell .mgr-topbar strong {
-  color: #f3f8f5;
+  color: #f7f7f7;
 }
 .adm-shell .adm-account {
-  border-left-color: #2c3d35;
+  border-left-color: #393939;
 }
 .adm-shell .mgr-account-person strong {
-  color: #f3f8f5;
+  color: #f7f7f7;
 }
 .adm-shell .mgr-account-person small {
-  color: #8da296;
+  color: #9d9d9d;
 }
 .adm-shell .mgr-account .mgr-account-avatar {
   border-color: #000000;
-  outline-color: #35473e;
-  background: #22a35d;
+  outline-color: #434343;
+  background: #838383;
   color: #ffffff;
 }
 .adm-shell .mgr-topbar .account-exit {
-  background: #21302a;
-  border-color: #35473e;
-  color: #d3e3da;
+  background: #2c2c2c;
+  border-color: #434343;
+  color: #dfdfdf;
 }
 .adm-shell .mgr-topbar .account-exit:hover {
-  background: #2b3d35;
-  border-color: #46594f;
+  background: #393939;
+  border-color: #545454;
   color: #ffffff;
 }
 
@@ -427,18 +427,18 @@
   gap: 8px;
   min-height: 42px;
   padding: 11px 17px;
-  border: 1px solid #e3f0e7;
+  border: 1px solid #ededed;
   border-radius: 10px;
   background: #fff;
-  color: #223b2c;
+  color: #353535;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(18, 57, 34, 0.08);
+  box-shadow: 0 4px 12px rgba(47, 47, 47, 0.08);
 }
 .adm-hero2-export:hover {
-  background: #f4faf6;
+  background: #f8f8f8;
 }
 
 /* ============================================================
@@ -455,7 +455,7 @@
   align-items: center;
   gap: 14px;
   padding: 18px 22px;
-  border: 1px solid #e6ece8;
+  border: 1px solid #eaeaea;
   border-radius: 14px;
   background: #fff;
 }
@@ -467,23 +467,23 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #eaf6ee;
-  color: #1c8747;
+  background: #f3f3f3;
+  color: #6c6c6c;
 }
 .adm-stat-icon.is-check {
-  background: #22a35d;
+  background: #838383;
   color: #fff;
 }
 .adm-stat-card p {
   margin: 0 0 4px;
   font-size: 12px;
-  color: #7c8d83;
+  color: #898989;
 }
 .adm-stat-card strong {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: #1c3a28;
+  color: #323232;
   font-variant-numeric: tabular-nums;
 }
 
@@ -496,7 +496,7 @@
   align-items: center;
   gap: 10px;
   padding: 18px 22px;
-  border-bottom: 1px solid #edf1ed;
+  border-bottom: 1px solid #f0f0f0;
 }
 .adm-search2 {
   display: flex;
@@ -506,17 +506,17 @@
   min-width: 220px;
   height: 40px;
   padding: 0 13px;
-  border: 1px solid #dce5df;
+  border: 1px solid #e3e3e3;
   border-radius: 9px;
   background: #fff;
-  color: #94a49a;
+  color: #a0a0a0;
 }
 .adm-search2 input {
   flex: 1;
   border: 0;
   background: none;
   padding: 0;
-  color: #2c3b32;
+  color: #373737;
   font: inherit;
   font-size: 12.5px;
 }
@@ -533,10 +533,10 @@
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  border: 1px solid #dce5df;
+  border: 1px solid #e3e3e3;
   border-radius: 9px;
   background: #fff;
-  color: #6d7d73;
+  color: #797979;
   cursor: not-allowed;
   opacity: 0.65;
 }
@@ -565,7 +565,7 @@
   font-weight: 700;
 }
 .adm-muted-cell {
-  color: #96a49b;
+  color: #a0a0a0;
 }
 .adm-row-menu-wrap {
   position: relative;
@@ -577,10 +577,10 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid #dce5df;
+  border: 1px solid #e3e3e3;
   border-radius: 9px;
   background: #fff;
-  color: #4c5d53;
+  color: #595959;
   cursor: pointer;
 }
 .adm-row-menu-trigger:hover {
@@ -592,10 +592,10 @@
   right: 0;
   z-index: 5;
   width: 160px;
-  border: 1px solid #e5e9e6;
+  border: 1px solid #e8e8e8;
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 16px 36px rgba(20, 40, 30, 0.14);
+  box-shadow: 0 16px 36px rgba(35, 35, 35, 0.14);
   padding: 6px;
   display: grid;
   gap: 2px;
@@ -606,14 +606,14 @@
   border: 0;
   border-radius: 8px;
   background: none;
-  color: #2c3b32;
+  color: #373737;
   font: inherit;
   font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
 .adm-row-menu button:hover:not(:disabled) {
-  background: #f0f5f1;
+  background: #f4f4f4;
 }
 .adm-row-menu button.is-danger {
   color: #a23d3d;
@@ -653,10 +653,10 @@
   min-width: 32px;
   height: 32px;
   padding: 0 4px;
-  border: 1px solid #dce5df;
+  border: 1px solid #e3e3e3;
   border-radius: 8px;
   background: #fff;
-  color: #4c5d53;
+  color: #595959;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -670,8 +670,8 @@
   cursor: default;
 }
 .adm-pager-btn.is-active {
-  border-color: #1c8747;
-  background: #1c8747;
+  border-color: #6c6c6c;
+  background: #6c6c6c;
   color: #fff;
 }
 

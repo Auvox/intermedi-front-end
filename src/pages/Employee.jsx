@@ -1,26 +1,22 @@
+import PersonaAvatar from "../components/PersonaAvatar";
+import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
-import ManagerIcon from "../components/ManagerIcon";
-import { initialData, unit } from "./managerData";
+import { unit } from "./managerData";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
 
 // Visual preview only. Replace these fixtures with intermedi-back-end data
 // when integrating authentication and server-side permissions.
-const { patients, employees } = initialData;
+
 const normalize = (text) =>
   text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
-const initials = (name) =>
-  name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
+
 
 function readEmployeeSession() {
   try {
@@ -36,7 +32,7 @@ export default function Employee() {
   const session = readEmployeeSession();
   const employeeName = session?.name || "Funcionário Local";
   const employeeUnit = session?.unitName || unit;
-  const employeeInitials = initials(employeeName);
+
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -281,9 +277,7 @@ export default function Employee() {
               aria-label="Abrir perfil do funcionário"
               onClick={openEmployeeProfile}
             >
-            <span className="mgr-account-avatar" aria-hidden="true">
-              {employeeInitials}
-            </span>
+            <PersonaAvatar className="mgr-account-avatar" role="funcionario" photo={session?.fotoPerfilFuncionario ?? session?.photo} />
             <span className="mgr-account-person">
               <strong>{employeeName}</strong>
               <small>Funcionário da unidade · {employeeUnit}</small>
@@ -295,7 +289,7 @@ export default function Employee() {
             </Link>
           </div>
         </div>
-        <main className="mgr-main">
+        <main className="mgr-main directory-layout">
           <Outlet />
         </main>
         <footer className="mgr-footer">
@@ -396,21 +390,13 @@ export default function Employee() {
   );
 }
 
-function PageHeader({ title, description, count, label, icon }) {
-  return (
-    <header className="mgr-page-head mgr-page-head-featured">
-      <div>
-        <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      <div className="emp-summary">
-        <ManagerIcon name={icon} size={25} />
-        <strong>{count}</strong>
-        <span>{label}</span>
-      </div>
-    </header>
-  );
+function PageHeader({ title, description, count, label, icon, results }) {
+  return <>
+    <header className="mgr-page-head mgr-page-head-featured"><div>
+      <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p><h1>{title}</h1><p>{description}</p>
+    </div></header>
+    <DirectoryStats items={[[label, count, icon], ["Resultados da busca", results, "check"]]} />
+  </>;
 }
 
 export function EmployeePatients() {
@@ -448,6 +434,7 @@ export function EmployeePatients() {
         const mapped = rawList.map((item) => ({
           id: String(item.idPaciente ?? item.id ?? ""),
           name: item.nomePaciente ?? item.name ?? "Paciente",
+          photo: item.fotoPerfilPaciente ?? item.photo,
           cpf: item.cpfPaciente ?? item.cpf ?? "",
           email: item.emailPaciente ?? item.email ?? "",
           phone: item.telPaciente ?? item.phone ?? "",
@@ -471,7 +458,7 @@ export function EmployeePatients() {
   }, []);
 
   const filtered = patients.filter((patient) =>
-    normalize(`${patient.name} ${patient.id}`).includes(
+    normalize(`${patient.name} ${patient.email} ${patient.id}`).includes(
       normalize(search.trim()),
     ),
   );
@@ -479,10 +466,11 @@ export function EmployeePatients() {
   return (
     <>
       <PageHeader
-        title="O cuidado começa com pessoas."
+        title="Pacientes"
         description="Encontre os pacientes da sua unidade em um só lugar."
         count={patients.length}
-        label="pacientes na unidade"
+        results={filtered.length}
+        label="Total de pacientes"
         icon="heart"
       />
       <section className="mgr-panel" aria-labelledby="emp-patients-title">
@@ -511,12 +499,7 @@ export function EmployeePatients() {
               {filtered.map((patient) => (
                 <tr key={patient.id}>
                   <td>
-                    <div className="emp-person">
-                      <span className="mgr-avatar" aria-hidden="true">
-                        {initials(patient.name)}
-                      </span>
-                      <strong>{patient.name}</strong>
-                    </div>
+                    <PersonCell name={patient.name} detail={patient.email} role="paciente" photo={patient.photo} />
                   </td>
                   <td>{String(patient.id).toUpperCase()}</td>
                   <td>{readEmployeeSession()?.unitName || unit}</td>
@@ -546,6 +529,7 @@ export function EmployeePatients() {
 
 export function EmployeeTeam() {
   const [search, setSearch] = useState("");
+  const [shift, setShift] = useState("");
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -584,6 +568,7 @@ export function EmployeeTeam() {
         const mapped = rawList.map((item) => ({
           id: String(item.idFuncionario ?? item.id ?? ""),
           name: item.nomeFuncionario ?? item.name ?? "Funcionário",
+          photo: item.fotoPerfilFuncionario ?? item.photo,
           role: item.cargoFuncionario ?? item.role ?? "Funcionário",
           shift: item.turnoFuncionario ?? item.shift ?? "",
           email: item.emailFuncionario ?? item.email ?? "",
@@ -614,7 +599,7 @@ export function EmployeeTeam() {
   }, []);
 
   const filtered = employees.filter((employee) =>
-    normalize(`${employee.name} ${employee.role}`).includes(
+    (!shift || employee.shift === shift) && normalize(`${employee.name} ${employee.role} ${employee.email}`).includes(
       normalize(search.trim()),
     ),
   );
@@ -622,10 +607,11 @@ export function EmployeeTeam() {
   return (
     <>
       <PageHeader
-        title="Sua equipe, mais perto."
+        title="Funcionários"
         description="Conheça os profissionais que compartilham o cuidado com você."
         count={employees.length}
-        label="profissionais na unidade"
+        results={filtered.length}
+        label="Profissionais na unidade"
         icon="people"
       />
       <section className="mgr-panel" aria-labelledby="emp-team-title">
@@ -640,23 +626,12 @@ export function EmployeeTeam() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
+          <select aria-label="Filtrar funcionários por turno" value={shift} onChange={event => setShift(event.target.value)}>
+            <option value="">Todos os turnos</option>
+            {[...new Set(employees.map(employee => employee.shift).filter(Boolean))].map(value => <option key={value} value={value}>{value}</option>)}
+          </select>
         </div>
-        <div className="mgr-employee-grid">
-          {filtered.map((employee) => (
-            <article
-              className="mgr-employee-card emp-team-card"
-              key={employee.id}
-            >
-              <span className="mgr-avatar" aria-hidden="true">
-                {initials(employee.name)}
-              </span>
-              <strong>{employee.name}</strong>
-              <span>{employee.role}</span>
-              <small>Turno: {employee.shift}</small>
-              <span className="emp-email">{employee.email}</span>
-            </article>
-          ))}
-        </div>
+        <TeamTable employees={filtered} />
         {!loading && !error && !filtered.length && (
           <p className="mgr-empty">
             Nenhum funcionário encontrado. Tente outro nome ou cargo.

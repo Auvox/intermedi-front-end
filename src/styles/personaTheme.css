@@ -1,0 +1,97 @@
+/* Identidade visual por persona. Superfícies de conteúdo continuam brancas. */
+.persona-avatar { overflow: hidden; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.persona-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.persona-avatar svg { flex-shrink: 0; }
+.persona-accessibility:has(.mgr-shell) {
+  --persona: #168b4b;
+  --persona-hover: #10763e;
+  --persona-dark: #173f2c;
+  --persona-end: #225a3b;
+  --persona-soft: #edf7f0;
+  --persona-border: #cfe4d7;
+  --persona-ink: #254734;
+  --persona-muted: #718379;
+  --persona-tint: #f6faf7;
+}
+.persona-accessibility:has(.emp-shell) {
+  --persona: #2477b9;
+  --persona-hover: #195e96;
+  --persona-dark: #194b76;
+  --persona-end: #2f80c4;
+  --persona-soft: #edf5fd;
+  --persona-border: #cee2f5;
+  --persona-ink: #25465f;
+  --persona-muted: #708394;
+  --persona-tint: #f5f9fd;
+}
+.persona-accessibility:has(.adm-shell) {
+  --persona: #171717;
+  --persona-hover: #353535;
+  --persona-dark: #000;
+  --persona-end: #161616;
+  --persona-soft: #f0f0f0;
+  --persona-border: #dedede;
+  --persona-ink: #292929;
+  --persona-muted: #777;
+  --persona-tint: #fafafa;
+}
+.mgr-shell .mgr-main :is(.mgr-page-head-featured, .directory-layout > .mgr-page-head),
+.mgr-shell .directory-layout > .mgr-page-head,
+.mgr-shell .adm-hero {
+  background: linear-gradient(115deg, var(--persona-dark), var(--persona-end));
+  border-color: var(--persona-dark);
+}
+.mgr-shell .mgr-page-head-featured h1, .mgr-shell .directory-layout > .mgr-page-head h1 { color: #fff; }
+.mgr-shell :is(.mgr-page-head-featured, .directory-layout > .mgr-page-head) p { color: #ffffffd9; }
+.mgr-shell :is(.mgr-page-head-featured, .directory-layout > .mgr-page-head) .mgr-eyebrow { color: #ffffffbf; }
+.mgr-shell :is(.directory-stat-icon, .adm-stat-icon, .adm-card-icon, .mgr-avatar, .directory-avatar) {
+  background: var(--persona-soft); color: var(--persona);
+}
+.mgr-shell .adm-avatar-circle { background: var(--persona-soft) !important; color: var(--persona) !important; }
+.mgr-shell .adm-avatar-circle.pharmacy-avatar { background: #f1eafa !important; color: #7c3db5 !important; }
+.mgr-shell .directory-stat:nth-child(2) .directory-stat-icon,
+.mgr-shell .adm-stat-icon.is-check { background: var(--persona); color: #fff; }
+.mgr-shell :is(.directory-stat, .adm-stat-card) strong { color: var(--persona-ink); }
+.mgr-shell :is(.directory-stat, .adm-stat-card) p { color: var(--persona-muted); }
+.mgr-shell .mgr-primary { background: var(--persona); border-color: var(--persona); color: #fff !important; }
+.mgr-shell .mgr-primary:hover { background: var(--persona-hover); }
+.mgr-shell :is(.mgr-secondary, .mgr-badge.green, .mgr-badge:not(.red):not(.yellow):not(.orange)) {
+  background: var(--persona-soft); border-color: var(--persona-border); color: var(--persona) !important;
+}
+.mgr-shell .mgr-secondary:hover { background: var(--persona-border); }
+.mgr-shell .mgr-page-head .mgr-primary, .mgr-shell .adm-hero2-export {
+  background: #fff; color: var(--persona-ink) !important; border-color: var(--persona-border);
+}
+.mgr-shell .mgr-page-head .mgr-primary:hover, .mgr-shell .adm-hero2-export:hover { background: var(--persona-soft); }
+.mgr-shell :is(.directory-row-action, .adm-row-menu-trigger) { color: var(--persona-ink); border-color: var(--persona-border); }
+.mgr-shell :is(.directory-row-action, .adm-row-menu-trigger):hover,
+.mgr-shell .adm-row-menu button:hover:not(:disabled) { background: var(--persona-soft); }
+.mgr-shell .manager-sidebar nav a.active { background: var(--persona-soft); color: var(--persona); border-color: var(--persona-border); }
+.mgr-shell .manager-sidebar nav a:hover { background: var(--persona-soft); }
+.mgr-shell .manager-sidebar { background: #fff; }
+.mgr-shell .manager-sidebar nav a:hover { color: var(--persona); }
+.mgr-shell :is(.manager-sidebar-unit-icon, .manager-sidebar-count) { background: var(--persona-soft); color: var(--persona); border-color: var(--persona-border); }
+.mgr-shell .manager-sidebar-unit strong { color: var(--persona-ink); }
+.mgr-shell :is(.manager-sidebar-unit-heading, .manager-sidebar-unit-detail, .manager-sidebar-role, .manager-sidebar-caption) { color: var(--persona-muted); }
+.mgr-shell .manager-sidebar nav a.active::before,
+.mgr-shell .manager-sidebar-role > span { background: var(--persona); }
+.mgr-shell .manager-sidebar-role > span { box-shadow: 0 0 0 3px var(--persona-soft); }
+.mgr-shell :is(.manager-sidebar-chevron, .manager-sidebar nav a.active .manager-sidebar-icon, .mgr-text-button, .mgr-card-link) { color: var(--persona); }
+.mgr-shell .mgr-account-avatar { background: var(--persona); color: #fff; border-color: var(--persona-border); }
+.mgr-shell .directory-layout .mgr-panel th { background: var(--persona-tint); color: var(--persona-muted); }
+.mgr-shell .directory-layout .mgr-panel td { color: var(--persona-ink); }
+.mgr-shell .directory-layout .mgr-panel tbody tr:hover { background: var(--persona-tint); }
+.mgr-shell .mgr-form :is(input, select, textarea) { background: #fff; border-color: var(--persona-border); color: var(--persona-ink); }
+.mgr-shell .mgr-form label { color: var(--persona-ink); }
+.mgr-shell .mgr-form input[readonly] { background: var(--persona-soft); }
+.mgr-shell :is(button, a, input, select, textarea):focus-visible { outline-color: var(--persona); }
+.mgr-shell .mgr-form :is(input, select, textarea):focus { border-color: var(--persona); box-shadow: 0 0 0 3px var(--persona-soft); }
+.mgr-shell :is(.emp-service-success, .mgr-registration-notice) { background: var(--persona-soft); border-color: var(--persona-border); color: var(--persona-ink); }
+.persona-accessibility:has(.mgr-shell) .accessibility-trigger { background: var(--persona); }
+.persona-accessibility:has(.mgr-shell) .accessibility-trigger:hover { background: var(--persona-hover); }
+
+/* O avatar representa a pessoa, não o tema da plataforma nem a posição da linha. */
+.mgr-shell .persona-avatar[data-persona="gerente"] { background: #e8f6ed; color: #168b4b; border-color: #cfe4d7; }
+.mgr-shell .persona-avatar[data-persona="paciente"] { background: #fff0e1; color: #bd570b; border-color: #f6d8bc; }
+.mgr-shell .persona-avatar[data-persona="funcionario"] { background: #edf5fd; color: #2477b9; border-color: #cee2f5; }
+.mgr-shell .persona-avatar[data-persona="admin"] { background: #f0f0f0; color: #171717; border-color: #dedede; }

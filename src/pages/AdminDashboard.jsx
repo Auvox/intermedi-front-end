@@ -78,7 +78,7 @@ const unitRanking = [
     status: "Normal",
     tone: "green",
     rate: "65%",
-    color: "#27a45e",
+    color: "#848484",
     spark: [24, 27, 26, 31, 34, 33, 38, 41, 45, 49],
   },
   {
@@ -371,8 +371,8 @@ function DemandChart() {
     >
       <defs>
         <linearGradient id="adm-demand-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2aa45f" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#2aa45f" stopOpacity="0" />
+          <stop offset="0%" stopColor="#858585" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#858585" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -386,7 +386,7 @@ function DemandChart() {
               x2={width - padRight}
               y1={y}
               y2={y}
-              stroke="#e8efea"
+              stroke="#ededed"
               strokeWidth="1"
             />
             <text x={padLeft - 6} y={y + 3} className="adm-axis" textAnchor="end">
@@ -400,7 +400,7 @@ function DemandChart() {
       <path
         d={smoothPath(forecastPoints)}
         fill="none"
-        stroke="#7fbf9b"
+        stroke="#afafaf"
         strokeWidth="1.8"
         strokeDasharray="5 4"
         strokeLinecap="round"
@@ -408,7 +408,7 @@ function DemandChart() {
       <path
         d={realLine}
         fill="none"
-        stroke="#1f9455"
+        stroke="#777777"
         strokeWidth="2.2"
         strokeLinecap="round"
       />
@@ -442,9 +442,9 @@ function StockDonut({ percent = 68 }) {
     >
       <defs>
         <linearGradient id="adm-donut-grad" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#0f7a41" />
-          <stop offset="60%" stopColor="#25a55f" />
-          <stop offset="100%" stopColor="#55c184" />
+          <stop offset="0%" stopColor="#5f5f5f" />
+          <stop offset="60%" stopColor="#858585" />
+          <stop offset="100%" stopColor="#a6a6a6" />
         </linearGradient>
       </defs>
       <circle
@@ -452,7 +452,7 @@ function StockDonut({ percent = 68 }) {
         cy="70"
         r={radius}
         fill="none"
-        stroke="#e7ecea"
+        stroke="#ebebeb"
         strokeWidth="18"
       />
       <circle

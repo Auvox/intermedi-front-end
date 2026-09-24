@@ -1,0 +1,46 @@
+/* Padrão compartilhado das listagens; mantém os estilos próprios dos formulários. */
+.mgr-shell:has(.directory-layout) { background: #f5f7f7; }
+.directory-layout > .mgr-page-head {
+  position: relative; isolation: isolate; overflow: hidden; min-height: 168px;
+  padding: 32px; margin: 30px 0 24px; border: 1px solid #000; border-radius: 19px;
+  background: radial-gradient(620px 260px at 88% -30%, #2dab6429, transparent 70%), #000;
+  align-items: flex-start;
+}
+.directory-layout > .mgr-page-head::after { content: ""; position: absolute; z-index: -1; right: -55px; top: -130px; width: 310px; height: 310px; border: 1px solid #ffffff12; border-radius: 50%; box-shadow: 0 0 0 44px #ffffff04, 0 0 0 88px #ffffff04; pointer-events: none; }
+.directory-layout > .mgr-page-head h1 { color: #fff; font-size: clamp(27px, 2.6vw, 36px); }
+.directory-layout > .mgr-page-head p { color: #d0dddd; }
+.directory-layout > .mgr-page-head .mgr-eyebrow { color: #b5d6d2; }
+.directory-layout > .mgr-page-head .mgr-primary { background: #fff; border: 1px solid #dce5df; color: #223b2c !important; }
+.directory-layout > .mgr-page-head .mgr-primary:hover { background: #edf5ef; }
+.directory-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin: 20px 0 24px; }
+.directory-stat { display: flex; align-items: center; gap: 14px; min-height: 96px; padding: 18px 22px; border: 1px solid #e6ece8; border-radius: 14px; background: #fff; }
+.directory-stat-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: #eaf6ee; color: #1c8747; }
+.directory-stat:nth-child(2) .directory-stat-icon { background: #22a35d; color: #fff; }
+.directory-stat p { margin: 0 0 4px; font-size: 12px; color: #7c8d83; }
+.directory-stat strong { font-size: 24px; font-weight: 700; color: #1c3a28; font-variant-numeric: tabular-nums; }
+.directory-layout > .mgr-panel { border: 1px solid #dce5df; border-radius: 16px; background: #fff; overflow: hidden; }
+.directory-layout .mgr-toolbar { padding: 18px 22px; gap: 10px; border-bottom: 1px solid #edf1ed; }
+.directory-layout .mgr-toolbar input { flex: 1 1 260px; min-width: 180px; height: 40px; border-radius: 9px; font-size: 12px; }
+.directory-layout .mgr-toolbar select { height: 40px; border-radius: 9px; }
+.directory-layout .mgr-toolbar h2 { font-size: 14px; }
+.directory-layout .mgr-panel table { width: 100%; border-collapse: collapse; }
+.directory-layout .mgr-panel th { padding: 14px 22px; background: #f6f9f7; color: #7c8d83; text-align: left; font-size: 11px; font-weight: 500; white-space: nowrap; border-bottom: 1px solid #e6ece8; }
+.directory-layout .mgr-panel td { padding: 19px 22px; height: 74px; vertical-align: middle; border-bottom: 1px solid #edf1ed; font-size: 12px; color: #365345; }
+.directory-layout .mgr-panel tbody tr:last-child td { border-bottom: 0; }
+.directory-layout .mgr-panel tbody tr:hover { background: #fafcfb; }
+.directory-layout .mgr-panel td small { display: block; margin-top: 4px; color: #7c8d83; font-size: 10px; }
+.directory-person { display: flex; align-items: center; gap: 12px; }
+.directory-avatar { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: #e5f6ef; color: #16834d; font-weight: 600; font-size: 11px; }
+tr:nth-child(3n + 1) .directory-avatar { background: #e7f0ff; color: #2675c4; }
+tr:nth-child(3n) .directory-avatar { background: #e3f6f3; color: #168e87; }
+.directory-row-action { padding: 8px 12px; background: #fff; border: 1px solid #dce5df; border-radius: 9px; color: #4c5d53; font-size: 12px; }
+.directory-row-action:hover { background: #edf5ef; }
+.directory-layout .mgr-table-note { padding: 18px 22px; margin: 0; font-size: 11px; color: #7c8d83; }
+.directory-layout .mgr-badge { border-radius: 6px; }
+@media (max-width: 760px) {
+  .directory-layout > .mgr-page-head { padding: 24px 20px; flex-direction: column; gap: 18px; }
+  .directory-stats { grid-template-columns: 1fr; gap: 12px; }
+  .directory-layout .mgr-toolbar { padding: 16px; }
+  .directory-layout .mgr-toolbar input { min-width: 0; flex-basis: 100%; }
+  .directory-layout .mgr-panel th, .directory-layout .mgr-panel td { padding: 14px 16px; }
+}
