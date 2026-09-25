@@ -18,6 +18,7 @@ export function normalizeGerentes(payload = []) {
     return {
       id: String(id),
       name,
+      photo: manager.fotoPerfilGerente ?? manager.photo,
       email,
       farmaciaId: manager.fkIdFarmacia ?? manager.idFarmacia ?? null,
       idEndereco: manager.idEndereco ?? null,

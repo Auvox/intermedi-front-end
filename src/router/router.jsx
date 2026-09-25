@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Employee, { EmployeePatients, EmployeeTeam } from "../pages/Employee";
+import EmployeeServices from "../pages/EmployeeServices";
 import Admin, { AdminDirectory } from "../pages/Admin";
 import AdminDashboard from "../pages/AdminDashboard";
 import LoginUser from "../pages/LoginUser";
@@ -13,6 +14,9 @@ import Manager, {
   ManagerMedicines,
   ManagerTickets,
 } from "../pages/Manager";
+
+import "../styles/directory.css";
+import "../styles/personaTheme.css";
 
 function Rotas() {
   return (
@@ -35,6 +39,7 @@ function Rotas() {
         <Route path="/funcionario" element={<AccessibleArea><Employee /></AccessibleArea>}>
           <Route index element={<Navigate to="pacientes" replace />} />
           <Route path="pacientes" element={<EmployeePatients />} />
+          <Route path="servicos" element={<EmployeeServices />} />
           <Route path="funcionarios" element={<EmployeeTeam />} />
           <Route
             path="*"

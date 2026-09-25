@@ -1,3 +1,4 @@
+import PersonaAvatar from "./PersonaAvatar";
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { authRequest } from "../services/auth";
@@ -292,14 +293,7 @@ export function AccountControls({ user }) {
           onClick={openProfile}
           aria-label="Abrir perfil do gerente"
         >
-          <span className="mgr-account-avatar" aria-hidden="true">
-            {user.name
-              .trim()
-              .split(/\s+/)
-              .slice(0, 2)
-              .map((part) => part[0])
-              .join("")}
-          </span>
+          <PersonaAvatar className="mgr-account-avatar" role="gerente" photo={user.fotoPerfilGerente ?? user.photo} />
           <span className="mgr-account-person" title={user.email}>
             <strong>{user.name}</strong>
             <small>Gerente da unidade</small>
