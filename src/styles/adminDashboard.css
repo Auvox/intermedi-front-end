@@ -1,5 +1,9 @@
 /* Dashboard do admin — camada puramente visual. */
 .adm-dash {
+  --adm-chart-consumption: #15803d;
+  --adm-chart-forecast: #65a30d;
+  --adm-chart-stock: #059669;
+  --adm-chart-deficit: #bbf7d0;
   display: grid;
   gap: 18px;
   margin-inline: -18px;
@@ -29,7 +33,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border: 1px solid #eaeaea;
+  border: 1px solid #dfede3;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(54, 54, 54, 0.04);
@@ -53,7 +57,7 @@
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -0.2px;
-  color: #333333;
+  color: #214b34;
   margin: 0;
 }
 .adm-card-head p {
@@ -70,8 +74,8 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #f4f4f4;
-  color: #707070;
+  background: #e8f5ec;
+  color: #15803d;
 }
 .adm-card-foot {
   margin-top: auto;
@@ -85,28 +89,28 @@
   border: 0;
   background: none;
   padding: 0;
-  color: #707070;
+  color: #15803d;
   font: inherit;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
 }
 .adm-ghost {
-  border: 1px solid #e9e9e9;
+  border: 1px solid #cfe5d6;
   border-radius: 8px;
   padding: 5px 9px;
   font-size: 10.5px;
   background: #f8fbf9;
-  color: #525252;
+  color: #315b43;
   white-space: nowrap;
 }
 .adm-ghost:hover,
 .adm-link:hover {
-  color: #535353;
+  color: #14532d;
 }
 .adm-ghost:hover {
-  background: #f4f4f4;
-  border-color: #dfdfdf;
+  background: #e8f5ec;
+  border-color: #a7d8b7;
 }
 
 /* ---------- Hero ---------- */
@@ -117,15 +121,15 @@
   gap: 16px;
   min-width: 0;
   padding: 22px 26px 24px;
-  border: 1px solid #000000;
+  border: 1px solid #14532d;
   border-radius: 16px;
   background:
     radial-gradient(
       620px 260px at 88% -30%,
-      rgba(139, 139, 139, 0.16),
-      rgba(139, 139, 139, 0) 70%
+      rgba(134, 239, 172, 0.28),
+      rgba(134, 239, 172, 0) 70%
     ),
-    #000000;
+    #14532d;
   overflow: hidden;
 }
 .adm-hero-meta {
@@ -139,7 +143,7 @@
   display: flex;
   align-items: center;
   gap: 18px;
-  color: #adadad;
+  color: #d1fae5;
   font-size: 11px;
 }
 .adm-hero-when span {
@@ -168,7 +172,7 @@
   max-width: 420px;
   font-size: 12.5px;
   line-height: 1.6;
-  color: #adadad;
+  color: #d1fae5;
 }
 .adm-chip {
   display: inline-flex;
@@ -182,8 +186,8 @@
   white-space: nowrap;
 }
 .adm-chip-dark {
-  background: #2f2f2f;
-  border: 1px solid #454545;
+  background: #166534;
+  border: 1px solid #4d9c6b;
   color: #f3f3f3;
 }
 .adm-chip-dark::before {
@@ -191,11 +195,11 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #c0c0c0;
+  background: #86efac;
 }
 .adm-chip-live {
-  background: #f2f2f2;
-  color: #606060;
+  background: #dcfce7;
+  color: #166534;
   letter-spacing: 0;
   font-weight: 500;
 }
@@ -204,7 +208,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #848484;
+  background: #16a34a;
 }
 
 /* ---------- Ações rápidas ---------- */
@@ -220,10 +224,10 @@
   gap: 10px;
   min-height: 48px;
   padding: 10px 12px;
-  border: 1px solid #e9e9e9;
+  border: 1px solid #cfe5d6;
   border-radius: 11px;
   background: #fff;
-  color: #525252;
+  color: #315b43;
   font: inherit;
   font-size: 11.5px;
   text-align: left;
@@ -242,24 +246,24 @@
 }
 .adm-quick-item i {
   display: inline-flex;
-  color: #b6b6b6;
+  color: #4d8b67;
 }
 .adm-quick-item:hover {
-  border-color: #d7d7d7;
-  background: #f9f9f9;
+  border-color: #86c99b;
+  background: #f0fdf4;
   transform: translateY(-1px);
 }
 .adm-quick-item.is-dark {
-  border-color: #232323;
-  background: #232323;
+  border-color: #166534;
+  background: #166534;
   color: #f6f6f6;
 }
 .adm-quick-item.is-dark i {
-  color: #b5b5b5;
+  color: #bbf7d0;
 }
 .adm-quick-item.is-dark:hover {
-  background: #323232;
-  border-color: #323232;
+  background: #14532d;
+  border-color: #14532d;
 }
 
 /* ---------- Procura vs. estoque ---------- */
@@ -317,11 +321,11 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.adm-dot.is-green {
-  background: #838383;
+.adm-dot.is-stock {
+  background: var(--adm-chart-stock);
 }
-.adm-dot.is-grey {
-  background: #d3d3d3;
+.adm-dot.is-deficit {
+  background: var(--adm-chart-deficit);
 }
 
 /* ---------- Solicitações rápidas ---------- */
@@ -337,13 +341,13 @@
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border: 1px solid #ececec;
+  border: 1px solid #dfede3;
   border-radius: 11px;
   background: #fbfdfc;
 }
 .adm-request-icon {
   display: inline-flex;
-  color: #8a8a8a;
+  color: #2f855a;
 }
 .adm-request-name {
   flex: 1;
@@ -352,13 +356,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11.5px;
-  color: #525252;
+  color: #315b43;
 }
 .adm-mini-primary {
   border: 0;
   border-radius: 8px;
   padding: 7px 12px;
-  background: #838383;
+  background: #15803d;
   color: #fff;
   font: inherit;
   font-size: 10.5px;
@@ -367,7 +371,7 @@
   cursor: pointer;
 }
 .adm-mini-primary:hover {
-  background: #696969;
+  background: #166534;
 }
 
 /* ---------- Indicadores ---------- */
@@ -381,7 +385,7 @@
   display: flex;
   gap: 12px;
   padding: 14px 15px;
-  border: 1px solid #ececec;
+  border: 1px solid #dfede3;
   border-radius: 13px;
   background: #fbfdfc;
 }
@@ -393,8 +397,8 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #f4f4f4;
-  color: #707070;
+  background: #e8f5ec;
+  color: #15803d;
 }
 .adm-kpi-body {
   min-width: 0;
@@ -428,7 +432,7 @@
   color: #d8763a;
 }
 .adm-delta.is-down {
-  color: #808080;
+  color: #15803d;
 }
 .adm-kpi-note {
   margin: 0;
@@ -514,8 +518,8 @@
   background: currentColor;
 }
 .adm-badge.is-green {
-  color: #6c6c6c;
-  background: #f3f3f3;
+  color: #166534;
+  background: #e8f5ec;
 }
 .adm-badge.is-yellow {
   color: #a4700b;
@@ -581,12 +585,12 @@
 .adm-legend-line {
   width: 16px;
   height: 0;
-  border-top: 2px solid #777777;
+  border-top: 2px solid var(--adm-chart-consumption);
   border-radius: 2px;
 }
 .adm-legend-line.is-dashed {
   border-top-style: dashed;
-  border-color: #afafaf;
+  border-color: var(--adm-chart-forecast);
 }
 .adm-chart-holder {
   display: flex;
@@ -610,9 +614,9 @@
   gap: 13px;
   margin: 0 18px 18px;
   padding: 14px 16px;
-  border: 1px solid #ececec;
+  border: 1px solid #dfede3;
   border-radius: 13px;
-  background: linear-gradient(100deg, #f8f8f8, #fbfdfc);
+  background: linear-gradient(100deg, #ecfdf5, #f7fee7);
 }
 .adm-forecast-icon {
   display: inline-flex;
@@ -622,7 +626,7 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #707070;
+  background: #047857;
   color: #fff;
 }
 .adm-forecast > div {
@@ -643,7 +647,7 @@
   font-size: 23px;
   font-weight: 600;
   letter-spacing: -0.8px;
-  color: #2d2d2d;
+  color: #14532d;
 }
 .adm-forecast-note {
   margin: 0;
@@ -658,8 +662,8 @@
   justify-content: center;
   gap: 10px;
   padding: 26px 24px;
-  border-color: #e1e1e1;
-  background: linear-gradient(150deg, #f3f3f3 0%, #fbfbfb 100%);
+  border-color: #bbdfc6;
+  background: linear-gradient(150deg, #dcfce7 0%, #f0fdf4 100%);
 }
 .adm-cta-icon {
   display: inline-flex;
@@ -668,7 +672,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #707070;
+  background: #047857;
   color: #fff;
 }
 .adm-dash .adm-cta h2 {
@@ -676,7 +680,7 @@
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.4px;
-  color: #2d2d2d;
+  color: #14532d;
 }
 .adm-cta p {
   margin: 0;
@@ -692,7 +696,7 @@
   border: 0;
   border-radius: 999px;
   padding: 11px 20px;
-  background: #838383;
+  background: #15803d;
   color: #fff;
   font: inherit;
   font-size: 12px;
@@ -700,7 +704,12 @@
   cursor: pointer;
 }
 .adm-cta-button:hover {
-  background: #696969;
+  background: #166534;
+}
+
+.adm-dash :is(button, a):focus-visible {
+  outline: 3px solid #4d7c0f;
+  outline-offset: 3px;
 }
 
 /* ---------- Responsivo ---------- */

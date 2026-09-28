@@ -12,6 +12,7 @@ export default function ManagerIcon({ name, size = 22 }) {
     clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
     alert: <><path d="m10.3 4.5-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-2.5l-8-14a2 2 0 0 0-3.4 0Z" /><path d="M12 9v5m0 3v.1" /></>,
     info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.1" /></>,
+    clipboard: <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4.5V3h6v1.5M9 9h6m-6 4h6m-6 4h4" /></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] || paths.box}</svg>;
 }

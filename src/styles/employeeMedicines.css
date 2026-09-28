@@ -1,0 +1,7 @@
+.emp-medicine-name { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+/* Reuse the manager badge shape and dot, preserving stock colors across persona themes. */
+.emp-shell .mgr-badge.emp-stock-tag.emp-stock-critical { color: #bd4747 !important; background: #fdecec; border-color: #f4dcdc; }
+.emp-shell .mgr-badge.emp-stock-tag.emp-stock-poor { color: #9a3b00 !important; background: #fff0df; border-color: #f3d9be; }
+.emp-shell .mgr-badge.emp-stock-tag.emp-stock-moderate { color: #916500 !important; background: #fff5d8; border-color: #f3e7c5; }
+.emp-shell .mgr-badge.emp-stock-tag.emp-stock-good { color: #216daa !important; background: #edf5fd; border-color: #cee2f5; }
+.emp-shell .mgr-badge.emp-stock-tag.emp-stock-excellent { color: #1c8747 !important; background: #e8f7ec; border-color: #d7efdf; }

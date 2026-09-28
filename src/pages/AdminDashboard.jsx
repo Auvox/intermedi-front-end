@@ -78,7 +78,7 @@ const unitRanking = [
     status: "Normal",
     tone: "green",
     rate: "65%",
-    color: "#848484",
+    color: "#15803d",
     spark: [24, 27, 26, 31, 34, 33, 38, 41, 45, 49],
   },
   {
@@ -86,7 +86,7 @@ const unitRanking = [
     status: "Normal",
     tone: "blue",
     rate: "58%",
-    color: "#3d8ede",
+    color: "#0d9488",
     spark: [20, 22, 25, 24, 28, 31, 30, 35, 38, 42],
   },
   {
@@ -94,7 +94,7 @@ const unitRanking = [
     status: "Abaixo",
     tone: "blue",
     rate: "42%",
-    color: "#68b1ec",
+    color: "#65a30d",
     spark: [14, 16, 15, 19, 21, 20, 24, 26, 29, 32],
   },
 ];
@@ -371,8 +371,8 @@ function DemandChart() {
     >
       <defs>
         <linearGradient id="adm-demand-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#858585" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#858585" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--adm-chart-consumption)" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="var(--adm-chart-consumption)" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -400,7 +400,7 @@ function DemandChart() {
       <path
         d={smoothPath(forecastPoints)}
         fill="none"
-        stroke="#afafaf"
+        stroke="var(--adm-chart-forecast)"
         strokeWidth="1.8"
         strokeDasharray="5 4"
         strokeLinecap="round"
@@ -408,7 +408,7 @@ function DemandChart() {
       <path
         d={realLine}
         fill="none"
-        stroke="#777777"
+        stroke="var(--adm-chart-consumption)"
         strokeWidth="2.2"
         strokeLinecap="round"
       />
@@ -442,9 +442,9 @@ function StockDonut({ percent = 68 }) {
     >
       <defs>
         <linearGradient id="adm-donut-grad" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#5f5f5f" />
-          <stop offset="60%" stopColor="#858585" />
-          <stop offset="100%" stopColor="#a6a6a6" />
+          <stop offset="0%" stopColor="#047857" />
+          <stop offset="60%" stopColor="var(--adm-chart-stock)" />
+          <stop offset="100%" stopColor="#34d399" />
         </linearGradient>
       </defs>
       <circle
@@ -452,7 +452,7 @@ function StockDonut({ percent = 68 }) {
         cy="70"
         r={radius}
         fill="none"
-        stroke="#ebebeb"
+        stroke="var(--adm-chart-deficit)"
         strokeWidth="18"
       />
       <circle
@@ -590,7 +590,7 @@ export default function AdminDashboard() {
             <dl className="adm-stock-legend">
               <div>
                 <dt>
-                  <span className="adm-dot is-green" /> Estoque disponível
+                  <span className="adm-dot is-stock" /> Estoque disponível
                 </dt>
                 <dd>
                   R$ 68.430 <small>(68%)</small>
@@ -598,7 +598,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <dt>
-                  <span className="adm-dot is-grey" /> Déficit de estoque
+                  <span className="adm-dot is-deficit" /> Déficit de estoque
                 </dt>
                 <dd>
                   R$ 31.570 <small>(32%)</small>
