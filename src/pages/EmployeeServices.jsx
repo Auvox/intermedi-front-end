@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
 import ManagerIcon from "../components/ManagerIcon";
 
-const API = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/$/, "");
-async function request(path, options = {}) {
-  const response = await fetch(`${API}${path}`, options);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Não foi possível concluir a operação.");
-  return data;
-}
+import { apiRequest as request, listarFuncionarios, listarPacientes, listarRemedios } from "../services/api";
 const emptyItem = () => ({ key: crypto.randomUUID(), idRemedio: "", quantidade: "1" });
 
 function ServiceModal({ children, onClose, title = "Solicitar serviço" }) {
@@ -88,16 +82,13 @@ export default function EmployeeServices() {
       try {
         const options = { signal: controller.signal };
         const [employees, patients, medicines] = await Promise.all([
-          request("/funcionario", options), request("/paciente", options), request("/remedios", options),
+          listarFuncionarios(options), listarPacientes(options), listarRemedios(options),
         ]);
-        if (![employees.funcionario, patients.paciente, medicines.remedios].every(Array.isArray)) {
-          throw new Error("Não foi possível ler as opções de cadastro.");
-        }
         if (controller.signal.aborted) return;
-        setCatalog({ employees: employees.funcionario, patients: patients.paciente, medicines: medicines.remedios });
+        setCatalog({ employees, patients, medicines });
         try {
           const session = JSON.parse(sessionStorage.getItem("intermediEmployeeSession") || "null");
-          if (employees.funcionario.some(e => String(e.idFuncionario) === String(session?.id))) {
+          if (employees.some(e => String(e.idFuncionario) === String(session?.id))) {
             setEmployeeId(String(session.id));
           }
         } catch { /* A seleção manual continua disponível sem uma sessão válida. */ }
@@ -254,9 +245,9 @@ export default function EmployeeServices() {
                 <label>Medicamento {index + 1}
                   <select required value={item.idRemedio} onChange={e => updateItem(item.key, "idRemedio", e.target.value)}>
                     <option value="">Selecione o medicamento</option>
-                    {catalog.medicines.map(m => <option key={m.idRemedio} value={m.idRemedio}
-                      disabled={items.some(other => other.key !== item.key && other.idRemedio === String(m.idRemedio))}>
-                      {m.nomeRemedio} · {m.dosagemRemedio || "Dosagem não informada"} · {m.fabricanteRemedio || "Fabricante não informado"}
+                    {catalog.medicines.map(m => <option key={m.id} value={m.id}
+                      disabled={items.some(other => other.key !== item.key && other.idRemedio === m.id)}>
+                      {m.name} · {m.dose || "Dosagem não informada"} · {m.manufacturer || "Fabricante não informado"}
                     </option>)}
                   </select>
                 </label>

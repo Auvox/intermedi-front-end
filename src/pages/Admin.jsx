@@ -4,6 +4,13 @@ import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import PersonaIcon from "../components/PersonaIcon";
 import FarmaciaSelect from "../components/FarmaciaSelect";
+import {
+  API_URL,
+  listarFarmacias,
+  listarFuncionarios,
+  listarGerentes,
+  listarPacientes,
+} from "../services/api";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { initialData, unit, formatDate } from "./managerData";
 import "../styles/manager.css";
@@ -396,27 +403,7 @@ export function AdminDirectory({ section }) {
 
     async function loadGerentes() {
       try {
-        const response = await fetch("http://localhost:3000/gerente", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar os gerentes.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.gerente)
-            ? payload.gerente
-            : Array.isArray(payload?.gerentes)
-              ? payload.gerentes
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarGerentes();
 
         if (!cancelled) {
           setData((current) => ({
@@ -448,27 +435,7 @@ export function AdminDirectory({ section }) {
 
     async function loadFarmacias() {
       try {
-        const response = await fetch("http://localhost:3000/farmacia", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar as farmácias.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.farmacia)
-            ? payload.farmacia
-            : Array.isArray(payload?.farmacias)
-              ? payload.farmacias
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarFarmacias();
 
         if (!cancelled) {
           setData((current) => ({
@@ -496,27 +463,7 @@ export function AdminDirectory({ section }) {
 
     async function loadFuncionarios() {
       try {
-        const response = await fetch("http://localhost:3000/funcionario", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar os funcionários.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.funcionario)
-            ? payload.funcionario
-            : Array.isArray(payload?.funcionarios)
-              ? payload.funcionarios
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarFuncionarios();
 
         if (!cancelled) {
           setData((current) => ({
@@ -548,27 +495,7 @@ export function AdminDirectory({ section }) {
 
     async function loadPacientes() {
       try {
-        const response = await fetch("http://localhost:3000/paciente", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar os pacientes.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.paciente)
-            ? payload.paciente
-            : Array.isArray(payload?.pacientes)
-              ? payload.pacientes
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarPacientes();
 
         if (!cancelled) {
           setData((current) => ({
@@ -692,7 +619,7 @@ export function AdminDirectory({ section }) {
     if (managers) {
       try {
         const response = await fetch(
-          `http://localhost:3000/gerente/${encodeURIComponent(record.id)}`,
+          `${API_URL}/gerente/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -729,7 +656,7 @@ export function AdminDirectory({ section }) {
     if (pharmacies) {
       try {
         const response = await fetch(
-          `http://localhost:3000/farmacia/${encodeURIComponent(record.id)}`,
+          `${API_URL}/farmacia/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -766,7 +693,7 @@ export function AdminDirectory({ section }) {
     if (patients) {
       try {
         const response = await fetch(
-          `http://localhost:3000/paciente/${encodeURIComponent(record.id)}`,
+          `${API_URL}/paciente/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -842,7 +769,7 @@ export function AdminDirectory({ section }) {
     setCadastrandoGerente(true);
 
     try {
-      const response = await fetch("http://localhost:3000/gerente", {
+      const response = await fetch(`${API_URL}/gerente`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -929,7 +856,7 @@ export function AdminDirectory({ section }) {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/farmacia/${encodeURIComponent(modal.record.id)}`,
+        `${API_URL}/farmacia/${encodeURIComponent(modal.record.id)}`,
         {
           method: "PUT",
           headers: {
@@ -1008,7 +935,7 @@ export function AdminDirectory({ section }) {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/farmacia", {
+      const response = await fetch(`${API_URL}/farmacia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

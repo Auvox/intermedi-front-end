@@ -1,6 +1,6 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { DirectoryStats, TeamTable } from "../components/Directory";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   Outlet,
@@ -12,6 +12,45 @@ import ManagerSidebar from "../components/ManagerSidebar";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
 import { authRequest } from "../services/auth";
+import useApiList from "../hooks/useApiList";
+import {
+  useChamadosGerente,
+  useChamadosPendentes,
+  useIdGerente,
+  useToast,
+} from "../hooks/useChamados";
+import {
+  ChamadoModal,
+  ErroComRetry,
+  PrioridadeBadge,
+  RemediosChamadoTable,
+  RespostaChamado,
+  SeletorPersona,
+  StatusChamadoBadge,
+  ToastRegion,
+} from "../components/Chamados";
+import { NotificacoesGerente, ResponderChamado } from "../components/ChamadosGerente";
+import {
+  STATUS_CHAMADO,
+  TURNO_FUNCIONARIO,
+  dataDoChamado,
+  formatarDataChamado,
+  resumoRemedios,
+  statusChamado,
+  tempoDesde,
+} from "../services/chamados";
+import {
+  API_URL,
+  cadastrarRemedio,
+  listarFarmacias,
+  listarFuncionarios,
+  listarGerentes,
+  listarPacientes,
+  listarRemedios,
+  normalizeFuncionario,
+  normalizePaciente,
+  normalizeText,
+} from "../services/api";
 import {
   availability,
   formatDate,
@@ -96,9 +135,9 @@ function MedicineTable({ medicines }) {
         <thead>
           <tr>
             <th>Medicamento</th>
-            <th>Unidade</th>
+            <th>Fabricante</th>
+            <th>Categoria</th>
             <th>Quantidade</th>
-            <th>Validade</th>
             <th>Disponibilidade</th>
           </tr>
         </thead>
@@ -109,11 +148,11 @@ function MedicineTable({ medicines }) {
                 <strong>{m.name}</strong>
                 {m.dose && <small>{m.dose}</small>}
               </td>
-              <td>{m.unit}</td>
+              <td>{m.manufacturer || "—"}</td>
+              <td>{m.categories || "—"}</td>
               <td>
-                <strong>{m.quantity}</strong> un.
+                {m.quantity === null ? "Não informada" : <><strong>{m.quantity}</strong> un.</>}
               </td>
-              <td>{formatDate(m.expiry)}</td>
               <td>
                 <Badge tone={availability(m).tone}>
                   {availability(m).label}
@@ -158,20 +197,26 @@ export default function Manager() {
 
   const user = outletContext?.user ?? sessionUser;
   const data = initialData;
+  // Antes de a sessão responder ainda não há e-mail para achar o idGerente
+  const sessionPending = !user && !sessionError;
+  // Sem login (ainda não implementado para as personas), o gerente é escolhido na topbar
+  const gerente = useIdGerente(user?.email, { aguardar: sessionPending });
+  const [toast, notify] = useToast();
+  const pendentes = useChamadosPendentes(gerente.idGerente, {
+    onNovaSolicitacao: (chamado) =>
+      notify(`Nova solicitação de ${chamado.funcionario?.nomeFuncionario || "funcionário"}`),
+  });
   useEffect(() => {
     document.title = "Área do gerente | Intermedi";
     return () => {
       document.title = "Intermedi";
     };
   }, []);
-  const external = data.tickets.filter(
-    (t) => t.unit !== unit && t.status !== "Resolvido",
-  ).length;
   return (
     <div className="mgr-shell">
       <ManagerSidebar
         unitName={user?.unitName || "Minha unidade"}
-        external={external}
+        pendingTickets={pendentes.totalPendentes}
       />
       <div className="mgr-workspace">
         <div className="mgr-topbar">
@@ -180,29 +225,28 @@ export default function Manager() {
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{user?.unitName || "Minha unidade"}</strong>
           </span>
-          <Link
-            to="/gerente/chamados?origem=rede"
-            className="mgr-notifications"
-            aria-label={`${external} chamados abertos de outras farmácias`}
-          >
-            <ManagerIcon name="bell" size={17} />
-            <b>{external}</b>
-          </Link>
+          {!gerente.temSessao && gerente.gerentes.length > 0 && (
+            <SeletorPersona
+              label="Gerente"
+              value={gerente.idGerente ?? ""}
+              onChange={gerente.escolher}
+              options={gerente.gerentes.map((g) => [g.id, g.nome])}
+            />
+          )}
+          <NotificacoesGerente gerente={gerente} pendentes={pendentes} />
           <AccountControls
             user={
-              user || { id: "", name: "Gerente", email: "", role: "gerente" }
+              user || { id: "", name: gerente.nome || "Gerente", email: "", role: "gerente" }
             }
           />
         </div>
-        {sessionError && (
-          <p className="mgr-empty" role="alert">
-            {sessionError}
-          </p>
-        )}
         <main className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
           <Outlet
             context={{
               data,
+              gerente,
+              pendentes,
+              notify,
               user: user || {
                 id: "",
                 name: "Gerente",
@@ -216,15 +260,15 @@ export default function Manager() {
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      <ToastRegion message={toast} />
     </div>
   );
 }
 export function ManagerDashboard() {
-  const { data, user } = useOutletContext();
-  const medicines = data.medicines.filter((m) => m.unit === unit);
-  const tickets = data.tickets.filter((t) => t.unit === unit);
-  const pending = tickets.filter((t) => t.status !== "Resolvido");
-  const managerName = user?.name || "Gerente";
+  const { user, gerente, pendentes } = useOutletContext();
+  const { items: medicines, loading: loadingMedicines, error: medicinesError } = useApiList(listarRemedios);
+  const { items: patients } = useApiList(listarPacientes);
+  const managerName = (gerente.temSessao ? user?.name : gerente.nome) || user?.name || "Gerente";
   const managerUnit = user?.unitName || unit;
   return (
     <>
@@ -242,21 +286,21 @@ export function ManagerDashboard() {
       <Stats
         items={[
           [
-            "Total de chamados",
-            tickets.length,
-            `${pending.length} precisam de atenção`,
+            "Chamados pendentes",
+            gerente.idGerente ? pendentes.totalPendentes : null,
+            "Aguardando sua resposta",
             "ticket",
           ],
           [
             "Remédios cadastrados",
             medicines.length,
-            "Medicamentos da sua unidade",
+            "Medicamentos cadastrados na rede",
             "pill",
           ],
           [
-            "Pacientes da unidade",
-            data.patients.length,
-            "Pessoas com histórico de retirada",
+            "Pacientes cadastrados",
+            patients.length,
+            "Pacientes cadastrados na rede",
             "heart",
           ],
         ]}
@@ -268,7 +312,7 @@ export function ManagerDashboard() {
         <div>
           <strong>Estoque em dia, cuidado que continua.</strong>
           <p>
-            {medicines.filter((m) => availability(m).tone !== "green").length}{" "}
+            {medicines.filter((m) => ["red", "yellow"].includes(availability(m).tone)).length}{" "}
             medicamentos precisam de atenção. Consulte o estoque e acompanhe as
             solicitações da equipe.
           </p>
@@ -278,12 +322,18 @@ export function ManagerDashboard() {
       <section className="mgr-panel">
         <div className="mgr-panel-head">
           <div>
-            <h2>Estoque da unidade</h2>
-            <p>Uma visão do estoque e dos itens que precisam de atenção.</p>
+            <h2>Remédios cadastrados</h2>
+            <p>Uma visão dos remédios e dos itens que precisam de atenção.</p>
           </div>
           <Link to="/gerente/remedios">Ver todos →</Link>
         </div>
-        <MedicineTable medicines={medicines} />
+        {loadingMedicines ? (
+          <p className="mgr-empty" role="status">Carregando remédios…</p>
+        ) : medicinesError ? (
+          <p className="mgr-empty" role="alert">{medicinesError}</p>
+        ) : (
+          <MedicineTable medicines={medicines.slice(0, 5)} />
+        )}
         <p className="mgr-table-note">
           Crítico: até o mínimo · Quase acabando: até 2× o mínimo · Disponível:
           acima de 2× o mínimo.
@@ -293,37 +343,45 @@ export function ManagerDashboard() {
         <div className="mgr-panel-head">
           <div>
             <h2>Chamados que precisam de você</h2>
-            <p>Solicitações abertas pela sua equipe.</p>
+            <p>Solicitações de reposição abertas pela sua equipe.</p>
           </div>
-          <Badge tone="yellow">{pending.length} abertos</Badge>
+          <Badge tone="yellow">
+            {pendentes.totalPendentes} {pendentes.totalPendentes === 1 ? "pendente" : "pendentes"}
+          </Badge>
         </div>
-        {pending.map((t) => (
-          <div className="mgr-ticket-line" key={t.id}>
-            <PersonaAvatar className="mgr-avatar" role="funcionario" photo={data.employees.find(e => e.id === t.employee)?.photo} />
-            <div>
-              <strong>{t.title}</strong>
-              <small>
-                {data.employees.find((e) => e.id === t.employee)?.name} ·{" "}
-                {formatDate(t.date)}
-              </small>
+        {gerente.loading || pendentes.loading ? (
+          <p className="mgr-empty" role="status">Carregando chamados…</p>
+        ) : gerente.error ? (
+          <ErroComRetry message={gerente.error} onRetry={gerente.retry} />
+        ) : pendentes.error ? (
+          <ErroComRetry message={pendentes.error} onRetry={pendentes.retry} />
+        ) : (
+          pendentes.pendentes.slice(0, 5).map((c) => (
+            <div className="mgr-ticket-line" key={c.idChamado}>
+              <PersonaAvatar className="mgr-avatar" role="funcionario" />
+              <div>
+                <strong>{c.titulo}</strong>
+                <small>
+                  {c.funcionario?.nomeFuncionario} · {tempoDesde(c.dataAbertura)}
+                </small>
+              </div>
+              <PrioridadeBadge prioridade={c.prioridade} />
+              <Link to={`/gerente/chamados?chamado=${c.idChamado}`}>
+                Abrir chamado →
+              </Link>
             </div>
-            <Badge tone={t.priority === "Alta" ? "red" : "yellow"}>
-              {t.priority}
-            </Badge>
-            <Link to={`/gerente/chamados?chamado=${t.id}`}>
-              Abrir chamado →
-            </Link>
-          </div>
-        ))}
-        {!pending.length && (
-          <p className="mgr-empty">Tudo em dia! Nenhum chamado pendente.</p>
+          ))
+        )}
+        {!pendentes.loading && !gerente.loading && !gerente.error && !pendentes.error && !pendentes.pendentes.length && (
+          <p className="mgr-empty">Tudo em dia! Nenhuma solicitação pendente.</p>
         )}
       </section>
     </>
   );
 }
 export function ManagerEmployees() {
-  const { data, user } = useOutletContext();
+  const { data, user, gerente } = useOutletContext();
+  const { chamados } = useChamadosGerente(gerente.idGerente);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -342,31 +400,11 @@ export function ManagerEmployees() {
   const [farmacias, setFarmacias] = useState([]);
   const [carregandoFarmacias, setCarregandoFarmacias] = useState(true);
   const [erroFarmacias, setErroFarmacias] = useState("");
-  const [farmaciaAtual, setFarmaciaAtual] = useState(null);
-
   async function buscarFarmacias() {
     setCarregandoFarmacias(true);
     setErroFarmacias("");
     try {
-      const response = await fetch("http://localhost:3000/farmacia", {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          result.error || "Não foi possível carregar as farmácias.",
-        );
-      }
-
-      const lista = Array.isArray(result)
-        ? result
-        : Array.isArray(result.farmacia)
-          ? result.farmacia
-          : Array.isArray(result.farmacias)
-            ? result.farmacias
-            : [];
+      const lista = await listarFarmacias();
 
       const mapped = lista.map((farmacia) => ({
         id: farmacia.idFarmacia ?? farmacia.id,
@@ -391,38 +429,12 @@ export function ManagerEmployees() {
     setCarregandoFuncionarios(true);
     setErroFuncionarios("");
     try {
-      const response = await fetch("http://localhost:3000/funcionario");
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.error || "Não foi possível carregar os funcionários.",
-        );
-      }
-
-      const lista = Array.isArray(result)
-        ? result
-        : result.funcionario || result.funcionarios || [];
-
-      const filtrada = farmaciaId
-        ? lista.filter(
-            (f) =>
-              String(f.fkIdFarmacia ?? f.idFarmacia ?? "") ===
-              String(farmaciaId),
-          )
-        : lista;
-
+      const lista = await listarFuncionarios();
+      const todos = lista.map(normalizeFuncionario);
       setFuncionarios(
-        filtrada.map((f) => ({
-          id: f.idFuncionario,
-          name: f.nomeFuncionario,
-          photo: f.fotoPerfilFuncionario ?? f.photo,
-          role: f.cargoFuncionario,
-          shift: f.turnoFuncionario,
-          matricula: f.matriculaFuncionario,
-          email: f.emailFuncionario,
-          phone: f.telFuncionario,
-        })),
+        farmaciaId
+          ? todos.filter((f) => f.farmaciaId === String(farmaciaId))
+          : todos,
       );
       return lista;
     } catch (error) {
@@ -440,27 +452,7 @@ export function ManagerEmployees() {
     async function carregarUnidadeDoGerenteLogado() {
       try {
         const farmaciasRaw = await buscarFarmacias();
-        const gerenteResponse = await fetch("http://localhost:3000/gerente", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const gerentePayload = await gerenteResponse.json().catch(() => ({}));
-        if (!gerenteResponse.ok) {
-          throw new Error(
-            gerentePayload.error ||
-              gerentePayload.message ||
-              "Não foi possível localizar o gerente logado.",
-          );
-        }
-
-        const gerentesRaw = Array.isArray(gerentePayload)
-          ? gerentePayload
-          : Array.isArray(gerentePayload?.gerente)
-            ? gerentePayload.gerente
-            : Array.isArray(gerentePayload?.gerentes)
-              ? gerentePayload.gerentes
-              : [];
-
+        const gerentesRaw = await listarGerentes();
         const gerente = gerentesRaw.find(
           (item) =>
             String(item.emailGerente ?? item.email ?? "")
@@ -481,16 +473,6 @@ export function ManagerEmployees() {
           : null;
 
         const farmaciaId = farmacia?.idFarmacia ?? farmacia?.id;
-        const farmaciaName =
-          farmacia?.nomeFarmacia ??
-          farmacia?.name ??
-          farmacia?.nome ??
-          user?.unitName;
-
-        if (farmaciaId) {
-          setFarmaciaAtual({ id: farmaciaId, name: farmaciaName });
-        }
-
         await buscarFuncionarios(farmaciaId ?? "");
       } catch (error) {
         setErroFuncionarios(
@@ -513,8 +495,11 @@ export function ManagerEmployees() {
   const deliveries = data.deliveries.filter(
     (d) => d.employee === selected?.id && inPeriod(d.date, period),
   );
-  const tickets = data.tickets.filter(
-    (t) => t.employee === selected?.id && inPeriod(t.date, period),
+  const desde = period ? new Date().setHours(0, 0, 0, 0) - Number(period) * 86400000 : 0;
+  const tickets = chamados.filter(
+    (c) =>
+      String(c.funcionario?.idFuncionario) === String(selected?.id) &&
+      (dataDoChamado(c.dataAbertura)?.getTime() ?? 0) >= desde,
   );
 
   const [nomeFuncionario, setNomeFuncionario] = useState("");
@@ -547,7 +532,7 @@ export function ManagerEmployees() {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/funcionario", {
+      const response = await fetch(`${API_URL}/funcionario`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(funcionario),
@@ -612,7 +597,7 @@ export function ManagerEmployees() {
     setDeleteError("");
     try {
       const response = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(employee.id)}`,
+        `${API_URL}/funcionario/${encodeURIComponent(employee.id)}`,
         { method: "DELETE" },
       );
       if (!response.ok) {
@@ -708,7 +693,7 @@ export function ManagerEmployees() {
           ],
           [
             "Chamados da equipe",
-            data.tickets.filter((t) => t.unit === unit).length,
+            gerente.idGerente ? chamados.length : null,
             "Solicitações de todos os períodos",
             "ticket",
           ],
@@ -909,11 +894,11 @@ export function ManagerEmployees() {
             ]}
           />
           <h3>Chamados do funcionário</h3>
-          {tickets.map((t) => (
-            <div className="mgr-detail-line" key={t.id}>
-              <strong>{t.title}</strong>
+          {tickets.map((c) => (
+            <div className="mgr-detail-line" key={c.idChamado}>
+              <strong>{c.titulo}</strong>
               <span>
-                {formatDate(t.date)} · {t.status}
+                {formatarDataChamado(c.dataAbertura)} · {statusChamado(c.status).label}
               </span>
             </div>
           ))}
@@ -937,192 +922,146 @@ export function ManagerEmployees() {
   );
 }
 export function ManagerPatients() {
-  const { data } = useOutletContext();
   const [search, setSearch] = useState("");
-  const [period, setPeriod] = useState("");
-  const deliveries = data.deliveries
-    .filter(
-      (d) =>
-        inPeriod(d.date, period) &&
-        `${data.patients.find((p) => p.id === d.patient)?.name} ${
-          data.medicines.find((m) => m.id === d.medicine)?.name
-        }`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const { items: patients, loading, error } = useApiList(listarPacientes, normalizePaciente);
+  const filtered = patients.filter((p) =>
+    normalizeText(`${p.name} ${p.email} ${p.cpf} ${p.frequentMedicine}`).includes(
+      normalizeText(search.trim()),
+    ),
+  );
   return (
     <>
       <Header
         title="Pacientes"
-        description="Consulte os pacientes e acompanhe cada retirada na sua unidade."
+        description="Consulte os pacientes cadastrados na rede."
       />
       <Stats
         items={[
+          ["Pacientes cadastrados", patients.length, "Total na rede", "heart"],
+          ["Resultados da busca", filtered.length, "Conforme os filtros", "check"],
           [
-            "Pacientes no período",
-            new Set(deliveries.map((d) => d.patient)).size,
-            "Pessoas distintas nos resultados",
-          ],
-          [
-            "Retiradas registradas",
-            deliveries.length,
-            "Conforme os filtros selecionados",
-          ],
-          [
-            "Unidades entregues",
-            deliveries.reduce((sum, d) => sum + d.quantity, 0),
-            "Total nos resultados",
+            "Com remédio frequente",
+            patients.filter((p) => p.frequentMedicine).length,
+            "Uso contínuo informado",
+            "pill",
           ],
         ]}
       />
       <section className="mgr-panel">
         <div className="mgr-toolbar">
           <input
-            aria-label="Buscar paciente ou medicamento"
-            placeholder="Buscar paciente ou medicamento…"
+            type="search"
+            aria-label="Buscar paciente"
+            placeholder="Buscar nome, e-mail, CPF ou remédio…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Period value={period} onChange={setPeriod} />
         </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Paciente</th>
-                <th>Medicamento</th>
-                <th>Quantidade</th>
-                <th>Data da retirada</th>
-                <th>Atendido por</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deliveries.map((d) => (
-                <tr key={d.id}>
-                  <td>
-                    <strong>
-                      {data.patients.find((p) => p.id === d.patient)?.name}
-                    </strong>
-                    <small>Registro {d.patient.toUpperCase()}</small>
-                  </td>
-                  <td>
-                    {data.medicines.find((m) => m.id === d.medicine)?.name}
-                    <small>
-                      {data.medicines.find((m) => m.id === d.medicine)?.dose}
-                    </small>
-                  </td>
-                  <td>{d.quantity} un.</td>
-                  <td>{formatDate(d.date)}</td>
-                  <td>
-                    {data.employees.find((e) => e.id === d.employee)?.name}
-                  </td>
+        {loading ? (
+          <p className="mgr-empty" role="status">Carregando pacientes…</p>
+        ) : error ? (
+          <p className="mgr-empty" role="alert">{error}</p>
+        ) : (
+          <div className="mgr-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Paciente</th>
+                  <th>CPF</th>
+                  <th>Telefone</th>
+                  <th>Cidade</th>
+                  <th>Remédio frequente</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {!deliveries.length && <Empty />}
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <PersonCell name={p.name} detail={p.email} role="paciente" photo={p.photo} />
+                    </td>
+                    <td>{p.cpf || "—"}</td>
+                    <td>{p.phone || "—"}</td>
+                    <td>{[p.city, p.state].filter(Boolean).join(" / ") || "—"}</td>
+                    <td>{p.frequentMedicine || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!filtered.length && <Empty />}
+          </div>
+        )}
+        <p className="mgr-table-note" role="status">
+          {filtered.length} de {patients.length} pacientes
+        </p>
       </section>
     </>
   );
- }
+}
+const emptyMedicine = { nomeRemedio: "", dosagemRemedio: "", fabricanteRemedio: "", descRemedio: "" };
+
 export function ManagerMedicines() {
-  const { user } = useOutletContext();
-
-  // Controle de parâmetros da URL (?busca=di)
   const [searchParams] = useSearchParams();
-  const buscaUrl = searchParams.get("busca") || "";
-
-  // Estados locais
-  const [inputSearch, setInputSearch] = useState(buscaUrl);
-  const [scope, setScope] = useState("");
+  const [search, setSearch] = useState(searchParams.get("busca") || "");
   const [status, setStatus] = useState("");
   const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState(emptyMedicine);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [notice, setNotice] = useState("");
+  const { items: allMedicines, loading, error, reload } = useApiList(listarRemedios);
 
-  // Estados dos medicamentos do Backend
-  const [medicamentosBackend, setMedicamentosBackend] = useState([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erroBackend, setErroBackend] = useState("");
-  // Consulta a API enquanto o usuário digita. O atraso curto evita uma chamada
-  // para cada tecla e o AbortController impede respostas antigas de sobrescreverem
-  // a lista mais recente.
-  useEffect(() => {
-    const controller = new AbortController();
-    const termo = inputSearch.trim();
+  const medicines = allMedicines.filter(
+    (m) =>
+      (!status || availability(m).tone === status) &&
+      normalizeText(`${m.name} ${m.dose} ${m.manufacturer} ${m.categories}`).includes(
+        normalizeText(search.trim()),
+      ),
+  );
 
-    async function carregarMedicamentos() {
-      setCarregando(true);
-      setErroBackend("");
+  function closeForm() {
+    setAdding(false);
+    setForm(emptyMedicine);
+    setFormError("");
+  }
 
-      try {
-        const endpoint = termo
-          ? `http://localhost:3000/remedios?busca=${encodeURIComponent(termo)}`
-          : "http://localhost:3000/remedios";
-        const response = await fetch(endpoint, {
-          signal: controller.signal,
-        });
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || result.message || "Erro ao carregar medicamentos.");
-        }
-
-        const lista = Array.isArray(result)
-          ? result
-          : result?.resultados || result?.remedios || result?.data;
-
-        if (!Array.isArray(lista)) {
-          throw new Error("O servidor não retornou uma lista de medicamentos.");
-        }
-
-        const adaptados = lista.map((item) => ({
-          id: item.idRemedio || item.id_remedio || item.id,
-          name: item.nomeRemedio || item.nome || item.name || "Medicamento sem nome",
-          dose: item.dosagemRemedio || item.dosagem || item.dose || "",
-          unit: item.nomeFarmacia || item.fabricanteRemedio || item.fabricante || item.unit || user?.unitName || "—",
-          quantity: item.quantidade ?? item.quantity ?? 0,
-          minimum: item.estoque_minimo ?? item.minimum ?? 5,
-          expiry: item.validade || item.expiry || new Date().toISOString(),
-        }));
-
-        if (!controller.signal.aborted) setMedicamentosBackend(adaptados);
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setMedicamentosBackend([]);
-          setErroBackend(err instanceof Error ? err.message : "Erro ao conectar ao servidor.");
-        }
-      } finally {
-        if (!controller.signal.aborted) setCarregando(false);
-      }
+  async function submit(event) {
+    event.preventDefault();
+    if (!form.nomeRemedio.trim()) {
+      setFormError("Informe o nome do remédio.");
+      return;
     }
+    setSaving(true);
+    setFormError("");
+    try {
+      await cadastrarRemedio(
+        Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim()])),
+      );
+      setNotice(`${form.nomeRemedio.trim()} cadastrado com sucesso.`);
+      closeForm();
+      reload();
+    } catch (err) {
+      setFormError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
-    // Carrega todos imediatamente ao abrir a tela ou limpar a busca.
-    const debounce = termo ? setTimeout(carregarMedicamentos, 250) : null;
-    if (!termo) carregarMedicamentos();
-    return () => {
-      clearTimeout(debounce);
-      controller.abort();
-    };
-  }, [inputSearch, user?.unitName]);
-  // Aplica filtros adicionais de escopo e disponibilidade
-  const baseLista = medicamentosBackend;
-  
-  const medicines = baseLista.filter((m) => {
-    const matchesScope = !scope || m.unit === scope;
-    const matchesStatus = !status || availability(m).tone === status;
-    return matchesScope && matchesStatus;
-  });
-
-  const unitsList = useMemo(() => {
-    return [...new Set(baseLista.map((m) => m.unit))];
-  }, [baseLista]);
+  const field = (name, label, props = {}) => (
+    <label>
+      {label}
+      <input
+        value={form[name]}
+        onChange={(e) => setForm((current) => ({ ...current, [name]: e.target.value }))}
+        {...props}
+      />
+    </label>
+  );
 
   return (
     <>
       <Header
         title="Medicamentos"
-        description="Consulte medicamentos da rede e cadastre itens na sua unidade."
+        description="Consulte os medicamentos da rede e cadastre novos itens."
         action={
           <button className="mgr-primary" onClick={() => setAdding(true)}>
             + Cadastrar remédio
@@ -1132,32 +1071,23 @@ export function ManagerMedicines() {
 
       <Stats
         items={[
-          ["Itens no catálogo", medicines.length, "Conforme os filtros", "pill"],
-          ["Estoque disponível", medicines.filter((m) => availability(m).tone === "green").length, "Disponíveis", "check"],
-          ["Precisam de atenção", medicines.filter((m) => availability(m).tone !== "green").length, "Atenção necessária", "alert"],
+          ["Itens no catálogo", allMedicines.length, "Cadastrados na rede", "pill"],
+          ["Resultados", medicines.length, "Conforme os filtros", "check"],
+          ["Precisam de atenção", allMedicines.filter((m) => ["red", "yellow"].includes(availability(m).tone)).length, "Estoque baixo", "alert"],
         ]}
       />
+
+      {notice && <p className="mgr-demo" role="status">{notice}</p>}
 
       <section className="mgr-panel">
         <div className="mgr-toolbar">
           <input
+            type="search"
             aria-label="Buscar remédio"
-            placeholder="Buscar remédio..."
-            value={inputSearch}
-            onChange={(e) => setInputSearch(e.target.value)}
+            placeholder="Buscar nome, dosagem, fabricante ou categoria…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-
-          <select
-            aria-label="Filtrar unidade"
-            value={scope}
-            onChange={(e) => setScope(e.target.value)}
-          >
-            <option value="">Todas as unidades</option>
-            {unitsList.map((u) => (
-              <option key={u} value={u}>{u}</option>
-            ))}
-          </select>
-
           <select
             aria-label="Filtrar disponibilidade"
             value={status}
@@ -1167,296 +1097,271 @@ export function ManagerMedicines() {
             <option value="green">Disponível</option>
             <option value="yellow">Quase acabando</option>
             <option value="red">Crítico</option>
+            <option value="neutral">Estoque não informado</option>
           </select>
+          <button type="button" className="mgr-secondary" disabled={loading} onClick={reload}>
+            Atualizar
+          </button>
         </div>
 
-        {carregando && <p className="mgr-empty">Buscando no servidor…</p>}
-        {erroBackend && <p className="mgr-empty" style={{ color: "red" }}>{erroBackend}</p>}
-
-        {!carregando && !erroBackend && <MedicineTable medicines={medicines} />}
+        {loading ? (
+          <p className="mgr-empty" role="status">Carregando remédios…</p>
+        ) : error ? (
+          <p className="mgr-empty" role="alert">{error}</p>
+        ) : (
+          <MedicineTable medicines={medicines} />
+        )}
 
         <p className="mgr-table-note">
-          Crítico: quantidade ≤ mínimo · Quase acabando: quantidade ≤ 2× mínimo · Disponível: quantidade &gt; 2× mínimo.
+          {medicines.length} de {allMedicines.length} remédios · Crítico: quantidade ≤ mínimo · Quase acabando: quantidade ≤ 2× mínimo · Disponível: quantidade &gt; 2× mínimo.
         </p>
       </section>
+
+      {adding && (
+        <Modal title="Cadastrar remédio" onClose={closeForm}>
+          <form className="mgr-form" onSubmit={submit}>
+            {field("nomeRemedio", "Nome *", { required: true, autoFocus: true, maxLength: 120 })}
+            <div className="mgr-form-row">
+              {field("dosagemRemedio", "Dosagem", { placeholder: "Ex.: 500mg", maxLength: 60 })}
+              {field("fabricanteRemedio", "Fabricante", { maxLength: 120 })}
+            </div>
+            <label>
+              Descrição
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={form.descRemedio}
+                onChange={(e) => setForm((current) => ({ ...current, descRemedio: e.target.value }))}
+              />
+            </label>
+            {formError && <p role="alert">{formError}</p>}
+            <button className="mgr-primary" type="submit" disabled={saving}>
+              {saving ? "Salvando…" : "Cadastrar remédio"}
+            </button>
+          </form>
+        </Modal>
+      )}
     </>
   );
 }
 export function ManagerTickets() {
-  const { data } = useOutletContext();
+  const { gerente, pendentes, notify } = useOutletContext();
   const [params, setParams] = useSearchParams();
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [adding, setAdding] = useState(false);
-  const scope = params.get("origem") || "unidade";
-  const selected = data.tickets.find((t) => t.id === params.get("chamado"));
-  const external = data.tickets.filter(
-    (t) => t.unit !== unit && t.status !== "Resolvido",
+  const { chamados, carregado, loading, error, reload, retry, setData } = useChamadosGerente(gerente.idGerente);
+
+  // Chegou solicitação nova no sininho: atualiza a lista também
+  const { totalPendentes, reload: reloadPendentes, removerPendente } = pendentes;
+  useEffect(() => {
+    if (carregado) reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPendentes]);
+
+  const idSelecionado = params.get("chamado");
+  const selected = idSelecionado
+    ? chamados.find((c) => String(c.idChamado) === idSelecionado)
+    : null;
+  const contar = (valor) => chamados.filter((c) => c.status === valor).length;
+  const termo = normalizeText(search.trim());
+  const tickets = chamados.filter(
+    (c) =>
+      (!status || c.status === status) &&
+      normalizeText(
+        `${c.idChamado} ${c.titulo} ${c.funcionario?.nomeFuncionario} ${resumoRemedios(c.remedios)}`,
+      ).includes(termo),
   );
-  const author = (t) =>
-    data.employees.find((e) => e.id === t.employee)?.name ||
-    t.author ||
-    "Equipe da unidade";
-  const tickets = data.tickets
-    .filter(
-      (t) =>
-        (scope === "rede" ? t.unit !== unit : t.unit === unit) &&
-        (!status || t.status === status) &&
-        `${t.title} ${author(t)} ${t.unit}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
+
+  function abrir(idChamado) {
+    const next = new URLSearchParams(params);
+    next.set("chamado", idChamado);
+    setParams(next);
+  }
   function close() {
     const next = new URLSearchParams(params);
     next.delete("chamado");
     setParams(next);
   }
+  function respondido(atualizado, aceitou) {
+    setData((lista) =>
+      (lista ?? []).map((c) => (c.idChamado === atualizado.idChamado ? atualizado : c)),
+    );
+    removerPendente(atualizado.idChamado);
+    notify(aceitou ? "Chamado aceito" : "Chamado recusado");
+  }
+  function conflito() {
+    reload();
+    reloadPendentes();
+  }
+
+  const header = (
+    <Header
+      title="Cada chamado importa."
+      description="Aceite ou recuse os pedidos de reposição da sua equipe."
+    />
+  );
+  if (gerente.loading) {
+    return <>{header}<section className="mgr-panel"><p className="mgr-empty" role="status">Carregando chamados…</p></section></>;
+  }
+  if (gerente.error) {
+    return <>{header}<section className="mgr-panel"><ErroComRetry message={gerente.error} onRetry={gerente.retry} /></section></>;
+  }
+
   return (
     <>
-      <Header
-        title="Cada chamado importa."
-        description="Acompanhe solicitações, resolva pendências e conecte sua unidade à rede."
-        action={
-          <button
-            className="mgr-primary"
-            onClick={() => {
-              setAdding(true);
-            }}
-          >
-            + Novo chamado
-          </button>
-        }
-      />
-      <Stats
+      {header}
+      <DirectoryStats
         items={[
-          [
-            "Pendentes",
-            tickets.filter((t) => t.status === "Pendente").length,
-            "Aguardando atendimento",
-            "ticket",
-          ],
-          [
-            "Em andamento",
-            tickets.filter((t) => t.status === "Em andamento").length,
-            "Solicitações em atendimento",
-            "clock",
-          ],
-          [
-            "Resolvidos",
-            tickets.filter((t) => t.status === "Resolvido").length,
-            "Atendimentos concluídos",
-            "check",
-          ],
+          ["Pendentes", carregado ? contar("pendente") : null, "clock"],
+          ["Aceitos", carregado ? contar("aceito") : null, "check"],
+          ["Recusados", carregado ? contar("recusado") : null, "alert"],
+          ["Resolvidos", carregado ? contar("resolvido") : null, "ticket"],
         ]}
       />
-      {external.length > 0 && (
-        <div className="mgr-insight">
-          <span className="mgr-insight-icon">
-            <ManagerIcon name="bell" />
-          </span>
-          <div>
-            <strong>
-              {external.length}{" "}
-              {external.length === 1
-                ? "chamado aberto de outra farmácia"
-                : "chamados abertos de outras farmácias"}
-            </strong>
-            <p>Outras unidades da rede precisam de atenção.</p>
-          </div>
-          <button
-            className="mgr-text-button"
-            onClick={() => {
-              setStatus("");
-              setSearch("");
-              setParams({ origem: "rede" });
-            }}
-          >
-            Ver notificações →
-          </button>
-        </div>
-      )}
       <section className="mgr-panel">
         <div className="mgr-toolbar">
-          <div className="mgr-tabs">
-            <button
-              aria-pressed={scope !== "rede"}
-              onClick={() => setParams({})}
-            >
-              Minha unidade
-            </button>
-            <button
-              aria-pressed={scope === "rede"}
-              onClick={() => setParams({ origem: "rede" })}
-            >
-              Outras farmácias ({external.length})
-            </button>
-          </div>
           <select
             aria-label="Filtrar status do chamado"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
             <option value="">Todos os status</option>
-            <option>Pendente</option>
-            <option>Em andamento</option>
-            <option>Resolvido</option>
+            {Object.entries(STATUS_CHAMADO).map(([valor, { label }]) => (
+              <option key={valor} value={valor}>{label}</option>
+            ))}
           </select>
           <input
+            type="search"
             aria-label="Buscar chamado"
-            placeholder="Buscar assunto ou funcionário…"
+            placeholder="Buscar assunto, funcionário ou remédio…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <button type="button" className="mgr-secondary" onClick={reload}>
+            Atualizar
+          </button>
         </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Chamado</th>
-                <th>Solicitante</th>
-                <th>Data</th>
-                <th>Prioridade</th>
-                <th>Status</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.map((t) => (
-                <tr key={t.id}>
-                  <td>
-                    <strong>{t.title}</strong>
-                    <small>
-                      #{t.id.slice(0, 8)} · {t.unit}
-                    </small>
-                  </td>
-                  <td>{author(t)}</td>
-                  <td>{formatDate(t.date)}</td>
-                  <td>
-                    <Badge
-                      tone={
-                        t.priority === "Alta"
-                          ? "red"
-                          : t.priority === "Média"
-                            ? "yellow"
-                            : "neutral"
-                      }
-                    >
-                      {t.priority}
-                    </Badge>
-                  </td>
-                  <td>
-                    <Badge tone={t.status === "Resolvido" ? "green" : "yellow"}>
-                      {t.status}
-                    </Badge>
-                  </td>
-                  <td>
-                    <button
-                      className="mgr-text-button"
-                      onClick={() => {
-                        const next = new URLSearchParams(params);
-                        next.set("chamado", t.id);
-                        setParams(next);
-                      }}
-                    >
-                      Abrir chamado ↗
-                    </button>
-                  </td>
+        {loading ? (
+          <p className="mgr-empty" role="status">Carregando chamados…</p>
+        ) : error && !carregado ? (
+          <ErroComRetry message={error} onRetry={retry} />
+        ) : (
+          <div className="mgr-table-wrap">
+            {error && <p className="chamado-inline-error" role="alert">{error}</p>}
+            <table>
+              <thead>
+                <tr>
+                  <th>Chamado</th>
+                  <th>Solicitante</th>
+                  <th>Data</th>
+                  <th>Prioridade</th>
+                  <th>Status</th>
+                  <th>Ação</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {!tickets.length && <Empty />}
-        </div>
-      </section>
-      {selected && (
-        <Modal title={selected.title} onClose={close}>
-          <div className="mgr-ticket-meta">
-            <Badge tone={selected.status === "Resolvido" ? "green" : "yellow"}>
-              {selected.status}
-            </Badge>
-            <span>Prioridade {selected.priority.toLowerCase()}</span>
-          </div>
-          <p>
-            {author(selected)} · {selected.unit}
-          </p>
-          <p>Aberto em {formatDate(selected.date)}</p>
-          <p className="mgr-description">{selected.description}</p>
-          {selected.resolvedAt && (
-            <p>Resolvido em {formatDate(selected.resolvedAt)}</p>
-          )}
-          {selected.unit === unit ? (
-            <div className="mgr-modal-actions">
-              {selected.status === "Pendente" && (
-                <button className="mgr-secondary" type="button">
-                  Iniciar atendimento
-                </button>
-              )}
-              {selected.status !== "Resolvido" ? (
-                <button className="mgr-primary" type="button">
-                  Marcar como resolvido
-                </button>
-              ) : (
-                <button className="mgr-secondary" type="button">
-                  Reabrir chamado
-                </button>
-              )}
-            </div>
-          ) : (
-            <p className="mgr-demo">
-              Este chamado pertence a outra farmácia. A atualização é feita pela
-              unidade responsável.
-            </p>
-          )}
-        </Modal>
-      )}
-      {adding && (
-        <Modal title="Novo chamado" onClose={() => setAdding(false)}>
-          <form
-            className="mgr-form"
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <label>
-              Assunto
-              <input
-                name="title"
-                required
-                maxLength={140}
-                placeholder="Ex.: falta de paracetamol"
-              />
-            </label>
-            <label>
-              Funcionário solicitante
-              <select name="employee" required>
-                {data.employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
+              </thead>
+              <tbody>
+                {tickets.map((c) => (
+                  <tr key={c.idChamado} className={c.status === "pendente" ? "chamado-row-pendente" : undefined}>
+                    <td>
+                      <strong>{c.titulo}</strong>
+                      <small>
+                        #{c.idChamado} · {resumoRemedios(c.remedios)}
+                      </small>
+                    </td>
+                    <td>
+                      {c.funcionario?.nomeFuncionario}
+                      <small>{c.funcionario?.cargoFuncionario}</small>
+                    </td>
+                    <td>{formatarDataChamado(c.dataAbertura)}</td>
+                    <td><PrioridadeBadge prioridade={c.prioridade} /></td>
+                    <td><StatusChamadoBadge status={c.status} /></td>
+                    <td>
+                      <button
+                        type="button"
+                        className="mgr-text-button"
+                        aria-label={`Abrir chamado #${c.idChamado}`}
+                        onClick={() => abrir(c.idChamado)}
+                      >
+                        {c.status === "pendente" ? "Responder ↗" : "Abrir chamado ↗"}
+                      </button>
+                    </td>
+                  </tr>
                 ))}
-              </select>
-            </label>
-            <label>
-              Prioridade
-              <select name="priority">
-                <option>Baixa</option>
-                <option>Média</option>
-                <option>Alta</option>
-              </select>
-            </label>
-            <label>
-              Descrição
-              <textarea
-                name="description"
-                rows="4"
-                required
-                maxLength={2000}
-                placeholder="Informe o medicamento, a quantidade e o motivo da solicitação."
-              />
-            </label>
-            <button className="mgr-primary">Criar chamado</button>
-          </form>
-        </Modal>
+              </tbody>
+            </table>
+            {!tickets.length && (
+              <p className="mgr-empty">
+                {status === "pendente" ? "Nenhuma solicitação pendente." : "Nenhum chamado encontrado para estes filtros."}
+              </p>
+            )}
+          </div>
+        )}
+        <p className="mgr-table-note">
+          {tickets.length} de {chamados.length} chamados · Atualiza automaticamente a cada 30 s
+        </p>
+      </section>
+      {idSelecionado && (
+        <ChamadoModal
+          title={selected ? selected.titulo : `Chamado #${idSelecionado}`}
+          onClose={close}
+        >
+          {!selected ? (
+            loading || !carregado ? (
+              <p className="mgr-empty" role="status">Carregando chamado…</p>
+            ) : (
+              <p className="mgr-empty" role="alert">Chamado não encontrado nesta farmácia.</p>
+            )
+          ) : (
+            <ChamadoDetalhe
+              key={selected.idChamado}
+              chamado={selected}
+              idGerente={gerente.idGerente}
+              onRespondido={respondido}
+              onConflito={conflito}
+            />
+          )}
+        </ChamadoModal>
       )}
     </>
+  );
+}
+
+function ChamadoDetalhe({ chamado, idGerente, onRespondido, onConflito }) {
+  const f = chamado.funcionario ?? {};
+  // 409: o formulário some quando a lista recarrega, então o aviso fica aqui
+  const [aviso, setAviso] = useState("");
+  return (
+    <div className="chamado-detalhe">
+      {aviso && <p className="chamado-inline-error chamado-aviso" role="alert">{aviso}</p>}
+      <div className="mgr-ticket-meta">
+        <StatusChamadoBadge status={chamado.status} />
+        <PrioridadeBadge prioridade={chamado.prioridade} />
+        <span>#{chamado.idChamado}</span>
+      </div>
+      <dl className="chamado-dados">
+        <div><dt>Funcionário</dt><dd>{f.nomeFuncionario || "—"}</dd></div>
+        <div><dt>Matrícula</dt><dd>{f.matriculaFuncionario || "—"}</dd></div>
+        <div><dt>Cargo</dt><dd>{f.cargoFuncionario || "—"}</dd></div>
+        <div><dt>Turno</dt><dd>{TURNO_FUNCIONARIO[f.turnoFuncionario] || f.turnoFuncionario || "—"}</dd></div>
+        <div><dt>Farmácia</dt><dd>{chamado.farmacia?.nomeFarmacia || "—"}</dd></div>
+        <div><dt>Aberto em</dt><dd>{formatarDataChamado(chamado.dataAbertura)}</dd></div>
+      </dl>
+      {chamado.descricao && <p className="mgr-description">{chamado.descricao}</p>}
+      <h3>Remédios solicitados</h3>
+      <RemediosChamadoTable remedios={chamado.remedios} />
+      {chamado.status === "pendente" ? (
+        <ResponderChamado
+          chamado={chamado}
+          idGerente={idGerente}
+          onRespondido={onRespondido}
+          onConflito={(mensagem) => {
+            setAviso(mensagem);
+            onConflito();
+          }}
+        />
+      ) : (
+        <RespostaChamado chamado={chamado} />
+      )}
+    </div>
   );
 }

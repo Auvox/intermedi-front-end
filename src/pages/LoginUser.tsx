@@ -6,6 +6,7 @@ import phoneMockup from "../assets/intermedi-phones.png";
 import { authRequest } from "../services/auth";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
+import { API_URL } from "../services/api";
 
 type Role = "gerente" | "funcionario" | "admin";
 type Mode = "login" | "cadastro";
@@ -147,7 +148,7 @@ export default function LoginUser({
       }
 
       try {
-        const listResponse = await fetch("http://localhost:3000/funcionario", {
+        const listResponse = await fetch(`${API_URL}/funcionario`, {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -192,7 +193,7 @@ export default function LoginUser({
         }
 
         const detailResponse = await fetch(
-          `http://localhost:3000/funcionario/${encodeURIComponent(funcionarioId)}`,
+          `${API_URL}/funcionario/${encodeURIComponent(funcionarioId)}`,
           { method: "GET", headers: { Accept: "application/json" } },
         );
         const detailPayload = await detailResponse.json().catch(() => ({}));
@@ -222,7 +223,7 @@ export default function LoginUser({
         let unitName = "Unidade não vinculada";
         if (farmaciaId) {
           const farmaciaResponse = await fetch(
-            "http://localhost:3000/farmacia",
+            `${API_URL}/farmacia`,
             {
               method: "GET",
               headers: { Accept: "application/json" },

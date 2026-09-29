@@ -92,7 +92,7 @@ function SidebarIcon({ name }) {
 
 export default function ManagerSidebar({
   unitName,
-  external,
+  pendingTickets = 0,
   employee = false,
   admin = false,
 }) {
@@ -112,7 +112,7 @@ export default function ManagerSidebar({
   const menuLinks = admin
     ? adminLinks
     : employee
-      ? [links[2], links[1], links[3], { path: "servicos", label: "Serviços", icon: "ticket" }]
+      ? [links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, { path: "servicos", label: "Serviços", icon: "ticket" }]
       : links;
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
@@ -155,12 +155,12 @@ export default function ManagerSidebar({
                 <SidebarIcon name={icon} />
               </span>
               <span className="manager-sidebar-label">{label}</span>
-              {path === "chamados" && external > 0 ? (
+              {path === "chamados" && pendingTickets > 0 ? (
                 <span
                   className="manager-sidebar-count"
-                  aria-label={`${external} chamados de outras farmácias`}
+                  aria-label={`${pendingTickets} ${pendingTickets === 1 ? "chamado pendente" : "chamados pendentes"}`}
                 >
-                  {external}
+                  {pendingTickets}
                 </span>
               ) : (
                 <span className="manager-sidebar-chevron">

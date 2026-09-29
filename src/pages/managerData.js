@@ -28,6 +28,8 @@ export const initialData = {
   ],
 };
 export function availability(medicine) {
+  if (medicine.quantity === null || medicine.quantity === undefined) return { label: 'Estoque não informado', tone: 'neutral' };
+  if (medicine.minimum === null || medicine.minimum === undefined) return medicine.quantity > 0 ? { label: 'Disponível', tone: 'green' } : { label: 'Crítico', tone: 'red' };
   if (medicine.quantity <= medicine.minimum) return { label: 'Crítico', tone: 'red' };
   if (medicine.quantity <= medicine.minimum * 2) return { label: 'Quase acabando', tone: 'yellow' };
   return { label: 'Disponível', tone: 'green' };

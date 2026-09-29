@@ -1,0 +1,110 @@
+/* Chamados de reposição (funcionário e gerente) */
+
+/* As cores de status/prioridade têm significado, então não seguem a cor da
+   persona (personaTheme.css recolore badges com !important). :not(#_) só
+   aumenta a especificidade. */
+.mgr-badge.chamado-badge:not(#_) { border: 0; }
+.mgr-badge.chamado-badge.green:not(#_) { color: #1c8747 !important; background: #e8f7ec; }
+.mgr-badge.chamado-badge.yellow:not(#_) { color: #916500 !important; background: #fff5d8; }
+.mgr-badge.chamado-badge.red:not(#_) { color: #bd4747 !important; background: #fdecec; }
+.mgr-badge.chamado-badge.neutral:not(#_) { color: #5f6b66 !important; background: #eceff0; }
+.mgr-badge.chamado-badge.blue:not(#_) { color: #1f5fae !important; background: #e7f0fc; }
+.mgr-badge.chamado-badge.purple:not(#_) { color: #6a3fb0 !important; background: #f1ebfb; }
+.mgr-badge.chamado-badge.urgent:not(#_) { color: #fff !important; background: #c62828; font-weight: 700; }
+
+/* Sininho e painel de notificações */
+.chamado-bell { position: relative; margin-left: auto; }
+.chamado-bell .mgr-notifications { display: flex; align-items: center; gap: 9px; font: inherit; cursor: pointer; }
+.chamado-bell .mgr-notifications b { background: #1a9251; color: #fff; padding: 0 4px; }
+.chamado-bell .mgr-notifications[aria-expanded="true"] { border-color: #1a9251; background: #eaf6ee; }
+.chamado-bell-panel {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 40;
+  width: min(360px, calc(100vw - 32px)); padding: 14px 0 8px;
+  background: #fff; border: 1px solid #dfe9e2; border-radius: 12px;
+  box-shadow: 0 14px 40px #10352024; color: #355640; font-size: 12px;
+}
+.chamado-bell-title { margin: 0 16px 8px; font-weight: 700; color: #264632; font-size: 13px; }
+.chamado-bell-panel ul { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
+.chamado-bell-panel li a { display: block; padding: 10px 16px; border-top: 1px solid #eef3ef; line-height: 1.45; color: #3f5a49; }
+.chamado-bell-panel li a:hover { background: #f3f9f5; }
+.chamado-bell-panel li strong { color: #1f4a31; font-weight: 600; }
+.chamado-bell-panel li small { display: block; margin-top: 3px; color: #7c8d83; font-size: 11px; }
+.chamado-urgente-text { color: #c62828; font-weight: 700; }
+.chamado-bell-empty { padding: 14px 16px; margin: 0; color: #7c8d83; }
+.chamado-bell-empty p { margin: 0 0 6px; }
+.chamado-bell-all { display: block; padding: 10px 16px 4px; border-top: 1px solid #eef3ef; color: #1c8149 !important; font-weight: 600; }
+
+/* Toast */
+.chamado-toast-region { position: fixed; right: 24px; bottom: 24px; z-index: 60; pointer-events: none; }
+.chamado-toast {
+  pointer-events: auto; max-width: min(360px, calc(100vw - 32px)); padding: 13px 18px;
+  border-radius: 10px; background: #173c29; color: #fff; font-size: 13px; font-weight: 500;
+  box-shadow: 0 12px 32px #0b24163d; animation: chamado-toast-in .2s ease-out;
+}
+@keyframes chamado-toast-in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .chamado-toast { animation: none; } }
+
+/* Formulários e estados */
+.chamado-field-error { color: #b23838; font-size: 11px; }
+.mgr-form [aria-invalid="true"] { border-color: #d05555 !important; }
+.chamado-inline-error { margin: 0; padding: 12px 24px; color: #b23838; font-size: 12px; background: #fdf2f2; }
+.chamado-retry { margin-top: 10px; }
+.chamado-aviso { margin-bottom: 14px; border-radius: 9px; }
+.chamado-seletor { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7d72; min-width: 0; }
+.chamado-seletor select { max-width: 200px; padding: 7px 10px; border: 1px dashed #b9cfc0; border-radius: 8px; background: #fbfdfb; color: #2f4d3a; font: 12px 'DM Sans', system-ui, sans-serif; }
+.mgr-topbar .chamado-seletor { margin-left: auto; }
+.mgr-topbar .chamado-seletor + .chamado-bell { margin-left: 0; }
+.chamado-filter { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7d72; }
+.chamado-recusar { padding: 12px 18px; font-size: 12px; font-weight: 600; }
+.chamado-acoes { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e5ece7; }
+.chamado-acoes label { font-weight: 600; }
+.chamado-confirmar { padding: 14px 16px; border: 1px solid #f0dfa6; border-radius: 10px; background: #fffaeb; }
+.chamado-confirmar p { margin: 0; font-weight: 600; color: #5b4500; }
+.chamado-confirmar .mgr-modal-actions { margin-top: 12px; }
+.chamado-confirmacao { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding: 14px 16px; border: 1px solid #cadfd1; border-radius: 12px; background: #edf5ef; color: #217343; }
+.chamado-confirmacao p { margin: 0; }
+
+/* Resposta do gerente */
+.chamado-resposta { margin: 14px 0 0; padding: 11px 14px; border-radius: 9px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.chamado-resposta.aceito { background: #e7f0fc; color: #1f4f8f; }
+.chamado-resposta.recusado { background: #fdecec; color: #9b3434; }
+.chamado-aguardando { margin: 14px 0 0; color: #8a6a00; font-size: 12px; }
+
+/* Remédios do chamado */
+.chamado-remedios { border: 1px solid #e3ebe5; border-radius: 10px; }
+.chamado-remedios table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.chamado-remedios th, .chamado-remedios td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #edf1ed; }
+.chamado-remedios th { background: #f8faf8; color: #819087; font-size: 10px; font-weight: 500; }
+.chamado-remedios tr:last-child td { border-bottom: 0; }
+.chamado-remedios td small { display: block; font-size: 10px; color: #8a978f; }
+.chamado-estoque { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Detalhe (gerente) */
+.chamado-detalhe h3 { margin: 18px 0 10px; }
+.chamado-dados { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
+.chamado-dados div { padding: 8px 0; border-bottom: 1px solid #eef3ef; min-width: 0; }
+.chamado-dados dt { color: #809087; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+.chamado-dados dd { margin: 2px 0 0; font-size: 12px; color: #345340; overflow-wrap: anywhere; }
+.chamado-row-pendente td:first-child { box-shadow: inset 3px 0 0 #e0a800; }
+
+/* Cards (funcionário) */
+.chamado-list { list-style: none; margin: 0; padding: 18px 24px; display: grid; gap: 14px; }
+.chamado-card { padding: 16px 18px; border: 1px solid #dfe8e1; border-radius: 12px; background: #fff; }
+.chamado-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.chamado-card-head h3 { margin: 0; font-size: 14px; font-weight: 600; color: #214a32; overflow-wrap: anywhere; }
+.chamado-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.chamado-card-meta { margin: 6px 0 10px; color: #7c8d83; font-size: 11px; }
+.chamado-card-remedios { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12px; color: #4b6456; }
+.chamado-card-remedios li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chamado-card-remedios strong { color: #254b34; font-weight: 600; }
+.chamado-card-remedios small { color: #819087; }
+.chamado-card-desc { margin: 10px 0 0; color: #5f7468; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .chamado-dados { grid-template-columns: 1fr 1fr; }
+  .chamado-list { padding: 14px 16px; }
+  .chamado-toast-region { left: 16px; right: 16px; bottom: 16px; }
+  .chamado-toast { max-width: none; }
+  .chamado-bell-panel { position: fixed; top: 70px; left: 16px; right: 16px; width: auto; }
+  .chamado-inline-error { padding: 12px 16px; }
+}

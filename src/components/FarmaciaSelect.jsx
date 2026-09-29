@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../services/api";
 
 const normalizar = (texto) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -15,7 +16,7 @@ export default function FarmaciaSelect({ value, onChange }) {
       setCarregando(true);
       setErro("");
       try {
-        const response = await fetch("http://localhost:3000/farmacia", { signal: controller.signal });
+        const response = await fetch(`${API_URL}/farmacia`, { signal: controller.signal });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Não foi possível carregar as farmácias.");
         const lista = Array.isArray(result) ? result : result.farmacia;

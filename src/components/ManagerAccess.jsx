@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { authRequest } from "../services/auth";
 import { normalizeGerentes } from "../services/gerenteMapper";
+import { API_URL } from "../services/api";
 
 export default function ManagerAccess() {
   const [state, setState] = useState({ loading: true });
@@ -91,7 +92,7 @@ export function AccountControls({ user }) {
     setProfileError("");
     try {
       const signal = AbortSignal.timeout(15000);
-      const listResponse = await fetch("http://localhost:3000/gerente", {
+      const listResponse = await fetch(`${API_URL}/gerente`, {
         signal,
         method: "GET",
         headers: { Accept: "application/json" },
@@ -133,7 +134,7 @@ export function AccountControls({ user }) {
       }
 
       const detailResponse = await fetch(
-        `http://localhost:3000/gerente/${encodeURIComponent(gerenteId)}`,
+        `${API_URL}/gerente/${encodeURIComponent(gerenteId)}`,
         {
           method: "GET",
           signal,
@@ -232,7 +233,7 @@ export function AccountControls({ user }) {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/gerente/${encodeURIComponent(profile.id)}`,
+        `${API_URL}/gerente/${encodeURIComponent(profile.id)}`,
         {
           method: "PUT",
           headers: {

@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import { unit } from "./managerData";
+import useApiList from "../hooks/useApiList";
+import {
+  API_URL,
+  listarFuncionarios,
+  listarPacientes,
+  normalizeFuncionario,
+  normalizePaciente,
+} from "../services/api";
+import { readEmployeeSession } from "../services/employeeSession";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
@@ -17,16 +26,6 @@ const normalize = (text) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
-
-function readEmployeeSession() {
-  try {
-    const raw = sessionStorage.getItem("intermediEmployeeSession");
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 export default function Employee() {
   const session = readEmployeeSession();
@@ -46,7 +45,7 @@ export default function Employee() {
     setProfileError("");
 
     try {
-      const listResponse = await fetch("http://localhost:3000/funcionario", {
+      const listResponse = await fetch(`${API_URL}/funcionario`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -94,7 +93,7 @@ export default function Employee() {
       }
 
       const detailResponse = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(funcionarioId)}`,
+        `${API_URL}/funcionario/${encodeURIComponent(funcionarioId)}`,
         {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -197,7 +196,7 @@ export default function Employee() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(profile.id)}`,
+        `${API_URL}/funcionario/${encodeURIComponent(profile.id)}`,
         {
           method: "PUT",
           headers: {
@@ -401,61 +400,7 @@ function PageHeader({ title, description, count, label, icon, results }) {
 
 export function EmployeePatients() {
   const [search, setSearch] = useState("");
-  const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadPatients() {
-      try {
-        setLoading(true);
-        setError("");
-        const response = await fetch("http://localhost:3000/paciente", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            payload.message ||
-              payload.error ||
-              "Não foi possível consultar os pacientes.",
-          );
-        }
-
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.paciente)
-            ? payload.paciente
-            : Array.isArray(payload?.pacientes)
-              ? payload.pacientes
-              : [];
-
-        const mapped = rawList.map((item) => ({
-          id: String(item.idPaciente ?? item.id ?? ""),
-          name: item.nomePaciente ?? item.name ?? "Paciente",
-          photo: item.fotoPerfilPaciente ?? item.photo,
-          cpf: item.cpfPaciente ?? item.cpf ?? "",
-          email: item.emailPaciente ?? item.email ?? "",
-          phone: item.telPaciente ?? item.phone ?? "",
-          address: item.ruaPaciente ?? item.endereco ?? "",
-          city: item.cidadePaciente ?? item.cidade ?? "",
-          state: item.estadoPaciente ?? item.estado ?? "",
-          createdAt: item.createdAtPaciente ?? item.createdAt ?? "",
-        }));
-
-        setPatients(mapped);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Erro ao carregar pacientes.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadPatients();
-  }, []);
+  const { items: patients, loading, error } = useApiList(listarPacientes, normalizePaciente);
 
   const filtered = patients.filter((patient) =>
     normalize(`${patient.name} ${patient.email} ${patient.id}`).includes(
@@ -530,73 +475,13 @@ export function EmployeePatients() {
 export function EmployeeTeam() {
   const [search, setSearch] = useState("");
   const [shift, setShift] = useState("");
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadEmployees() {
-      try {
-        setLoading(true);
-        setError("");
-        const response = await fetch("http://localhost:3000/funcionario", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            payload.message ||
-              payload.error ||
-              "Não foi possível consultar os funcionários.",
-          );
-        }
-
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.funcionario)
-            ? payload.funcionario
-            : Array.isArray(payload?.funcionarios)
-              ? payload.funcionarios
-              : [];
-
-        const session = readEmployeeSession();
-        const targetFarmaciaId = String(
-          session?.farmaciasId ?? session?.farmaciaId ?? "",
-        );
-
-        const mapped = rawList.map((item) => ({
-          id: String(item.idFuncionario ?? item.id ?? ""),
-          name: item.nomeFuncionario ?? item.name ?? "Funcionário",
-          photo: item.fotoPerfilFuncionario ?? item.photo,
-          role: item.cargoFuncionario ?? item.role ?? "Funcionário",
-          shift: item.turnoFuncionario ?? item.shift ?? "",
-          email: item.emailFuncionario ?? item.email ?? "",
-          phone: item.telFuncionario ?? item.phone ?? "",
-          matricula: item.matriculaFuncionario ?? item.matricula ?? "",
-          farmaciaId: String(
-            item.fkIdFarmacia ?? item.idFarmacia ?? item.farmaciaId ?? "",
-          ),
-        }));
-
-        const sameUnit = mapped.filter((item) => {
-          return item.farmaciaId && targetFarmaciaId
-            ? item.farmaciaId === targetFarmaciaId
-            : true;
-        });
-
-        setEmployees(sameUnit.length ? sameUnit : mapped);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Erro ao carregar funcionários.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadEmployees();
-  }, []);
+  const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
+  const session = readEmployeeSession();
+  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? "");
+  const sameUnit = targetFarmaciaId
+    ? allEmployees.filter((item) => item.farmaciaId === targetFarmaciaId)
+    : [];
+  const employees = sameUnit.length ? sameUnit : allEmployees;
 
   const filtered = employees.filter((employee) =>
     (!shift || employee.shift === shift) && normalize(`${employee.name} ${employee.role} ${employee.email}`).includes(
