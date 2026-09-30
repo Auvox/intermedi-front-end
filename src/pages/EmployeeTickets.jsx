@@ -1,22 +1,26 @@
 import { useCallback, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
 import {
-  CriticoBadge,
+  AcompanhamentoRemedios,
   ErroComRetry,
   PrioridadeBadge,
+  ProgressoChamado,
   RespostaChamado,
   SeletorPersona,
   StatusChamadoBadge,
 } from "../components/Chamados";
 import SolicitarReposicao from "../components/SolicitarReposicao";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { propsLinha } from "../services/perfil";
 import useApiList from "../hooks/useApiList";
-import { useFuncionarioAtual, usePolling } from "../hooks/useChamados";
+import { INTERVALO_CHAMADOS, useFuncionarioAtual, usePolling } from "../hooks/useChamados";
 import { listarChamadosFuncionario, listarRemedios } from "../services/api";
-import { STATUS_CHAMADO, formatarDataChamado } from "../services/chamados";
+import { INTERVALO_A_CAMINHO, STATUS_CHAMADO, formatarDataChamado, temACaminho } from "../services/chamados";
 
 // "Minhas solicitações": chamados de reposição abertos pelo funcionário.
 export default function EmployeeTickets() {
   const funcionario = useFuncionarioAtual();
+  const { abrirPerfil } = usePerfil();
   const { idFuncionario } = funcionario;
   const [status, setStatus] = useState("");
   const [solicitando, setSolicitando] = useState(false);
@@ -26,7 +30,11 @@ export default function EmployeeTickets() {
     (options) => listarChamadosFuncionario(idFuncionario, status, options).then((data) => data.chamados ?? []),
     [idFuncionario, status],
   );
-  const { data, loading, error, reload, retry } = usePolling(fetcher, { enabled: Boolean(idFuncionario) });
+  const { data, loading, error, reload, retry } = usePolling(fetcher, {
+    enabled: Boolean(idFuncionario),
+    // a cada 5 s enquanto houver remédio a caminho, para trocar para "Recebido" sozinho
+    interval: (lista) => (temACaminho(lista ?? []) ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS),
+  });
   // Filtra também no cliente para não mostrar a lista anterior (outro status ou
   // outro funcionário) enquanto a nova chega
   const todos = (data ?? []).filter((c) => String(c.funcionario?.idFuncionario) === String(idFuncionario));
@@ -104,7 +112,10 @@ export default function EmployeeTickets() {
                   <ul className="chamado-list">
                     {chamados.map((c) => (
                       <li key={c.idChamado}>
-                        <article className="chamado-card" aria-labelledby={`chamado-${c.idChamado}`}>
+                        <article
+                          {...propsLinha((el) => abrirPerfil("chamado", c.idChamado, el), `Abrir chamado #${c.idChamado}: ${c.titulo}`)}
+                          className="perfil-linha chamado-card"
+                        >
                           <div className="chamado-card-head">
                             <h3 id={`chamado-${c.idChamado}`}>{c.titulo}</h3>
                             <div className="chamado-card-badges">
@@ -115,16 +126,11 @@ export default function EmployeeTickets() {
                           <p className="chamado-card-meta">
                             #{c.idChamado} · {formatarDataChamado(c.dataAbertura)} · {c.farmacia?.nomeFarmacia}
                           </p>
-                          <ul className="chamado-card-remedios" aria-label="Remédios solicitados">
-                            {c.remedios.map((r) => (
-                              <li key={r.idRemedio}>
-                                <strong>{r.nomeRemedio}</strong>
-                                {r.dosagemRemedio && ` ${r.dosagemRemedio}`} · {r.quantidadeSolicitada} un.
-                                <small> (estoque {r.estoqueAtual})</small>
-                                {r.critico && <CriticoBadge />}
-                              </li>
-                            ))}
-                          </ul>
+                          {!["pendente", "recusado", "cancelado"].includes(c.status) && <ProgressoChamado chamado={c} />}
+                          <AcompanhamentoRemedios chamado={c} />
+                          {c.status === "resolvido" && (
+                            <p className="chamado-resolvido">Todos os remédios chegaram ✔</p>
+                          )}
                           {c.descricao && <p className="chamado-card-desc">{c.descricao}</p>}
                           {c.resposta ? (
                             <RespostaChamado chamado={c} />
@@ -147,7 +153,7 @@ export default function EmployeeTickets() {
                   </p>
                 )}
                 <p className="mgr-table-note">
-                  {chamados.length} solicitações · Atualiza automaticamente a cada 30 s
+                  {chamados.length} solicitações · Atualiza automaticamente (a cada 5 s enquanto há remédio a caminho)
                 </p>
               </>
             )}

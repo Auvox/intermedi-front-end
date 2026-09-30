@@ -10,6 +10,7 @@ const links = [
   { path: "remedios", label: "Remédios", icon: "pill" },
   { path: "chamados", label: "Chamados", icon: "ticket" },
   { path: "servicos", label: "Serviços", icon: "clipboard" },
+  { path: "pedidos", label: "Pedidos da rede", icon: "truck" },
 ];
 
 function SidebarIcon({ name }) {
@@ -100,6 +101,7 @@ function SidebarIcon({ name }) {
 export default function ManagerSidebar({
   unitName,
   pendingTickets = 0,
+  pendingOrders = 0,
   employee = false,
   admin = false,
 }) {
@@ -107,7 +109,7 @@ export default function ManagerSidebar({
   // seguindo a referencia, mas sem navegacao ate o back entregar.
   const adminLinks = [
     { path: "", label: "Dashboard", icon: "dashboard" },
-    { path: "medicamentos", label: "Medicamentos", icon: "pill", soon: true },
+    { path: "medicamentos", label: "Medicamentos", icon: "pill" },
     { path: "farmacias", label: "Unidades", icon: "pharmacy" },
     { path: "gerentes", label: "Gerentes", icon: "manager" },
     { path: "pacientes", label: "Pacientes", icon: "heart" },
@@ -121,6 +123,8 @@ export default function ManagerSidebar({
     : employee
       ? [links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
       : links;
+  // Badge no menu: chamados pendentes da equipe e pedidos de outras farmácias
+  const contador = (path) => (path === "chamados" ? pendingTickets : path === "pedidos" ? pendingOrders : 0);
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
   return (
@@ -162,12 +166,16 @@ export default function ManagerSidebar({
                 <SidebarIcon name={icon} />
               </span>
               <span className="manager-sidebar-label">{label}</span>
-              {path === "chamados" && pendingTickets > 0 ? (
+              {contador(path) > 0 ? (
                 <span
                   className="manager-sidebar-count"
-                  aria-label={`${pendingTickets} ${pendingTickets === 1 ? "chamado pendente" : "chamados pendentes"}`}
+                  aria-label={
+                    path === "pedidos"
+                      ? `${pendingOrders} ${pendingOrders === 1 ? "pedido da rede pendente" : "pedidos da rede pendentes"}`
+                      : `${pendingTickets} ${pendingTickets === 1 ? "chamado pendente" : "chamados pendentes"}`
+                  }
                 >
-                  {pendingTickets}
+                  {contador(path)}
                 </span>
               ) : (
                 <span className="manager-sidebar-chevron">

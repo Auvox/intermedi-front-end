@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { listarChamadosGerente, listarFuncionarios, listarGerentes, normalizeFuncionario } from "../services/api";
+import {
+  listarChamadosGerente,
+  listarFuncionarios,
+  listarGerentes,
+  listarPedidosGerente,
+  normalizeFuncionario,
+} from "../services/api";
+import { INTERVALO_A_CAMINHO, dataDoChamado, entregaRecente, temACaminho } from "../services/chamados";
 import { readEmployeeSession } from "../services/employeeSession";
 
 export const INTERVALO_CHAMADOS = 30000;
@@ -7,9 +14,12 @@ export const INTERVALO_CHAMADOS = 30000;
 // Consulta a API ao montar, a cada `interval` ms e quando a aba volta a ficar
 // visível. Só a primeira carga mostra "carregando"; as seguintes atualizam em
 // silêncio. `fetcher` recebe { signal } e deve ser estável (useCallback).
-export function usePolling(fetcher, { enabled = true, interval = INTERVALO_CHAMADOS } = {}) {
+// `interval` pode ser um número ou uma função (dados) => número, para consultar
+// mais rápido enquanto há algo a caminho.
+export function usePolling(fetcher, { enabled = true, interval: intervalOpcao = INTERVALO_CHAMADOS } = {}) {
   const [state, setState] = useState({ data: null, loading: enabled, error: "" });
   const controllerRef = useRef(null);
+  const interval = typeof intervalOpcao === "function" ? intervalOpcao(state.data) : intervalOpcao;
 
   const load = useCallback(async () => {
     if (!enabled) return;
@@ -52,6 +62,20 @@ export function usePolling(fetcher, { enabled = true, interval = INTERVALO_CHAMA
   return { ...state, reload: load, retry, setData };
 }
 
+// Segundos até `dataPrevistaChegada` (UTC), recalculados a cada 1 s no próprio
+// navegador — sem chamar a API. null quando não há previsão.
+export function useContagemRegressiva(dataPrevistaChegada) {
+  const alvo = dataDoChamado(dataPrevistaChegada)?.getTime() ?? null;
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    if (alvo === null) return undefined;
+    const timer = setInterval(() => setAgora(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [alvo]);
+  if (alvo === null) return null;
+  return Math.max(0, Math.ceil((alvo - agora) / 1000));
+}
+
 // Mensagem temporária (toast) que some sozinha
 export function useToast(duracao = 5000) {
   const [message, setMessage] = useState("");
@@ -75,6 +99,19 @@ function lerEscolha(chave) {
 }
 function salvarEscolha(chave, valor) {
   try { localStorage.setItem(chave, valor); } catch { /* só perde a lembrança */ }
+  // avisa as outras instâncias do hook na mesma aba (ex.: sino do topo e a página)
+  window.dispatchEvent(new CustomEvent(EVENTO_ESCOLHA, { detail: { chave, valor } }));
+}
+const EVENTO_ESCOLHA = "intermedi:escolha";
+// Mantém a escolha sincronizada entre componentes que usam a mesma chave
+function useEscolha(chave) {
+  const [valor, setValor] = useState(() => lerEscolha(chave));
+  useEffect(() => {
+    const ouvir = (event) => { if (event.detail?.chave === chave) setValor(event.detail.valor); };
+    window.addEventListener(EVENTO_ESCOLHA, ouvir);
+    return () => window.removeEventListener(EVENTO_ESCOLHA, ouvir);
+  }, [chave]);
+  return [valor, setValor];
 }
 
 // idGerente do back-end: pelo e-mail da sessão ou, sem sessão, pelo gerente escolhido.
@@ -83,7 +120,7 @@ export function useIdGerente(email, { aguardar = false } = {}) {
   const normalizado = String(email || "").trim().toLowerCase();
   const [state, setState] = useState({ gerentes: [], loading: true, error: "" });
   const [tentativa, setTentativa] = useState(0);
-  const [escolhido, setEscolhido] = useState(() => lerEscolha("intermedi.teste.gerente"));
+  const [escolhido, setEscolhido] = useEscolha("intermedi.teste.gerente");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,12 +139,13 @@ export function useIdGerente(email, { aguardar = false } = {}) {
   const escolher = useCallback((id) => {
     setEscolhido(String(id));
     salvarEscolha("intermedi.teste.gerente", String(id));
-  }, []);
+  }, [setEscolhido]);
 
   const gerentes = state.gerentes.map((g) => ({
     id: String(g.idGerente ?? g.id),
     nome: g.nomeGerente ?? g.nome ?? "Gerente",
     email: String(g.emailGerente ?? g.email ?? "").trim().toLowerCase(),
+    idFarmacia: g.fkIdFarmacia != null ? String(g.fkIdFarmacia) : null,
   }));
   const daSessao = normalizado ? gerentes.find((g) => g.email === normalizado) : null;
   const atual = daSessao ?? gerentes.find((g) => g.id === escolhido) ?? gerentes[0] ?? null;
@@ -117,6 +155,7 @@ export function useIdGerente(email, { aguardar = false } = {}) {
   return {
     idGerente: loading ? null : atual?.id ?? null,
     nome: atual?.nome ?? "",
+    idFarmacia: loading ? null : atual?.idFarmacia ?? null,
     gerentes,
     temSessao: Boolean(daSessao),
     escolher,
@@ -130,7 +169,7 @@ export function useIdGerente(email, { aguardar = false } = {}) {
 export function useFuncionarioAtual() {
   const sessionId = readEmployeeSession()?.id;
   const [state, setState] = useState({ funcionarios: [], loading: true, error: "" });
-  const [escolhido, setEscolhido] = useState(() => lerEscolha("intermedi.teste.funcionario"));
+  const [escolhido, setEscolhido] = useEscolha("intermedi.teste.funcionario");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -145,7 +184,7 @@ export function useFuncionarioAtual() {
   const escolher = useCallback((id) => {
     setEscolhido(String(id));
     salvarEscolha("intermedi.teste.funcionario", String(id));
-  }, []);
+  }, [setEscolhido]);
 
   const { funcionarios } = state;
   const idFuncionario = sessionId
@@ -154,14 +193,134 @@ export function useFuncionarioAtual() {
   return { idFuncionario, funcionarios, temSessao: Boolean(sessionId), escolher, loading: !sessionId && state.loading, error: state.error };
 }
 
+// Funcionário atual + a farmácia onde ele trabalha (fkIdFarmacia do cadastro ou,
+// sem isso, o farmaciasId salvo na sessão).
+export function useFarmaciaDoFuncionario() {
+  const funcionario = useFuncionarioAtual();
+  const atual = funcionario.funcionarios.find((f) => String(f.id) === String(funcionario.idFuncionario));
+  const session = readEmployeeSession();
+  const idFarmacia = atual?.farmaciaId || String(session?.farmaciasId ?? session?.farmaciaId ?? "") || null;
+  return { ...funcionario, idFarmacia };
+}
+
 // Todos os chamados da farmácia do gerente (página de chamados e ficha do funcionário)
 export function useChamadosGerente(idGerente) {
   const fetcher = useCallback(
     (options) => listarChamadosGerente(idGerente, "", options).then((data) => data.chamados ?? []),
     [idGerente],
   );
-  const { data, ...rest } = usePolling(fetcher, { enabled: Boolean(idGerente) });
+  const { data, ...rest } = usePolling(fetcher, {
+    enabled: Boolean(idGerente),
+    interval: (lista) => (temACaminho(lista ?? []) ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS),
+  });
   return { chamados: data ?? [], carregado: data !== null, ...rest };
+}
+
+// Remédios que chegaram (pedidos entre farmácias com status "recebida").
+// tipos: "enviados" = chegou na farmácia deste gerente; "recebidos" = ele forneceu.
+// - onNovas(entregas): chamado quando uma entrega aparece enquanto a tela está aberta
+// - naoLidas: entregas das últimas 24 h ainda não vistas no sino (guardado no
+//   navegador por `escopo`, então quem estava fora vê o badge ao voltar)
+export function useEntregas(idGerente, { tipos = ["enviados"], escopo, onNovas } = {}) {
+  const chaveTipos = tipos.join(",");
+  const fetcher = useCallback(
+    async (options) => {
+      const listas = await Promise.all(
+        chaveTipos.split(",").map((tipo) =>
+          listarPedidosGerente(idGerente, tipo, "", options).then((data) =>
+            (data.pedidos ?? []).map((p) => ({ ...p, tipo })),
+          ),
+        ),
+      );
+      return listas.flat();
+    },
+    [idGerente, chaveTipos],
+  );
+  const { data, loading, error, reload, retry } = usePolling(fetcher, {
+    enabled: Boolean(idGerente),
+    // a cada 5 s enquanto houver remédio a caminho: a notificação sai logo que chega
+    interval: (lista) => ((lista ?? []).some((p) => p.status === "enviada") ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS),
+  });
+
+  const entregas = (data ?? [])
+    .filter(entregaRecente)
+    .sort((a, b) => String(b.dataRecebimento).localeCompare(String(a.dataRecebimento)));
+
+  // Aviso na hora: compara com as entregas já conhecidas nesta sessão
+  const conhecidas = useRef(null);
+  const callback = useRef(onNovas);
+  useEffect(() => { callback.current = onNovas; });
+  useEffect(() => { conhecidas.current = null; }, [idGerente]);
+  useEffect(() => {
+    if (!data) return;
+    const recebidas = data.filter((p) => p.status === "recebida");
+    const chave = (p) => `${p.tipo}:${p.idRedistribuicao}`;
+    if (conhecidas.current) {
+      const novas = recebidas.filter((p) => !conhecidas.current.has(chave(p)));
+      if (novas.length) callback.current?.(novas);
+    }
+    conhecidas.current = new Set(recebidas.map(chave));
+  }, [data]);
+
+  // Não lidas: mais novas que a última vez que o sino foi aberto
+  const chaveLido = `intermedi.entregas.lido.${escopo}`;
+  const [lidos, setLidos] = useState({});
+  const lidoAte = lidos[chaveLido] ?? lerEscolha(chaveLido);
+  const naoLidas = entregas.filter((p) => String(p.dataRecebimento) > lidoAte).length;
+  function marcarLidas() {
+    const maisNova = entregas[0]?.dataRecebimento;
+    if (!maisNova || maisNova <= lidoAte) return;
+    salvarEscolha(chaveLido, maisNova);
+    setLidos((atual) => ({ ...atual, [chaveLido]: maisNova }));
+  }
+  const isNaoLida = (p) => String(p.dataRecebimento) > lidoAte;
+  return { entregas, naoLidas, isNaoLida, marcarLidas, loading, error, reload, retry };
+}
+
+// Um gerente da farmácia (para o funcionário consultar os pedidos da unidade dele)
+export function useGerenteDaFarmacia(idFarmacia) {
+  const [gerentes, setGerentes] = useState([]);
+  useEffect(() => {
+    if (!idFarmacia) return undefined;
+    const controller = new AbortController();
+    listarGerentes({ signal: controller.signal }).then(setGerentes).catch(() => {});
+    return () => controller.abort();
+  }, [idFarmacia]);
+  const gerente = gerentes.find((g) => String(g.fkIdFarmacia ?? g.idFarmacia) === String(idFarmacia));
+  return gerente ? String(gerente.idGerente ?? gerente.id) : null;
+}
+
+// Pedidos de outras farmácias aguardando a resposta desta (sininho do gerente
+// fornecedor). Chama onNovoPedido(pedido) quando aparece um idRedistribuicao novo.
+export function usePedidosRecebidosPendentes(idGerente, { onNovoPedido } = {}) {
+  const fetcher = useCallback(
+    (options) => listarPedidosGerente(idGerente, "recebidos", "solicitada", options),
+    [idGerente],
+  );
+  const { data, loading, error, reload, retry } = usePolling(fetcher, { enabled: Boolean(idGerente) });
+  const conhecidos = useRef(null);
+  const callback = useRef(onNovoPedido);
+  useEffect(() => { callback.current = onNovoPedido; });
+  useEffect(() => { conhecidos.current = null; }, [idGerente]);
+
+  useEffect(() => {
+    if (!data) return;
+    const ids = (data.pedidos ?? []).map((p) => p.idRedistribuicao);
+    if (conhecidos.current) {
+      const novo = (data.pedidos ?? []).find((p) => !conhecidos.current.has(p.idRedistribuicao));
+      if (novo) callback.current?.(novo);
+    }
+    conhecidos.current = new Set(ids);
+  }, [data]);
+
+  return {
+    totalPendentes: data?.totalPendentes ?? 0,
+    pedidos: data?.pedidos ?? [],
+    loading,
+    error,
+    reload,
+    retry,
+  };
 }
 
 // Notificações do gerente: pendentes da farmácia, consultados a cada 30 s.

@@ -3,6 +3,9 @@ import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
+import PerfilProvider from "../components/perfil/PerfilProvider";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { propsLinha } from "../services/perfil";
 import { unit } from "./managerData";
 import useApiList from "../hooks/useApiList";
 import {
@@ -13,6 +16,10 @@ import {
   normalizePaciente,
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
+import { ToastRegion } from "../components/Chamados";
+import { SinoEntregas } from "../components/NotificacoesEntregas";
+import { useEntregas, useFarmaciaDoFuncionario, useGerenteDaFarmacia, useToast } from "../hooks/useChamados";
+import { textoEntregas } from "../services/chamados";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
@@ -31,6 +38,17 @@ export default function Employee() {
   const session = readEmployeeSession();
   const employeeName = session?.name || "Funcionário Local";
   const employeeUnit = session?.unitName || unit;
+
+  // Notificação de remédios que chegaram na farmácia do funcionário: consulta os
+  // pedidos "enviados" da unidade pelo gerente dela (não há endpoint por farmácia)
+  const funcionario = useFarmaciaDoFuncionario();
+  const idGerenteUnidade = useGerenteDaFarmacia(funcionario.idFarmacia);
+  const [toast, notify] = useToast(8000);
+  const entregas = useEntregas(idGerenteUnidade, {
+    tipos: ["enviados"],
+    escopo: `funcionario:${funcionario.idFuncionario}:${funcionario.idFarmacia}`,
+    onNovas: (novas) => notify(textoEntregas(novas)),
+  });
 
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -269,6 +287,7 @@ export default function Employee() {
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{employeeUnit}</strong>
           </span>
+          <SinoEntregas entregas={entregas} />
           <div className="mgr-account emp-account">
             <button
               type="button"
@@ -288,13 +307,16 @@ export default function Employee() {
             </Link>
           </div>
         </div>
-        <main className="mgr-main directory-layout">
-          <Outlet />
-        </main>
+        <PerfilProvider plataforma="funcionario">
+          <main className="mgr-main directory-layout">
+            <Outlet />
+          </main>
+        </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      <ToastRegion message={toast} />
 
       {profileOpen && (
         <dialog
@@ -399,6 +421,7 @@ function PageHeader({ title, description, count, label, icon, results }) {
 }
 
 export function EmployeePatients() {
+  const { abrirPerfil } = usePerfil();
   const [search, setSearch] = useState("");
   const { items: patients, loading, error } = useApiList(listarPacientes, normalizePaciente);
 
@@ -442,7 +465,7 @@ export function EmployeePatients() {
             </thead>
             <tbody>
               {filtered.map((patient) => (
-                <tr key={patient.id}>
+                <tr key={patient.id} {...propsLinha((el) => abrirPerfil("paciente", patient.id, el), `Abrir perfil de ${patient.name}`)}>
                   <td>
                     <PersonCell name={patient.name} detail={patient.email} role="paciente" photo={patient.photo} />
                   </td>
@@ -473,6 +496,7 @@ export function EmployeePatients() {
 }
 
 export function EmployeeTeam() {
+  const { abrirPerfil } = usePerfil();
   const [search, setSearch] = useState("");
   const [shift, setShift] = useState("");
   const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
@@ -516,7 +540,7 @@ export function EmployeeTeam() {
             {[...new Set(employees.map(employee => employee.shift).filter(Boolean))].map(value => <option key={value} value={value}>{value}</option>)}
           </select>
         </div>
-        <TeamTable employees={filtered} />
+        <TeamTable employees={filtered} onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)} />
         {!loading && !error && !filtered.length && (
           <p className="mgr-empty">
             Nenhum funcionário encontrado. Tente outro nome ou cargo.

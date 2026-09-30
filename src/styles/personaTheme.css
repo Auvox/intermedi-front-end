@@ -95,3 +95,5 @@
 .mgr-shell .persona-avatar[data-persona="paciente"] { background: #fff0e1; color: #bd570b; border-color: #f6d8bc; }
 .mgr-shell .persona-avatar[data-persona="funcionario"] { background: #edf5fd; color: #2477b9; border-color: #cee2f5; }
 .mgr-shell .persona-avatar[data-persona="admin"] { background: #f0f0f0; color: #171717; border-color: #dedede; }
+.persona-iniciais { font-weight: 700; font-size: 13px; letter-spacing: .3px; line-height: 1; }
+.perfil-hero-avatar .persona-iniciais { font-size: 38px; }

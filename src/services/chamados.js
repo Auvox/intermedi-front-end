@@ -1,9 +1,11 @@
 // Rótulos, cores e datas dos chamados, compartilhados por funcionário e gerente.
 
+// Ao aceitar, o chamado vai para "em_andamento" (pedido à rede). "aceito" fica
+// só para exibir dados antigos.
 export const STATUS_CHAMADO = {
   pendente: { label: "Pendente", tone: "yellow" },
-  aceito: { label: "Aceito", tone: "blue" },
   em_andamento: { label: "Em andamento", tone: "purple" },
+  aceito: { label: "Aceito", tone: "blue" },
   resolvido: { label: "Resolvido", tone: "green" },
   recusado: { label: "Recusado", tone: "red" },
   cancelado: { label: "Cancelado", tone: "neutral" },
@@ -23,8 +25,77 @@ export const TURNO_FUNCIONARIO = {
   integral: "Integral",
 };
 
+// Situação de cada remédio do chamado (null = chamado recusado/cancelado)
+export const SITUACAO_ITEM = {
+  aguardando_gerente: { label: "Aguardando gerente", tone: "yellow", icone: "clock" },
+  aguardando_fornecedor: { label: "Aguardando farmácia fornecedora", tone: "blue", icone: "pharmacy" },
+  a_caminho: { label: "A caminho", tone: "purple", icone: "truck" },
+  recebido: { label: "Recebido", tone: "green", icone: "check" },
+  sem_fornecedor: { label: "Sem fornecedor", tone: "red", icone: "alert" },
+};
+
+// Status de um pedido entre farmácias (redistribuição)
+export const STATUS_PEDIDO = {
+  solicitada: { label: "Aguardando resposta", tone: "yellow" },
+  aprovada: { label: "Aprovado", tone: "blue" },
+  enviada: { label: "A caminho", tone: "purple" },
+  recebida: { label: "Entregue", tone: "green" },
+  recusada: { label: "Recusado", tone: "red" },
+  cancelada: { label: "Cancelado", tone: "neutral" },
+};
+
 export const statusChamado = (status) =>
   STATUS_CHAMADO[status] ?? { label: status || "—", tone: "neutral" };
+export const situacaoItem = (situacao) =>
+  SITUACAO_ITEM[situacao] ?? { label: "—", tone: "neutral", icone: null };
+export const statusPedido = (status) =>
+  STATUS_PEDIDO[status] ?? { label: status || "—", tone: "neutral" };
+
+// Enquanto houver remédio a caminho a tela consulta a API a cada 5 s (para
+// trocar para "Recebido" sozinha); fora isso, a cada 30 s.
+export const INTERVALO_A_CAMINHO = 5000;
+export const temACaminho = (chamados = []) =>
+  chamados.some((c) => (c.remedios ?? []).some((r) => r.situacao === "a_caminho"));
+
+// Remédios recebidos / total, para a barra de progresso
+export function progressoChamado(chamado) {
+  const total = chamado.remedios?.length ?? 0;
+  const recebidos = (chamado.remedios ?? []).filter((r) => r.situacao === "recebido").length;
+  return { recebidos, total };
+}
+
+// Entregas entre farmácias: pedido que chegou (status "recebida") nas últimas 24 h
+const JANELA_ENTREGAS_MS = 24 * 60 * 60 * 1000;
+export function entregaRecente(pedido) {
+  const chegada = dataDoChamado(pedido.dataRecebimento);
+  return pedido.status === "recebida" && Boolean(chegada) && Date.now() - chegada.getTime() < JANELA_ENTREGAS_MS;
+}
+export const chaveEntrega = (p) => `${p.tipo}:${p.idRedistribuicao}`;
+export const itemEntregue = (p) =>
+  `${p.quantidade}× ${[p.nomeRemedio, p.dosagemRemedio].filter(Boolean).join(" ")}`;
+
+// Texto da notificação. tipo "enviados": chegou na minha farmácia;
+// "recebidos": eu forneci e o remédio chegou na outra farmácia.
+export function textoEntregas(entregas) {
+  const chegaram = entregas.filter((p) => p.tipo !== "recebidos");
+  const forneci = entregas.filter((p) => p.tipo === "recebidos");
+  const partes = [];
+  if (chegaram.length) {
+    partes.push(`Remédios entregues na sua farmácia: ${chegaram
+      .map((p) => `${itemEntregue(p)} (de ${p.nomeFarmaciaOrigem})`).join(", ")}.`);
+  }
+  if (forneci.length) {
+    partes.push(`Entrega concluída: ${forneci
+      .map((p) => `${itemEntregue(p)} chegou à ${p.nomeFarmaciaDestino}`).join(", ")}.`);
+  }
+  return partes.join(" ");
+}
+
+// "1:42" a partir de segundos
+export function formatarContagem(segundos) {
+  const s = Math.max(0, Math.ceil(segundos));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 export const prioridadeChamado = (prioridade) =>
   PRIORIDADE_CHAMADO[prioridade] ?? { label: prioridade || "—", tone: "neutral" };
 

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DirectoryStats } from "../components/Directory";
 import ManagerIcon from "../components/ManagerIcon";
-import { ChamadoModal, ErroComRetry } from "../components/Chamados";
+import { ErroComRetry } from "../components/Chamados";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { propsLinha } from "../services/perfil";
 import useApiList from "../hooks/useApiList";
 import { listarServicos, normalizeText } from "../services/api";
 import { formatarDataChamado } from "../services/chamados";
@@ -15,7 +17,7 @@ export default function ManagerServices() {
   const { items: servicos, loading, error, reload } = useApiList(listarServicos);
   const [params, setParams] = useSearchParams();
   const [busca, setBusca] = useState("");
-  const [selecionado, setSelecionado] = useState(null);
+  const { abrirPerfil } = usePerfil();
   // ?funcionario= permite abrir a tela já filtrada
   const funcionario = params.get("funcionario") || "";
 
@@ -115,19 +117,23 @@ export default function ManagerServices() {
                 </thead>
                 <tbody>
                   {filtrados.map((s) => (
-                    <tr key={s.idServico}>
+                    <tr key={s.idServico} {...propsLinha((el) => abrirPerfil("servico", s.idServico, el), `Abrir serviço nº ${s.idServico}`)}>
                       <td>
                         <button
                           type="button"
                           className="emp-service-link"
                           aria-label={`Consultar serviço nº ${s.idServico}`}
-                          onClick={() => setSelecionado(s)}
+                          onClick={(e) => abrirPerfil("servico", s.idServico, e.currentTarget.closest("tr"))}
                         >
                           <span className="emp-service-icon"><ManagerIcon name="clipboard" size={19} /></span>
                           <span><strong>Serviço nº {s.idServico}</strong><small>Ver informações</small></span>
                         </button>
                       </td>
-                      <td>{mostrar(s.nomePaciente)}</td>
+                      <td>
+                        <button type="button" className="perfil-link" onClick={(e) => abrirPerfil("paciente", s.idPaciente, e.currentTarget)}>
+                          {mostrar(s.nomePaciente)}
+                        </button>
+                      </td>
                       <td>
                         <button
                           type="button"
@@ -174,20 +180,6 @@ export default function ManagerServices() {
         )}
       </section>
 
-      {selecionado && (
-        <ChamadoModal title={`Serviço nº ${selecionado.idServico}`} onClose={() => setSelecionado(null)}>
-          <dl className="chamado-dados">
-            <div><dt>Data e hora</dt><dd>{formatarDataChamado(selecionado.dataServico)}</dd></div>
-            <div><dt>Paciente</dt><dd>{mostrar(selecionado.nomePaciente)}</dd></div>
-            <div><dt>Funcionário</dt><dd>{mostrar(selecionado.nomeFuncionario)}</dd></div>
-            <div><dt>Farmácia</dt><dd>{mostrar(selecionado.nomeFarmacia)}</dd></div>
-            <div><dt>Medicamentos</dt><dd>{selecionado.totalMedicamentos}</dd></div>
-            <div><dt>Unidades</dt><dd>{Number(selecionado.quantidadeTotal || 0).toLocaleString("pt-BR")}</dd></div>
-          </dl>
-          <h3>Observação</h3>
-          <p className="mgr-description">{mostrar(selecionado.observacao)}</p>
-        </ChamadoModal>
-      )}
     </>
   );
 }

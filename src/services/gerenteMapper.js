@@ -1,3 +1,4 @@
+import { fotoPessoa } from "./api";
 export function normalizeGerentes(payload = []) {
   return payload.map((manager, index) => {
     const id = manager.idGerente ?? manager.id ?? String(index + 1);
@@ -18,7 +19,7 @@ export function normalizeGerentes(payload = []) {
     return {
       id: String(id),
       name,
-      photo: manager.fotoPerfilGerente ?? manager.photo,
+      photo: fotoPessoa(manager.fotoGerente ?? manager.fotoPerfilGerente) ?? manager.photo,
       email,
       farmaciaId: manager.fkIdFarmacia ?? manager.idFarmacia ?? null,
       idEndereco: manager.idEndereco ?? null,
