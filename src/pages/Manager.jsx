@@ -1,6 +1,6 @@
 import PersonaAvatar from "../components/PersonaAvatar";
 import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
   Outlet,
@@ -16,6 +16,7 @@ import useApiList from "../hooks/useApiList";
 import {
   useChamadosGerente,
   useChamadosPendentes,
+  usePolling,
   useIdGerente,
   useToast,
 } from "../hooks/useChamados";
@@ -30,6 +31,8 @@ import {
   ToastRegion,
 } from "../components/Chamados";
 import { NotificacoesGerente, ResponderChamado } from "../components/ChamadosGerente";
+import { EstoqueTabela } from "../components/Remedios";
+import { ordenarEstoque } from "../services/remedios";
 import {
   STATUS_CHAMADO,
   TURNO_FUNCIONARIO,
@@ -41,18 +44,16 @@ import {
 } from "../services/chamados";
 import {
   API_URL,
-  cadastrarRemedio,
   listarFarmacias,
   listarFuncionarios,
   listarGerentes,
   listarPacientes,
-  listarRemedios,
+  listarEstoqueGerente,
   normalizeFuncionario,
   normalizePaciente,
   normalizeText,
 } from "../services/api";
 import {
-  availability,
   formatDate,
   initialData,
   inPeriod,
@@ -127,44 +128,6 @@ function Header({ eyebrow, title, description, action, featured = false }) {
 }
 function Stats({ items }) {
   return <DirectoryStats items={items.map(([label, value, , icon]) => [label, value, icon])} />;
-}
-function MedicineTable({ medicines }) {
-  return (
-    <div className="mgr-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Medicamento</th>
-            <th>Fabricante</th>
-            <th>Categoria</th>
-            <th>Quantidade</th>
-            <th>Disponibilidade</th>
-          </tr>
-        </thead>
-        <tbody>
-          {medicines.map((m) => (
-            <tr key={m.id}>
-              <td>
-                <strong>{m.name}</strong>
-                {m.dose && <small>{m.dose}</small>}
-              </td>
-              <td>{m.manufacturer || "—"}</td>
-              <td>{m.categories || "—"}</td>
-              <td>
-                {m.quantity === null ? "Não informada" : <><strong>{m.quantity}</strong> un.</>}
-              </td>
-              <td>
-                <Badge tone={availability(m).tone}>
-                  {availability(m).label}
-                </Badge>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {!medicines.length && <Empty />}
-    </div>
-  );
 }
 export default function Manager() {
   const location = useLocation();
@@ -266,7 +229,13 @@ export default function Manager() {
 }
 export function ManagerDashboard() {
   const { user, gerente, pendentes } = useOutletContext();
-  const { items: medicines, loading: loadingMedicines, error: medicinesError } = useApiList(listarRemedios);
+  const buscarEstoque = useCallback(
+    (options) => listarEstoqueGerente(gerente.idGerente, {}, options),
+    [gerente.idGerente],
+  );
+  const estoque = usePolling(buscarEstoque, { enabled: Boolean(gerente.idGerente), interval: 0 });
+  const resumo = estoque.data?.resumo;
+  const atencao = resumo ? resumo.criticos + resumo.zerados + resumo.vencidos : null;
   const { items: patients } = useApiList(listarPacientes);
   const managerName = (gerente.temSessao ? user?.name : gerente.nome) || user?.name || "Gerente";
   const managerUnit = user?.unitName || unit;
@@ -292,9 +261,9 @@ export function ManagerDashboard() {
             "ticket",
           ],
           [
-            "Remédios cadastrados",
-            medicines.length,
-            "Medicamentos cadastrados na rede",
+            "Itens no estoque",
+            resumo?.totalItens ?? null,
+            "Remédios da sua farmácia",
             "pill",
           ],
           [
@@ -312,9 +281,9 @@ export function ManagerDashboard() {
         <div>
           <strong>Estoque em dia, cuidado que continua.</strong>
           <p>
-            {medicines.filter((m) => ["red", "yellow"].includes(availability(m).tone)).length}{" "}
-            medicamentos precisam de atenção. Consulte o estoque e acompanhe as
-            solicitações da equipe.
+            {atencao === null
+              ? "Consulte o estoque e acompanhe as solicitações da equipe."
+              : `${atencao} ${atencao === 1 ? "item precisa" : "itens precisam"} de atenção (críticos, zerados ou vencidos). Consulte o estoque e acompanhe as solicitações da equipe.`}
           </p>
         </div>
         <Link to="/gerente/remedios">Ver estoque →</Link>
@@ -322,21 +291,22 @@ export function ManagerDashboard() {
       <section className="mgr-panel">
         <div className="mgr-panel-head">
           <div>
-            <h2>Remédios cadastrados</h2>
-            <p>Uma visão dos remédios e dos itens que precisam de atenção.</p>
+            <h2>Estoque da farmácia</h2>
+            <p>Os itens que mais precisam de atenção aparecem primeiro.</p>
           </div>
           <Link to="/gerente/remedios">Ver todos →</Link>
         </div>
-        {loadingMedicines ? (
-          <p className="mgr-empty" role="status">Carregando remédios…</p>
-        ) : medicinesError ? (
-          <p className="mgr-empty" role="alert">{medicinesError}</p>
+        {!gerente.idGerente || estoque.loading ? (
+          <p className="mgr-empty" role="status">Carregando estoque…</p>
+        ) : estoque.error ? (
+          <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
+        ) : estoque.data?.estoque?.length ? (
+          <EstoqueTabela itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)} />
         ) : (
-          <MedicineTable medicines={medicines.slice(0, 5)} />
+          <p className="mgr-empty">O estoque desta farmácia está vazio.</p>
         )}
         <p className="mgr-table-note">
-          Crítico: até o mínimo · Quase acabando: até 2× o mínimo · Disponível:
-          acima de 2× o mínimo.
+          Crítico: quantidade no mínimo ou abaixo · Zerado: sem unidades · Lote vencido não pode ser entregue.
         </p>
       </section>
       <section className="mgr-panel">
@@ -994,153 +964,6 @@ export function ManagerPatients() {
           {filtered.length} de {patients.length} pacientes
         </p>
       </section>
-    </>
-  );
-}
-const emptyMedicine = { nomeRemedio: "", dosagemRemedio: "", fabricanteRemedio: "", descRemedio: "" };
-
-export function ManagerMedicines() {
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("busca") || "");
-  const [status, setStatus] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState(emptyMedicine);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [notice, setNotice] = useState("");
-  const { items: allMedicines, loading, error, reload } = useApiList(listarRemedios);
-
-  const medicines = allMedicines.filter(
-    (m) =>
-      (!status || availability(m).tone === status) &&
-      normalizeText(`${m.name} ${m.dose} ${m.manufacturer} ${m.categories}`).includes(
-        normalizeText(search.trim()),
-      ),
-  );
-
-  function closeForm() {
-    setAdding(false);
-    setForm(emptyMedicine);
-    setFormError("");
-  }
-
-  async function submit(event) {
-    event.preventDefault();
-    if (!form.nomeRemedio.trim()) {
-      setFormError("Informe o nome do remédio.");
-      return;
-    }
-    setSaving(true);
-    setFormError("");
-    try {
-      await cadastrarRemedio(
-        Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim()])),
-      );
-      setNotice(`${form.nomeRemedio.trim()} cadastrado com sucesso.`);
-      closeForm();
-      reload();
-    } catch (err) {
-      setFormError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const field = (name, label, props = {}) => (
-    <label>
-      {label}
-      <input
-        value={form[name]}
-        onChange={(e) => setForm((current) => ({ ...current, [name]: e.target.value }))}
-        {...props}
-      />
-    </label>
-  );
-
-  return (
-    <>
-      <Header
-        title="Medicamentos"
-        description="Consulte os medicamentos da rede e cadastre novos itens."
-        action={
-          <button className="mgr-primary" onClick={() => setAdding(true)}>
-            + Cadastrar remédio
-          </button>
-        }
-      />
-
-      <Stats
-        items={[
-          ["Itens no catálogo", allMedicines.length, "Cadastrados na rede", "pill"],
-          ["Resultados", medicines.length, "Conforme os filtros", "check"],
-          ["Precisam de atenção", allMedicines.filter((m) => ["red", "yellow"].includes(availability(m).tone)).length, "Estoque baixo", "alert"],
-        ]}
-      />
-
-      {notice && <p className="mgr-demo" role="status">{notice}</p>}
-
-      <section className="mgr-panel">
-        <div className="mgr-toolbar">
-          <input
-            type="search"
-            aria-label="Buscar remédio"
-            placeholder="Buscar nome, dosagem, fabricante ou categoria…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            aria-label="Filtrar disponibilidade"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="">Todas as disponibilidades</option>
-            <option value="green">Disponível</option>
-            <option value="yellow">Quase acabando</option>
-            <option value="red">Crítico</option>
-            <option value="neutral">Estoque não informado</option>
-          </select>
-          <button type="button" className="mgr-secondary" disabled={loading} onClick={reload}>
-            Atualizar
-          </button>
-        </div>
-
-        {loading ? (
-          <p className="mgr-empty" role="status">Carregando remédios…</p>
-        ) : error ? (
-          <p className="mgr-empty" role="alert">{error}</p>
-        ) : (
-          <MedicineTable medicines={medicines} />
-        )}
-
-        <p className="mgr-table-note">
-          {medicines.length} de {allMedicines.length} remédios · Crítico: quantidade ≤ mínimo · Quase acabando: quantidade ≤ 2× mínimo · Disponível: quantidade &gt; 2× mínimo.
-        </p>
-      </section>
-
-      {adding && (
-        <Modal title="Cadastrar remédio" onClose={closeForm}>
-          <form className="mgr-form" onSubmit={submit}>
-            {field("nomeRemedio", "Nome *", { required: true, autoFocus: true, maxLength: 120 })}
-            <div className="mgr-form-row">
-              {field("dosagemRemedio", "Dosagem", { placeholder: "Ex.: 500mg", maxLength: 60 })}
-              {field("fabricanteRemedio", "Fabricante", { maxLength: 120 })}
-            </div>
-            <label>
-              Descrição
-              <textarea
-                rows={3}
-                maxLength={500}
-                value={form.descRemedio}
-                onChange={(e) => setForm((current) => ({ ...current, descRemedio: e.target.value }))}
-              />
-            </label>
-            {formError && <p role="alert">{formError}</p>}
-            <button className="mgr-primary" type="submit" disabled={saving}>
-              {saving ? "Salvando…" : "Cadastrar remédio"}
-            </button>
-          </form>
-        </Modal>
-      )}
     </>
   );
 }

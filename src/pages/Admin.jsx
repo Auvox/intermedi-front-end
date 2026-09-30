@@ -236,6 +236,7 @@ const normalizeFuncionarios = (payload = []) =>
 
 // Apenas rotulo visual da trilha no topo (nao altera rotas nem dados).
 const breadcrumbLabels = {
+  medicamentos: "Medicamentos",
   gerentes: "Gerentes",
   farmacias: "Unidades",
   pacientes: "Pacientes",

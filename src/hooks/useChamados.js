@@ -154,6 +154,16 @@ export function useFuncionarioAtual() {
   return { idFuncionario, funcionarios, temSessao: Boolean(sessionId), escolher, loading: !sessionId && state.loading, error: state.error };
 }
 
+// Funcionário atual + a farmácia onde ele trabalha (fkIdFarmacia do cadastro ou,
+// sem isso, o farmaciasId salvo na sessão).
+export function useFarmaciaDoFuncionario() {
+  const funcionario = useFuncionarioAtual();
+  const atual = funcionario.funcionarios.find((f) => String(f.id) === String(funcionario.idFuncionario));
+  const session = readEmployeeSession();
+  const idFarmacia = atual?.farmaciaId || String(session?.farmaciasId ?? session?.farmaciaId ?? "") || null;
+  return { ...funcionario, idFarmacia };
+}
+
 // Todos os chamados da farmácia do gerente (página de chamados e ficha do funcionário)
 export function useChamadosGerente(idGerente) {
   const fetcher = useCallback(

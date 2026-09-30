@@ -67,13 +67,59 @@ export async function listarRemedios(options) {
   return lista.map(normalizeRemedio);
 }
 
-export function cadastrarRemedio(dados) {
-  return apiRequest("/remedios", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dados),
+const json = (method, body) => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  ...(body !== undefined && { body: JSON.stringify(body) }),
+});
+
+// Monta "?busca=x&situacao=y" ignorando filtros vazios
+function query(filtros = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filtros).forEach(([chave, valor]) => {
+    if (valor !== undefined && valor !== null && String(valor).trim() !== "") params.set(chave, String(valor).trim());
   });
+  const texto = params.toString();
+  return texto ? `?${texto}` : "";
 }
+
+// Foto do remédio vem como caminho relativo ("/uploads/remedios/abc.png") ou null
+export const fotoUrl = (foto) => (foto ? `${API_URL}${foto}` : null);
+
+// Catálogo de medicamentos (cadastrado pelo admin)
+export const listarCatalogo = (filtros, options) => apiRequest(`/remedios${query(filtros)}`, options);
+export const buscarRemedio = (idRemedio, options) =>
+  apiRequest(`/remedios/${idRemedio}`, options).then((data) => data.resultado);
+export const cadastrarRemedio = (dados) => apiRequest("/remedios", json("POST", dados));
+export const editarRemedio = (idRemedio, dados) => apiRequest(`/remedios/${idRemedio}`, json("PUT", dados));
+export const apagarRemedio = (idRemedio) => apiRequest(`/remedios/${idRemedio}`, { method: "DELETE" });
+export function enviarFotoRemedio(idRemedio, arquivo) {
+  const form = new FormData();
+  form.append("foto", arquivo);
+  // Sem Content-Type: o navegador monta o boundary do multipart
+  return apiRequest(`/remedios/${idRemedio}/foto`, { method: "PUT", body: form });
+}
+export const removerFotoRemedio = (idRemedio) => apiRequest(`/remedios/${idRemedio}/foto`, { method: "DELETE" });
+export const listarCategorias = (options) =>
+  apiRequest("/categorias", options).then((data) => data.categorias ?? []);
+
+// Estoque: o gerente administra o da farmácia dele; o funcionário consulta o da farmácia onde trabalha
+export const listarEstoqueGerente = (idGerente, filtros, options) =>
+  apiRequest(`/gerente/${idGerente}/estoque${query(filtros)}`, options);
+export const adicionarEstoque = (idGerente, dados) => apiRequest(`/gerente/${idGerente}/estoque`, json("POST", dados));
+export const atualizarEstoque = (idGerente, idRemedio, dados) =>
+  apiRequest(`/gerente/${idGerente}/estoque/${idRemedio}`, json("PUT", dados));
+export const removerEstoque = (idGerente, idRemedio) =>
+  apiRequest(`/gerente/${idGerente}/estoque/${idRemedio}`, { method: "DELETE" });
+export const listarEstoqueFarmacia = (idFarmacia, filtros, options) =>
+  apiRequest(`/farmacia/${idFarmacia}/estoque${query(filtros)}`, options);
+
+// Serviços (entrega ao paciente, com baixa no estoque da farmácia)
+export const cadastrarServico = (dados) => apiRequest("/servicos", json("POST", dados));
+export const buscarServico = (idServico, options) =>
+  apiRequest(`/servicos/${idServico}`, options).then((data) => data.resultado);
+export const listarServicosDaFarmacia = (idFarmacia, options) =>
+  apiRequest(`/servicos${query({ idFarmacia })}`, options).then((data) => extractList(data, ["servicos"]));
 
 // Chamados de reposição: o funcionário solicita e o gerente da farmácia responde.
 export const solicitarChamado = (idFuncionario, body) =>

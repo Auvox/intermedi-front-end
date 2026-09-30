@@ -5,6 +5,7 @@ import EmployeeMedicines from "../pages/EmployeeMedicines";
 import EmployeeTickets from "../pages/EmployeeTickets";
 import Admin, { AdminDirectory } from "../pages/Admin";
 import AdminDashboard from "../pages/AdminDashboard";
+import AdminMedicines from "../pages/AdminMedicines";
 import LoginUser from "../pages/LoginUser";
 import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
@@ -13,10 +14,10 @@ import Manager, {
   ManagerDashboard,
   ManagerEmployees,
   ManagerPatients,
-  ManagerMedicines,
   ManagerTickets,
 } from "../pages/Manager";
 import ManagerServices from "../pages/ManagerServices";
+import ManagerMedicines from "../pages/ManagerMedicines";
 
 import "../styles/directory.css";
 import "../styles/personaTheme.css";
@@ -30,6 +31,7 @@ function Rotas() {
         <Route path="/cadastro" element={<CadastroUser />} />
         <Route path="/admin" element={<AccessibleArea><Admin /></AccessibleArea>}>
           <Route index element={<AdminDashboard />} />
+          <Route path="medicamentos" element={<AdminMedicines />} />
           {["gerentes", "farmacias", "pacientes", "chamados"].map((section) => (
             <Route
               key={section}

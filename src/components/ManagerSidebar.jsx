@@ -107,7 +107,7 @@ export default function ManagerSidebar({
   // seguindo a referencia, mas sem navegacao ate o back entregar.
   const adminLinks = [
     { path: "", label: "Dashboard", icon: "dashboard" },
-    { path: "medicamentos", label: "Medicamentos", icon: "pill", soon: true },
+    { path: "medicamentos", label: "Medicamentos", icon: "pill" },
     { path: "farmacias", label: "Unidades", icon: "pharmacy" },
     { path: "gerentes", label: "Gerentes", icon: "manager" },
     { path: "pacientes", label: "Pacientes", icon: "heart" },

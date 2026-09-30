@@ -4,7 +4,11 @@ import { solicitarChamado } from "../services/api";
 import { PRIORIDADE_CHAMADO } from "../services/chamados";
 import { ChamadoModal, RemediosChamadoTable, StatusChamadoBadge } from "./Chamados";
 
-const novoItem = (idRemedio = "") => ({ key: crypto.randomUUID(), idRemedio: String(idRemedio), quantidade: "" });
+const novoItem = (idRemedio = "", quantidade = "") => ({
+  key: crypto.randomUUID(),
+  idRemedio: String(idRemedio),
+  quantidade: String(quantidade),
+});
 
 const nomesGerentes = (gerentes = []) => {
   const nomes = gerentes.map((g) => g.nomeGerente).filter(Boolean);
@@ -25,11 +29,25 @@ function validar(items) {
 }
 
 // Formulário do funcionário para pedir reposição de estoque ao gerente.
-export default function SolicitarReposicao({ medicines, funcionario, remedioInicial, onClose, onSuccess }) {
+// itensIniciais ([{ idRemedio, quantidade }]) e prioridadeInicial já preenchem o
+// pedido (ex.: a partir de um item crítico do estoque); tudo pode ser editado.
+export default function SolicitarReposicao({
+  medicines,
+  funcionario,
+  remedioInicial,
+  itensIniciais,
+  prioridadeInicial = "media",
+  onClose,
+  onSuccess,
+}) {
   const { idFuncionario } = funcionario;
   const uid = useId();
-  const [items, setItems] = useState(() => [novoItem(remedioInicial)]);
-  const [prioridade, setPrioridade] = useState("media");
+  const [items, setItems] = useState(() =>
+    itensIniciais?.length
+      ? itensIniciais.map((item) => novoItem(item.idRemedio, item.quantidade))
+      : [novoItem(remedioInicial)],
+  );
+  const [prioridade, setPrioridade] = useState(prioridadeInicial);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [erros, setErros] = useState({});
