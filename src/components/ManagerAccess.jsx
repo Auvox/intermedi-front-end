@@ -272,10 +272,13 @@ export function AccountControls({ user }) {
   }
 
   async function logout() {
-    setPending(true);
-    setError("");
+  setPending(true);
+  setError("");
     try {
-      await authRequest("logout", {});
+      await authRequest("logout", { method: "POST" });
+      localStorage.removeItem("token");
+      sessionStorage.clear();
+
       navigate("/login?perfil=gerente", { replace: true });
     } catch {
       setError("Não foi possível sair. Tente novamente.");
