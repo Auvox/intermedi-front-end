@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { ErroComRetry, SeletorPersona } from "../components/Chamados";
 import { EstoqueTabela, ResumoEstoque } from "../components/Remedios";
 import SolicitarReposicao from "../components/SolicitarReposicao";
+import { usePerfil } from "../components/perfil/perfilContext";
 import useApiList from "../hooks/useApiList";
 import { useFarmaciaDoFuncionario, usePolling } from "../hooks/useChamados";
 import useDebounce from "../hooks/useDebounce";
@@ -20,6 +21,7 @@ const FILTROS_SITUACAO = [
 // Estoque da farmácia onde o funcionário trabalha (somente consulta)
 export default function EmployeeMedicines() {
   const funcionario = useFarmaciaDoFuncionario();
+  const { abrirPerfil } = usePerfil();
   const { idFarmacia } = funcionario;
   const { items: catalogo } = useApiList(listarRemedios);
   const [busca, setBusca] = useState("");
@@ -32,7 +34,7 @@ export default function EmployeeMedicines() {
     (options) => listarEstoqueFarmacia(idFarmacia, { busca: buscaDebounced, situacao: situacaoFiltro }, options),
     [idFarmacia, buscaDebounced, situacaoFiltro],
   );
-  const { data, loading, error, reload, retry } = usePolling(fetcher, { enabled: Boolean(idFarmacia), interval: 0 });
+  const { data, loading, error, reload, retry } = usePolling(fetcher, { enabled: Boolean(idFarmacia) });
   const itens = ordenarEstoque(data?.estoque ?? []);
 
   return (
@@ -98,6 +100,7 @@ export default function EmployeeMedicines() {
             ) : itens.length ? (
               <EstoqueTabela
                 itens={itens}
+                onAbrir={(item, el) => abrirPerfil("remedio", item.idRemedio, el)}
                 acoes={(item) =>
                   precisaReposicao(item) ? (
                     <button

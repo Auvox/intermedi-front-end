@@ -3,6 +3,7 @@ import ManagerIcon from "./ManagerIcon";
 import { ChamadoModal } from "./Chamados";
 import { fotoUrl } from "../services/api";
 import { formatarValidade, nomeComDosagem, situacao, tarja } from "../services/remedios";
+import { propsLinha } from "../services/perfil";
 import "../styles/remedios.css";
 
 // Foto do remédio; sem foto (ou se a imagem falhar) mostra o ícone de pílula
@@ -92,8 +93,9 @@ export function ResumoEstoque({ resumo, filtro, onFiltrar }) {
   );
 }
 
-// Tabela do estoque; `acoes(item)` desenha os botões de cada linha
-export function EstoqueTabela({ itens, acoes }) {
+// Tabela do estoque; `acoes(item)` desenha os botões de cada linha e
+// `onAbrir(item, elemento)` torna a linha inteira clicável (perfil do remédio).
+export function EstoqueTabela({ itens, acoes, onAbrir }) {
   return (
     <div className="mgr-table-wrap">
       <table className="remedio-tabela">
@@ -109,7 +111,11 @@ export function EstoqueTabela({ itens, acoes }) {
         </thead>
         <tbody>
           {itens.map((item) => (
-            <tr key={item.idEstoque ?? item.idRemedio} className={item.vencido || item.situacao !== "ok" ? "remedio-linha-alerta" : undefined}>
+            <tr
+              key={item.idEstoque ?? item.idRemedio}
+              {...(onAbrir ? propsLinha((el) => onAbrir(item, el), `Abrir perfil de ${item.nomeRemedio}`) : {})}
+              className={[onAbrir && "perfil-linha", (item.vencido || item.situacao !== "ok") && "remedio-linha-alerta"].filter(Boolean).join(" ") || undefined}
+            >
               <td>
                 <div className="remedio-celula">
                   <FotoRemedio foto={item.fotoRemedio} nome={item.nomeRemedio} />

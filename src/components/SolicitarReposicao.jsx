@@ -229,6 +229,12 @@ export default function SolicitarReposicao({
               placeholder="Ex.: muitas receitas essa semana"
             />
           </label>
+          {items.length >= 2 && (
+            <p className="chamado-pacote-resumo" aria-live="polite">
+              <span className="mgr-badge chamado-badge blue">Pacote · {items.length} remédios</span>
+              Um chamado só; o gerente pede todos à rede de uma vez.
+            </p>
+          )}
           {erroEnvio && <p role="alert">{erroEnvio}</p>}
           <div className="mgr-modal-actions">
             <button className="mgr-secondary" type="button" onClick={onClose}>Cancelar</button>

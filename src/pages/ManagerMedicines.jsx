@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { ChamadoModal, ErroComRetry } from "../components/Chamados";
 import { ConfirmarModal, EstoqueTabela, FotoRemedio, ResumoEstoque, TarjaBadge } from "../components/Remedios";
 import { usePolling } from "../hooks/useChamados";
+import { usePerfil } from "../components/perfil/perfilContext";
 import useDebounce from "../hooks/useDebounce";
 import {
   adicionarEstoque,
@@ -25,6 +26,7 @@ const FILTROS_SITUACAO = [
 // ele adiciona ao estoque os remédios que o admin já cadastrou.
 export default function ManagerMedicines() {
   const { gerente, notify } = useOutletContext();
+  const { abrirPerfil } = usePerfil();
   const { idGerente } = gerente;
   const [busca, setBusca] = useState("");
   const [situacaoFiltro, setSituacaoFiltro] = useState("");
@@ -35,7 +37,7 @@ export default function ManagerMedicines() {
     (options) => listarEstoqueGerente(idGerente, { busca: buscaDebounced, situacao: situacaoFiltro }, options),
     [idGerente, buscaDebounced, situacaoFiltro],
   );
-  const { data, loading, error, reload, retry } = usePolling(fetcher, { enabled: Boolean(idGerente), interval: 0 });
+  const { data, loading, error, reload, retry } = usePolling(fetcher, { enabled: Boolean(idGerente) });
   const itens = ordenarEstoque(data?.estoque ?? []);
 
   function concluido(mensagem) {
@@ -108,6 +110,7 @@ export default function ManagerMedicines() {
         ) : itens.length ? (
           <EstoqueTabela
             itens={itens}
+            onAbrir={(item, el) => abrirPerfil("remedio", item.idRemedio, el)}
             acoes={(item) => (
               <>
                 <button type="button" className="directory-row-action" aria-label={`Registrar entrada de ${item.nomeRemedio}`} onClick={() => setModal({ tipo: "entrada", item })}>

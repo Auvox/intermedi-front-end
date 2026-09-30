@@ -2,12 +2,13 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
 import ManagerIcon from "../components/ManagerIcon";
 import { ChamadoModal, ErroComRetry, SeletorPersona } from "../components/Chamados";
-import { FotoRemedio, TarjaBadge } from "../components/Remedios";
+import { TarjaBadge } from "../components/Remedios";
 import SolicitarReposicao from "../components/SolicitarReposicao";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { propsLinha } from "../services/perfil";
 import useApiList from "../hooks/useApiList";
 import { useFarmaciaDoFuncionario, usePolling } from "../hooks/useChamados";
 import {
-  buscarServico,
   cadastrarServico,
   listarEstoqueFarmacia,
   listarPacientes,
@@ -16,7 +17,6 @@ import {
   normalizeText,
 } from "../services/api";
 import { formatarDataHora, nomeComDosagem, reposicaoDoEstoque } from "../services/remedios";
-import { TURNO_FUNCIONARIO } from "../services/chamados";
 
 const novoItem = () => ({ key: crypto.randomUUID(), idRemedio: "", quantidade: "1" });
 const mostrar = (valor) => (valor === null || valor === undefined || valor === "" ? "Não informado" : valor);
@@ -30,7 +30,7 @@ export default function EmployeeServices() {
   const { items: catalogo } = useApiList(listarRemedios);
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
-  const [selecionado, setSelecionado] = useState(null);
+  const { abrirPerfil } = usePerfil();
   const [reposicao, setReposicao] = useState(null);
 
   const buscarEstoque = useCallback((options) => listarEstoqueFarmacia(idFarmacia, {}, options), [idFarmacia]);
@@ -119,12 +119,12 @@ export default function EmployeeServices() {
                     </thead>
                     <tbody>
                       {filtrados.map((s) => (
-                        <tr key={s.idServico}>
+                        <tr key={s.idServico} {...propsLinha((el) => abrirPerfil("servico", s.idServico, el), `Abrir serviço nº ${s.idServico}`)}>
                           <td>
                             <button
                               type="button"
                               className="emp-service-link"
-                              onClick={() => setSelecionado(s)}
+                              onClick={(e) => abrirPerfil("servico", s.idServico, e.currentTarget.closest("tr"))}
                               aria-label={`Consultar serviço nº ${s.idServico}`}
                             >
                               <span className="emp-service-icon"><ManagerIcon name="clipboard" size={19} /></span>
@@ -166,7 +166,6 @@ export default function EmployeeServices() {
           onSolicitarReposicao={(itens) => { setAberto(false); setReposicao(reposicaoDoEstoque(itens)); }}
         />
       )}
-      {selecionado && <DetalheServico servico={selecionado} onClose={() => setSelecionado(null)} />}
       {reposicao && (
         <SolicitarReposicao
           medicines={catalogo}
@@ -457,95 +456,6 @@ function NovoServico({ funcionario, farmacia, estoque, pacientes, onClose, onReg
           </div>
         </fieldset>
       </form>
-    </ChamadoModal>
-  );
-}
-
-function DetalheServico({ servico, onClose }) {
-  const [estado, setEstado] = useState({ dados: null, loading: true, erro: "" });
-  useEffect(() => {
-    const controller = new AbortController();
-    buscarServico(servico.idServico, { signal: controller.signal })
-      .then((dados) => setEstado({ dados, loading: false, erro: "" }))
-      .catch((e) => {
-        if (!controller.signal.aborted) setEstado({ dados: null, loading: false, erro: e.message });
-      });
-    return () => controller.abort();
-  }, [servico.idServico]);
-  const s = estado.dados;
-
-  return (
-    <ChamadoModal title={`Serviço nº ${servico.idServico}`} onClose={onClose} className="emp-service-modal">
-      {estado.loading ? (
-        <p className="mgr-empty" role="status">Carregando informações do serviço…</p>
-      ) : estado.erro ? (
-        <p className="mgr-empty" role="alert">Não foi possível carregar os detalhes. {estado.erro}</p>
-      ) : (
-        <div className="emp-service-details">
-          <section>
-            <h3>Resumo do serviço</h3>
-            <dl>
-              <div><dt>Código</dt><dd>#{s.idServico}</dd></div>
-              <div><dt>Data e hora</dt><dd>{formatarDataHora(s.dataServico)}</dd></div>
-              <div><dt>Total de medicamentos</dt><dd>{s.totalMedicamentos}</dd></div>
-              <div><dt>Total de unidades</dt><dd>{s.quantidadeTotal}</dd></div>
-              <div className="emp-service-detail-wide"><dt>Observação</dt><dd>{mostrar(s.observacao)}</dd></div>
-            </dl>
-          </section>
-          <section>
-            <h3>Medicamentos</h3>
-            <div className="emp-service-detail-medicines">
-              {(s.remedios ?? []).map((item) => (
-                <article key={item.idRemedio} className="remedio-servico-item">
-                  <div>
-                    <FotoRemedio foto={item.fotoRemedio} nome={item.nomeRemedio} />
-                    <strong>{item.nomeRemedio}</strong>
-                    <span>{mostrar(item.dosagemRemedio)}</span>
-                  </div>
-                  <b>{item.quantidade} un.</b>
-                  <p><TarjaBadge valor={item.tarjaRemedio} /></p>
-                  <p>{mostrar(item.descRemedio)}</p>
-                  <small>{mostrar(item.fabricanteRemedio)} · {mostrar(item.categorias)}</small>
-                </article>
-              ))}
-            </div>
-          </section>
-          <section>
-            <h3>Paciente</h3>
-            <dl>
-              <div><dt>Nome</dt><dd>{mostrar(s.nomePaciente)}</dd></div>
-              <div><dt>CPF</dt><dd>{mostrar(s.cpfPaciente)}</dd></div>
-              <div><dt>Telefone</dt><dd>{mostrar(s.telPaciente)}</dd></div>
-              <div><dt>E-mail</dt><dd>{mostrar(s.emailPaciente)}</dd></div>
-              <div className="emp-service-detail-wide"><dt>Medicamento frequente</dt><dd>{mostrar(s.medicamentoFrequentePaciente)}</dd></div>
-            </dl>
-          </section>
-          <section>
-            <h3>Funcionário responsável</h3>
-            <dl>
-              <div><dt>Nome</dt><dd>{mostrar(s.nomeFuncionario)}</dd></div>
-              <div><dt>Matrícula</dt><dd>{mostrar(s.matriculaFuncionario)}</dd></div>
-              <div><dt>Cargo</dt><dd>{mostrar(s.cargoFuncionario)}</dd></div>
-              <div><dt>Turno</dt><dd>{TURNO_FUNCIONARIO[s.turnoFuncionario] || mostrar(s.turnoFuncionario)}</dd></div>
-              <div><dt>CPF</dt><dd>{mostrar(s.cpfFuncionario)}</dd></div>
-              <div><dt>E-mail</dt><dd>{mostrar(s.emailFuncionario)}</dd></div>
-              <div><dt>Telefone</dt><dd>{mostrar(s.telFuncionario)}</dd></div>
-            </dl>
-          </section>
-          <section>
-            <h3>Farmácia</h3>
-            <dl>
-              <div><dt>Unidade</dt><dd>{mostrar(s.nomeFarmacia)}</dd></div>
-              <div><dt>CNES</dt><dd>{mostrar(s.cnesFarmacia)}</dd></div>
-              <div><dt>Telefone</dt><dd>{mostrar(s.telFarmacia)}</dd></div>
-              <div><dt>E-mail</dt><dd>{mostrar(s.emailFarmacia)}</dd></div>
-            </dl>
-          </section>
-          <div className="mgr-modal-actions">
-            <button type="button" className="mgr-primary" onClick={onClose}>Fechar</button>
-          </div>
-        </div>
-      )}
     </ChamadoModal>
   );
 }

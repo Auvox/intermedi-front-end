@@ -2,6 +2,10 @@ import PersonaAvatar from "../components/PersonaAvatar";
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
+import PerfilProvider from "../components/perfil/PerfilProvider";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { propsLinha } from "../services/perfil";
+import { useAoAlterarDados } from "../hooks/useResumo";
 import PersonaIcon from "../components/PersonaIcon";
 import FarmaciaSelect from "../components/FarmaciaSelect";
 import {
@@ -10,6 +14,7 @@ import {
   listarFuncionarios,
   listarGerentes,
   listarPacientes,
+  fotoPessoa,
 } from "../services/api";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { initialData, unit, formatDate } from "./managerData";
@@ -155,6 +160,7 @@ const normalizeFarmacias = (payload = []) =>
       email,
       phone,
       cnes,
+      photo: fotoPessoa(farmacia.fotoFarmacia),
       idEndereco: farmacia.idEndereco ?? null,
       unit,
       status: "Ativo",
@@ -191,7 +197,7 @@ const normalizePacientes = (payload = []) =>
       name,
       email,
       unit,
-      photo: paciente.fotoPerfilPaciente ?? paciente.photo,
+      photo: fotoPessoa(paciente.fotoPerfilPaciente) ?? paciente.photo,
       status: paciente.status || "Ativo",
       createdAt: paciente.createdAt ?? paciente.created_at ?? null,
       role: paciente.role ?? "Paciente",
@@ -223,7 +229,7 @@ const normalizeFuncionarios = (payload = []) =>
       name,
       email,
       unit,
-      photo: funcionario.fotoPerfilFuncionario ?? funcionario.photo,
+      photo: fotoPessoa(funcionario.fotoFuncionario ?? funcionario.fotoPerfilFuncionario) ?? funcionario.photo,
       role: funcionario.cargoFuncionario ?? funcionario.role ?? "Funcionario",
       shift: funcionario.turnoFuncionario ?? funcionario.shift ?? "",
       status: "Ativo",
@@ -332,9 +338,11 @@ export default function Admin() {
             </Link>
           </div>
         </div>
-        <main className="mgr-main">
-          <Outlet context={{ data, setData }} />
-        </main>
+        <PerfilProvider plataforma="admin">
+          <main className="mgr-main">
+            <Outlet context={{ data, setData }} />
+          </main>
+        </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
@@ -374,6 +382,11 @@ function Dialog({ title, onClose, children }) {
 
 export function AdminDirectory({ section }) {
   const { data, setData } = useOutletContext();
+  const { abrirPerfil } = usePerfil();
+  // foto trocada no perfil: recarrega as listas para mostrar a nova
+  const [versao, setVersao] = useState(0);
+  useAoAlterarDados(() => setVersao((v) => v + 1));
+  const tipoPerfil = section === "gerentes" ? "gerente" : section === "farmacias" ? "farmacia" : section === "pacientes" ? "paciente" : null;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [unitFilter, setUnitFilter] = useState("");
@@ -425,7 +438,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [section, setData]);
+  }, [section, setData, versao]);
 
   useEffect(() => {
     if (section !== "farmacias" && section !== "gerentes") {
@@ -457,7 +470,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [section, setData]);
+  }, [section, setData, versao]);
 
   useEffect(() => {
     let cancelled = false;
@@ -485,7 +498,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [setData]);
+  }, [setData, versao]);
 
   useEffect(() => {
     if (section !== "pacientes") {
@@ -517,7 +530,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [section, setData]);
+  }, [section, setData, versao]);
 
   const [nomeGerente, setNomeGerente] = useState("");
   const [emailGerente, setEmailGerente] = useState("");
@@ -1130,10 +1143,17 @@ export function AdminDirectory({ section }) {
                       record.status,
                     );
                     return (
-                      <tr key={record.id}>
+                      <tr
+                        key={record.id}
+                        {...propsLinha((el) => abrirPerfil(tipoPerfil, record.id, el), `Abrir perfil de ${record.name}`)}
+                      >
                         <td>
                           <div className="adm-name-cell">
-                            {pharmacies ? <span
+                            {pharmacies && record.photo ? (
+                              <span className="adm-avatar-circle pharmacy-avatar perfil-avatar-lista">
+                                <img src={record.photo} alt="" />
+                              </span>
+                            ) : pharmacies ? <span
                               className="adm-avatar-circle pharmacy-avatar"
                               style={{
                                 background: tone.background,
@@ -1142,7 +1162,7 @@ export function AdminDirectory({ section }) {
                               aria-hidden="true"
                             >
                               <Icon name="pharmacy" size={20} />
-                            </span> : <PersonaAvatar role={managers ? "gerente" : patients ? "paciente" : "funcionario"} photo={record.photo} />}
+                            </span> : <PersonaAvatar role={managers ? "gerente" : patients ? "paciente" : "funcionario"} photo={record.photo} name={record.name} />}
                             <span>
                               <strong>{record.name}</strong>
                               <small>
@@ -1179,6 +1199,7 @@ export function AdminDirectory({ section }) {
                             {openRowMenu === record.id && (
                               <>
                                 <div
+                                  data-sem-perfil
                                   className="adm-menu-backdrop"
                                   onClick={() => setOpenRowMenu(null)}
                                 />
@@ -1186,9 +1207,9 @@ export function AdminDirectory({ section }) {
                                   <button
                                     type="button"
                                     role="menuitem"
-                                    onClick={() => {
-                                      setModal({ type: "details", record });
+                                    onClick={(event) => {
                                       setOpenRowMenu(null);
+                                      abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("tr"));
                                     }}
                                   >
                                     Consultar
@@ -1338,7 +1359,10 @@ export function AdminDirectory({ section }) {
                 </thead>
                 <tbody>
                   {filtered.map((record) => (
-                    <tr key={record.id}>
+                    <tr
+                      key={record.id}
+                      {...propsLinha(() => setModal({ type: "details", record }), `Consultar ${record.name}`)}
+                    >
                       <td>
                         <strong>{record.name}</strong>
                         <small>{formatDate(record.date)}</small>

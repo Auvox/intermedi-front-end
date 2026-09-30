@@ -7,13 +7,14 @@ import { usePolling, useToast } from "../hooks/useChamados";
 import useDebounce from "../hooks/useDebounce";
 import {
   apagarRemedio,
-  buscarRemedio,
   enviarFotoRemedio,
   listarCatalogo,
   listarCategorias,
   removerFotoRemedio,
 } from "../services/api";
-import { formatarDataHora, nomeComDosagem, tipo, validarFoto } from "../services/remedios";
+import { nomeComDosagem, tipo, validarFoto } from "../services/remedios";
+import { propsLinha } from "../services/perfil";
+import { usePerfil } from "../components/perfil/perfilContext";
 
 const mostrar = (valor) => (valor === null || valor === undefined || valor === "" ? "Não informado" : valor);
 
@@ -26,6 +27,7 @@ export default function AdminMedicines() {
   const [categorias, setCategorias] = useState([]);
   const [modal, setModal] = useState(null); // { tipo: "form"|"detalhe"|"foto"|"apagar", remedio }
   const [toast, notify] = useToast();
+  const { abrirPerfil } = usePerfil();
 
   const fetcher = useCallback(
     (options) => listarCatalogo({ busca: buscaDebounced, categoria }, options),
@@ -98,7 +100,7 @@ export default function AdminMedicines() {
         ) : remedios.length ? (
           <ul className="remedio-catalogo">
             {remedios.map((r) => (
-              <li key={r.idRemedio} className="remedio-card">
+              <li key={r.idRemedio} className="remedio-card" {...propsLinha((el) => abrirPerfil("remedio", r.idRemedio, el), `Abrir perfil de ${r.nomeRemedio}`)}>
                 <FotoRemedio foto={r.fotoRemedio} nome={r.nomeRemedio} tamanho="md" />
                 <div className="remedio-card-corpo">
                   <h3>{nomeComDosagem(r)}</h3>
@@ -115,7 +117,7 @@ export default function AdminMedicines() {
                   </p>
                 </div>
                 <div className="remedio-acoes remedio-card-acoes">
-                  <button type="button" className="directory-row-action" aria-label={`Ver detalhes de ${r.nomeRemedio}`} onClick={() => setModal({ tipo: "detalhe", remedio: r })}>
+                  <button type="button" className="directory-row-action" aria-label={`Ver detalhes de ${r.nomeRemedio}`} onClick={(e) => abrirPerfil("remedio", r.idRemedio, e.currentTarget.closest("li"))}>
                     Ver detalhes
                   </button>
                   <button type="button" className="directory-row-action" aria-label={`Editar ${r.nomeRemedio}`} onClick={() => setModal({ tipo: "form", remedio: r })}>
@@ -157,7 +159,6 @@ export default function AdminMedicines() {
       {modal?.tipo === "form" && (
         <RemedioForm remedio={modal.remedio} categorias={categorias} onClose={() => setModal(null)} onSalvo={salvo} />
       )}
-      {modal?.tipo === "detalhe" && <DetalheRemedio remedio={modal.remedio} onClose={() => setModal(null)} />}
       {modal?.tipo === "foto" && (
         <FotoModal
           remedio={modal.remedio}
@@ -183,64 +184,6 @@ export default function AdminMedicines() {
       )}
       <ToastRegion message={toast} />
     </>
-  );
-}
-
-// "Bula resumida" com os dados completos do remédio
-function DetalheRemedio({ remedio, onClose }) {
-  const [estado, setEstado] = useState({ dados: remedio, loading: true, erro: "" });
-  useEffect(() => {
-    const controller = new AbortController();
-    buscarRemedio(remedio.idRemedio, { signal: controller.signal })
-      .then((dados) => setEstado({ dados, loading: false, erro: "" }))
-      .catch((e) => {
-        if (!controller.signal.aborted) setEstado((atual) => ({ ...atual, loading: false, erro: e.message }));
-      });
-    return () => controller.abort();
-  }, [remedio.idRemedio]);
-  const r = estado.dados;
-  const linha = (rotulo, valor) => (
-    <div><dt>{rotulo}</dt><dd>{mostrar(valor)}</dd></div>
-  );
-  return (
-    <ChamadoModal title={nomeComDosagem(r)} onClose={onClose} className="remedio-detalhe-modal">
-      {estado.loading && <p className="remedio-obrigatorio-nota" role="status">Atualizando informações…</p>}
-      {estado.erro && <p className="remedio-aviso remedio-aviso-erro" role="alert">{estado.erro}</p>}
-      <div className="remedio-bula">
-        <FotoRemedio foto={r.fotoRemedio} nome={r.nomeRemedio} tamanho="lg" />
-        <div>
-          <p className="remedio-card-principio">{mostrar(r.principioAtivoRemedio)}</p>
-          <div className="remedio-selos">
-            <TarjaBadge valor={r.tarjaRemedio} />
-            {r.tipoRemedio && <span className="remedio-tipo">{tipo(r.tipoRemedio)}</span>}
-          </div>
-          {r.exigeReceita && (
-            <p className="remedio-aviso">
-              Exige receita médica{r.retemReceita ? " · a receita fica retida na farmácia" : ""}.
-            </p>
-          )}
-          {r.descRemedio && <p>{r.descRemedio}</p>}
-        </div>
-      </div>
-      <dl className="chamado-dados remedio-bula-dados">
-        {linha("Registro ANVISA", r.registroAnvisaRemedio)}
-        {linha("Fabricante", r.fabricanteRemedio)}
-        {linha("Forma farmacêutica", r.formaFarmaceuticaRemedio)}
-        {linha("Via de administração", r.viaAdministracaoRemedio)}
-        {linha("Apresentação", r.apresentacaoRemedio)}
-        {linha("Categorias", r.categorias)}
-      </dl>
-      <h3>Indicações</h3>
-      <p>{mostrar(r.indicacoesRemedio)}</p>
-      <h3>Contraindicações</h3>
-      <p>{mostrar(r.contraindicacoesRemedio)}</p>
-      <h3>Armazenamento</h3>
-      <p>{mostrar(r.armazenamentoRemedio)}</p>
-      <p className="mgr-table-note">
-        Cadastrado em {formatarDataHora(r.createdAtRemedio)}
-        {r.updatedAtRemedio && ` · atualizado em ${formatarDataHora(r.updatedAtRemedio)}`}
-      </p>
-    </ChamadoModal>
   );
 }
 
