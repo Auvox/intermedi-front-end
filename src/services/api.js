@@ -41,6 +41,7 @@ export const listarPacientes = list("/paciente", ["paciente", "pacientes"]);
 export const listarFuncionarios = list("/funcionario", ["funcionario", "funcionarios"]);
 export const listarGerentes = list("/gerente", ["gerente", "gerentes"]);
 export const listarFarmacias = list("/farmacia", ["farmacia", "farmacias"]);
+export const listarServicos = list("/servicos", ["servicos", "servico"]);
 
 // Estoque e validade ainda não existem na API; ficam null até o endpoint de
 // estoque por farmácia ser criado.

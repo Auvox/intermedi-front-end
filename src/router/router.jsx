@@ -16,6 +16,7 @@ import Manager, {
   ManagerMedicines,
   ManagerTickets,
 } from "../pages/Manager";
+import ManagerServices from "../pages/ManagerServices";
 
 import "../styles/directory.css";
 import "../styles/personaTheme.css";
@@ -55,6 +56,7 @@ function Rotas() {
           <Route path="funcionarios" element={<ManagerEmployees />} />
           <Route path="pacientes" element={<ManagerPatients />} />
           <Route path="remedios" element={<ManagerMedicines />} />
+          <Route path="servicos" element={<ManagerServices />} />
           <Route path="chamados" element={<ManagerTickets />} />
         </Route>
       </Routes>

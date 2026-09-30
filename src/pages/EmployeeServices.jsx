@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
 import ManagerIcon from "../components/ManagerIcon";
 
-import { apiRequest as request, listarFuncionarios, listarPacientes, listarRemedios } from "../services/api";
+import { apiRequest as request, listarFuncionarios, listarPacientes, listarRemedios, listarServicos } from "../services/api";
 const emptyItem = () => ({ key: crypto.randomUUID(), idRemedio: "", quantidade: "1" });
 
 function ServiceModal({ children, onClose, title = "Solicitar serviço" }) {
@@ -62,9 +62,8 @@ export default function EmployeeServices() {
 
   useEffect(() => {
     const controller = new AbortController();
-    request("/servicos", { signal: controller.signal }).then(data => {
-      if (!Array.isArray(data.servicos)) throw new Error("Resposta inválida ao consultar serviços.");
-      if (!controller.signal.aborted) { setServices(data.servicos); setListError(""); }
+    listarServicos({ signal: controller.signal }).then(servicos => {
+      if (!controller.signal.aborted) { setServices(servicos); setListError(""); }
     }).catch(err => {
       if (!controller.signal.aborted) setListError(`Não foi possível consultar os serviços. ${err.message}`);
     }).finally(() => { if (!controller.signal.aborted) setListLoading(false); });

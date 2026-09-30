@@ -9,6 +9,7 @@ const links = [
   { path: "pacientes", label: "Pacientes", icon: "heart" },
   { path: "remedios", label: "Remédios", icon: "pill" },
   { path: "chamados", label: "Chamados", icon: "ticket" },
+  { path: "servicos", label: "Serviços", icon: "clipboard" },
 ];
 
 function SidebarIcon({ name }) {
@@ -44,6 +45,12 @@ function SidebarIcon({ name }) {
       <>
         <path d="M4 5h16a1 1 0 0 1 1 1v4a2 2 0 0 0 0 4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a2 2 0 0 0 0-4V6a1 1 0 0 1 1-1Z" />
         <path d="M15 5v3m0 3v2m0 3v3" />
+      </>
+    ),
+    clipboard: (
+      <>
+        <rect x="5" y="4" width="14" height="17" rx="2" />
+        <path d="M9 4.5V3h6v1.5M9 9h6m-6 4h6m-6 4h4" />
       </>
     ),
     pharmacy: (
@@ -112,7 +119,7 @@ export default function ManagerSidebar({
   const menuLinks = admin
     ? adminLinks
     : employee
-      ? [links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, { path: "servicos", label: "Serviços", icon: "ticket" }]
+      ? [links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
       : links;
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
