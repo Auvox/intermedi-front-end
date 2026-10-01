@@ -1,3 +1,4 @@
+import PersonaIcon from "./PersonaIcon";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import "../styles/managerSidebar.css";
@@ -8,9 +9,12 @@ const links = [
   { path: "pacientes", label: "Pacientes", icon: "heart" },
   { path: "remedios", label: "Remédios", icon: "pill" },
   { path: "chamados", label: "Chamados", icon: "ticket" },
+  { path: "servicos", label: "Serviços", icon: "clipboard" },
+  { path: "pedidos", label: "Pedidos da rede", icon: "truck" },
 ];
 
 function SidebarIcon({ name }) {
+  if (["heart", "team", "manager"].includes(name)) return <PersonaIcon role={name === "heart" ? "paciente" : name === "manager" ? "gerente" : "funcionario"} size={22} />;
   const paths = {
     dashboard: (
       <>
@@ -44,10 +48,35 @@ function SidebarIcon({ name }) {
         <path d="M15 5v3m0 3v2m0 3v3" />
       </>
     ),
+    clipboard: (
+      <>
+        <rect x="5" y="4" width="14" height="17" rx="2" />
+        <path d="M9 4.5V3h6v1.5M9 9h6m-6 4h6m-6 4h4" />
+      </>
+    ),
     pharmacy: (
       <>
         <rect x="4" y="3" width="16" height="18" rx="3" />
         <path d="M10 21v-5h4v5M12 6v6m-3-3h6" />
+      </>
+    ),
+    truck: (
+      <>
+        <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" />
+        <circle cx="7" cy="18" r="1.8" />
+        <circle cx="17" cy="18" r="1.8" />
+      </>
+    ),
+    report: (
+      <>
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M8 16v-4m4 4V8m4 8v-6" />
+      </>
+    ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.9 12a7.9 7.9 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7.7 7.7 0 0 0-2-1.2L15.1 3h-4l-.4 2.7a7.7 7.7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7.7 7.7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7.7 7.7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.07-.4.1-.8.1-1.2Z" />
       </>
     ),
     arrow: <path d="m9 5 7 7-7 7" />,
@@ -71,21 +100,31 @@ function SidebarIcon({ name }) {
 
 export default function ManagerSidebar({
   unitName,
-  external,
+  pendingTickets = 0,
+  pendingOrders = 0,
   employee = false,
   admin = false,
 }) {
+  // Itens marcados com `soon` ainda nao possuem rota/tela: aparecem no menu
+  // seguindo a referencia, mas sem navegacao ate o back entregar.
   const adminLinks = [
-    { path: "gerentes", label: "Gerentes", icon: "team" },
-    { path: "farmacias", label: "Farmácias", icon: "pharmacy" },
-    links[2],
-    links[4],
+    { path: "", label: "Dashboard", icon: "dashboard" },
+    { path: "medicamentos", label: "Medicamentos", icon: "pill" },
+    { path: "farmacias", label: "Unidades", icon: "pharmacy" },
+    { path: "gerentes", label: "Gerentes", icon: "manager" },
+    { path: "pacientes", label: "Pacientes", icon: "heart" },
+    { path: "chamados", label: "Solicitações", icon: "ticket" },
+    { path: "rotas", label: "Rotas e Distribuição", icon: "truck", soon: true },
+    { path: "relatorios", label: "Relatórios", icon: "report", soon: true },
+    { path: "configuracoes", label: "Configurações", icon: "settings", soon: true },
   ];
   const menuLinks = admin
     ? adminLinks
     : employee
-      ? [links[2], links[1]]
+      ? [links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
       : links;
+  // Badge no menu: chamados pendentes da equipe e pedidos de outras farmácias
+  const contador = (path) => (path === "chamados" ? pendingTickets : path === "pedidos" ? pendingOrders : 0);
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
   return (
@@ -102,7 +141,22 @@ export default function ManagerSidebar({
       <div className="manager-sidebar-menu">
         <p className="manager-sidebar-caption">PRINCIPAL</p>
         <nav aria-label={`Menu do ${role}`}>
-          {menuLinks.map(({ path, label, icon }) => (
+          {menuLinks.map(({ path, label, icon, soon }) =>
+            soon ? (
+              <button
+                key={path}
+                type="button"
+                className="manager-sidebar-soon"
+                aria-disabled="true"
+                title="Em breve"
+              >
+                <span className="manager-sidebar-icon">
+                  <SidebarIcon name={icon} />
+                </span>
+                <span className="manager-sidebar-label">{label}</span>
+                <span className="manager-sidebar-soon-tag">Em breve</span>
+              </button>
+            ) : (
             <NavLink
               key={path}
               end={!path}
@@ -112,12 +166,16 @@ export default function ManagerSidebar({
                 <SidebarIcon name={icon} />
               </span>
               <span className="manager-sidebar-label">{label}</span>
-              {path === "chamados" && external > 0 ? (
+              {contador(path) > 0 ? (
                 <span
                   className="manager-sidebar-count"
-                  aria-label={`${external} chamados de outras farmácias`}
+                  aria-label={
+                    path === "pedidos"
+                      ? `${pendingOrders} ${pendingOrders === 1 ? "pedido da rede pendente" : "pedidos da rede pendentes"}`
+                      : `${pendingTickets} ${pendingTickets === 1 ? "chamado pendente" : "chamados pendentes"}`
+                  }
                 >
-                  {external}
+                  {contador(path)}
                 </span>
               ) : (
                 <span className="manager-sidebar-chevron">
@@ -125,7 +183,8 @@ export default function ManagerSidebar({
                 </span>
               )}
             </NavLink>
-          ))}
+            ),
+          )}
         </nav>
       </div>
 

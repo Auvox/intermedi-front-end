@@ -1,42 +1,58 @@
+import PersonaAvatar from "../components/PersonaAvatar";
+import { CartaoPessoa, DirectoryStats, GradePessoas, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
-import ManagerIcon from "../components/ManagerIcon";
-import { initialData, unit } from "./managerData";
+import PerfilProvider from "../components/perfil/PerfilProvider";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { unit } from "./managerData";
+import useApiList from "../hooks/useApiList";
+import {
+  API_URL,
+  listarFuncionarios,
+  listarPacientes,
+  normalizeFuncionario,
+  normalizePaciente,
+} from "../services/api";
+import { readEmployeeSession } from "../services/employeeSession";
+import { ToastRegion } from "../components/Chamados";
+import { SinoFuncionario } from "../components/NotificacoesEntregas";
+import { FaixaEmAndamento } from "../components/Rastreio";
+import { useFarmaciaDoFuncionario, useGerenteDaFarmacia, useToast } from "../hooks/useChamados";
+import { useNotificacoesRastreio, usePedidosDoFuncionario } from "../hooks/useRastreio";
+import { emAndamento } from "../services/rastreio";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
 
 // Visual preview only. Replace these fixtures with intermedi-back-end data
 // when integrating authentication and server-side permissions.
-const { patients, employees } = initialData;
+
 const normalize = (text) =>
   text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
-const initials = (name) =>
-  name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
 
-function readEmployeeSession() {
-  try {
-    const raw = sessionStorage.getItem("intermediEmployeeSession");
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 export default function Employee() {
   const session = readEmployeeSession();
   const employeeName = session?.name || "Funcionário Local";
   const employeeUnit = session?.unitName || unit;
-  const employeeInitials = initials(employeeName);
+
+  // Rastreamento: cada etapa da entrega dos chamados que o funcionário abriu e a
+  // chegada dos remédios que outras pessoas da unidade pediram (os pedidos da
+  // unidade vêm pelo gerente dela; não há endpoint por farmácia)
+  const funcionario = useFarmaciaDoFuncionario();
+  const idGerenteUnidade = useGerenteDaFarmacia(funcionario.idFarmacia);
+  const [toast, notify] = useToast(8000);
+  const fonteRastreio = usePedidosDoFuncionario(funcionario.idFuncionario, idGerenteUnidade);
+  const rastreio = useNotificacoesRastreio(fonteRastreio.pedidos, {
+    escopo: `funcionario:${funcionario.idFuncionario}:${funcionario.idFarmacia}`,
+    pronto: fonteRastreio.carregado,
+    onNovos: (texto) => notify(texto),
+  });
+
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -50,7 +66,7 @@ export default function Employee() {
     setProfileError("");
 
     try {
-      const listResponse = await fetch("http://localhost:3000/funcionario", {
+      const listResponse = await fetch(`${API_URL}/funcionario`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -98,7 +114,7 @@ export default function Employee() {
       }
 
       const detailResponse = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(funcionarioId)}`,
+        `${API_URL}/funcionario/${encodeURIComponent(funcionarioId)}`,
         {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -201,7 +217,7 @@ export default function Employee() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/funcionario/${encodeURIComponent(profile.id)}`,
+        `${API_URL}/funcionario/${encodeURIComponent(profile.id)}`,
         {
           method: "PUT",
           headers: {
@@ -274,6 +290,7 @@ export default function Employee() {
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{employeeUnit}</strong>
           </span>
+          <SinoFuncionario rastreio={rastreio} fonte={fonteRastreio} />
           <div className="mgr-account emp-account">
             <button
               type="button"
@@ -281,9 +298,7 @@ export default function Employee() {
               aria-label="Abrir perfil do funcionário"
               onClick={openEmployeeProfile}
             >
-            <span className="mgr-account-avatar" aria-hidden="true">
-              {employeeInitials}
-            </span>
+            <PersonaAvatar className="mgr-account-avatar" role="funcionario" photo={session?.fotoPerfilFuncionario ?? session?.photo} />
             <span className="mgr-account-person">
               <strong>{employeeName}</strong>
               <small>Funcionário da unidade · {employeeUnit}</small>
@@ -295,13 +310,16 @@ export default function Employee() {
             </Link>
           </div>
         </div>
-        <main className="mgr-main">
-          <Outlet />
-        </main>
+        <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
+          <main className="mgr-main directory-layout">
+            <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados }} />
+          </main>
+        </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      <ToastRegion message={toast} />
 
       {profileOpen && (
         <dialog
@@ -396,82 +414,30 @@ export default function Employee() {
   );
 }
 
-function PageHeader({ title, description, count, label, icon }) {
-  return (
-    <header className="mgr-page-head mgr-page-head-featured">
-      <div>
-        <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      <div className="emp-summary">
-        <ManagerIcon name={icon} size={25} />
-        <strong>{count}</strong>
-        <span>{label}</span>
-      </div>
-    </header>
-  );
+function PageHeader({ title, description, count, label, icon, results }) {
+  return <>
+    <header className="mgr-page-head mgr-page-head-featured"><div>
+      <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p><h1>{title}</h1><p>{description}</p>
+    </div></header>
+    <DirectoryStats items={[[label, count, icon], ["Resultados da busca", results, "check"]]} />
+  </>;
+}
+
+// Chamados do funcionário ainda em processo (aguardando gerente, fornecedor ou a caminho)
+function emProcesso(chamados = []) {
+  return chamados
+    .filter((c) => c.status === "pendente" || c.status === "em_andamento")
+    .map((c) => ({ chamado: c, pedidos: (c.pedidos ?? []).filter(emAndamento) }));
 }
 
 export function EmployeePatients() {
+  const { abrirPerfil } = usePerfil();
+  const { chamadosDoFuncionario } = useOutletContext() ?? {};
   const [search, setSearch] = useState("");
-  const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadPatients() {
-      try {
-        setLoading(true);
-        setError("");
-        const response = await fetch("http://localhost:3000/paciente", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            payload.message ||
-              payload.error ||
-              "Não foi possível consultar os pacientes.",
-          );
-        }
-
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.paciente)
-            ? payload.paciente
-            : Array.isArray(payload?.pacientes)
-              ? payload.pacientes
-              : [];
-
-        const mapped = rawList.map((item) => ({
-          id: String(item.idPaciente ?? item.id ?? ""),
-          name: item.nomePaciente ?? item.name ?? "Paciente",
-          cpf: item.cpfPaciente ?? item.cpf ?? "",
-          email: item.emailPaciente ?? item.email ?? "",
-          phone: item.telPaciente ?? item.phone ?? "",
-          address: item.ruaPaciente ?? item.endereco ?? "",
-          city: item.cidadePaciente ?? item.cidade ?? "",
-          state: item.estadoPaciente ?? item.estado ?? "",
-          createdAt: item.createdAtPaciente ?? item.createdAt ?? "",
-        }));
-
-        setPatients(mapped);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Erro ao carregar pacientes.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadPatients();
-  }, []);
+  const { items: patients, loading, error } = useApiList(listarPacientes, normalizePaciente);
 
   const filtered = patients.filter((patient) =>
-    normalize(`${patient.name} ${patient.id}`).includes(
+    normalize(`${patient.name} ${patient.email} ${patient.id}`).includes(
       normalize(search.trim()),
     ),
   );
@@ -479,11 +445,16 @@ export function EmployeePatients() {
   return (
     <>
       <PageHeader
-        title="O cuidado começa com pessoas."
+        title="Pacientes"
         description="Encontre os pacientes da sua unidade em um só lugar."
         count={patients.length}
-        label="pacientes na unidade"
+        results={filtered.length}
+        label="Total de pacientes"
         icon="heart"
+      />
+      <FaixaEmAndamento
+        chamados={emProcesso(chamadosDoFuncionario)}
+        onAbrirChamado={(c, el) => abrirPerfil("chamado", c.idChamado, el)}
       />
       <section className="mgr-panel" aria-labelledby="emp-patients-title">
         <div className="mgr-toolbar">
@@ -498,33 +469,24 @@ export function EmployeePatients() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Paciente</th>
-                <th scope="col">Código</th>
-                <th scope="col">Unidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((patient) => (
-                <tr key={patient.id}>
-                  <td>
-                    <div className="emp-person">
-                      <span className="mgr-avatar" aria-hidden="true">
-                        {initials(patient.name)}
-                      </span>
-                      <strong>{patient.name}</strong>
-                    </div>
-                  </td>
-                  <td>{String(patient.id).toUpperCase()}</td>
-                  <td>{readEmployeeSession()?.unitName || unit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <GradePessoas rotulo="Pacientes">
+          {filtered.map((patient) => (
+            <li key={patient.id}>
+              <CartaoPessoa
+                role="paciente"
+                nome={patient.name}
+                foto={patient.photo}
+                papel={`Paciente · código ${String(patient.id).toUpperCase()}`}
+                linhas={[
+                  ["mail", patient.email],
+                  ["phone", patient.phone],
+                  ["pharmacy", readEmployeeSession()?.unitName || unit],
+                ]}
+                onAbrir={(el) => abrirPerfil("paciente", patient.id, el)}
+              />
+            </li>
+          ))}
+        </GradePessoas>
         {!loading && !error && !filtered.length && (
           <p className="mgr-empty">
             Nenhum paciente encontrado. Tente outro nome ou código.
@@ -545,76 +507,19 @@ export function EmployeePatients() {
 }
 
 export function EmployeeTeam() {
+  const { abrirPerfil } = usePerfil();
   const [search, setSearch] = useState("");
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadEmployees() {
-      try {
-        setLoading(true);
-        setError("");
-        const response = await fetch("http://localhost:3000/funcionario", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            payload.message ||
-              payload.error ||
-              "Não foi possível consultar os funcionários.",
-          );
-        }
-
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.funcionario)
-            ? payload.funcionario
-            : Array.isArray(payload?.funcionarios)
-              ? payload.funcionarios
-              : [];
-
-        const session = readEmployeeSession();
-        const targetFarmaciaId = String(
-          session?.farmaciasId ?? session?.farmaciaId ?? "",
-        );
-
-        const mapped = rawList.map((item) => ({
-          id: String(item.idFuncionario ?? item.id ?? ""),
-          name: item.nomeFuncionario ?? item.name ?? "Funcionário",
-          role: item.cargoFuncionario ?? item.role ?? "Funcionário",
-          shift: item.turnoFuncionario ?? item.shift ?? "",
-          email: item.emailFuncionario ?? item.email ?? "",
-          phone: item.telFuncionario ?? item.phone ?? "",
-          matricula: item.matriculaFuncionario ?? item.matricula ?? "",
-          farmaciaId: String(
-            item.fkIdFarmacia ?? item.idFarmacia ?? item.farmaciaId ?? "",
-          ),
-        }));
-
-        const sameUnit = mapped.filter((item) => {
-          return item.farmaciaId && targetFarmaciaId
-            ? item.farmaciaId === targetFarmaciaId
-            : true;
-        });
-
-        setEmployees(sameUnit.length ? sameUnit : mapped);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Erro ao carregar funcionários.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadEmployees();
-  }, []);
+  const [shift, setShift] = useState("");
+  const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
+  const session = readEmployeeSession();
+  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? "");
+  const sameUnit = targetFarmaciaId
+    ? allEmployees.filter((item) => item.farmaciaId === targetFarmaciaId)
+    : [];
+  const employees = sameUnit.length ? sameUnit : allEmployees;
 
   const filtered = employees.filter((employee) =>
-    normalize(`${employee.name} ${employee.role}`).includes(
+    (!shift || employee.shift === shift) && normalize(`${employee.name} ${employee.role} ${employee.email}`).includes(
       normalize(search.trim()),
     ),
   );
@@ -622,10 +527,11 @@ export function EmployeeTeam() {
   return (
     <>
       <PageHeader
-        title="Sua equipe, mais perto."
+        title="Funcionários"
         description="Conheça os profissionais que compartilham o cuidado com você."
         count={employees.length}
-        label="profissionais na unidade"
+        results={filtered.length}
+        label="Profissionais na unidade"
         icon="people"
       />
       <section className="mgr-panel" aria-labelledby="emp-team-title">
@@ -640,23 +546,12 @@ export function EmployeeTeam() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
+          <select aria-label="Filtrar funcionários por turno" value={shift} onChange={event => setShift(event.target.value)}>
+            <option value="">Todos os turnos</option>
+            {[...new Set(employees.map(employee => employee.shift).filter(Boolean))].map(value => <option key={value} value={value}>{value}</option>)}
+          </select>
         </div>
-        <div className="mgr-employee-grid">
-          {filtered.map((employee) => (
-            <article
-              className="mgr-employee-card emp-team-card"
-              key={employee.id}
-            >
-              <span className="mgr-avatar" aria-hidden="true">
-                {initials(employee.name)}
-              </span>
-              <strong>{employee.name}</strong>
-              <span>{employee.role}</span>
-              <small>Turno: {employee.shift}</small>
-              <span className="emp-email">{employee.email}</span>
-            </article>
-          ))}
-        </div>
+        <TeamTable employees={filtered} onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)} />
         {!loading && !error && !filtered.length && (
           <p className="mgr-empty">
             Nenhum funcionário encontrado. Tente outro nome ou cargo.

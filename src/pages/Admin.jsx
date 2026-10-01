@@ -1,6 +1,22 @@
+import PersonaAvatar from "../components/PersonaAvatar";
+import { CartaoPessoa, GradePessoas } from "../components/Directory";
 import { useEffect, useRef, useState } from "react";
-import { Link, Outlet, useOutletContext } from "react-router-dom";
+import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
+import PerfilProvider from "../components/perfil/PerfilProvider";
+import { usePerfil } from "../components/perfil/perfilContext";
+import { propsLinha } from "../services/perfil";
+import { useAoAlterarDados } from "../hooks/useResumo";
+import PersonaIcon from "../components/PersonaIcon";
+import FarmaciaSelect from "../components/FarmaciaSelect";
+import {
+  API_URL,
+  listarFarmacias,
+  listarFuncionarios,
+  listarGerentes,
+  listarPacientes,
+  fotoPessoa,
+} from "../services/api";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { initialData, unit, formatDate } from "./managerData";
 import "../styles/manager.css";
@@ -95,6 +111,31 @@ const normalize = (value) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
+// Paleta usada só para colorir os avatares de iniciais nas listagens novas
+// (Gerentes/Unidades/Pacientes). Puramente visual, não vem do back.
+const avatarBgPalette = [
+  "#e7f7ee",
+  "#e7f1fc",
+  "#fdf3da",
+  "#fdeceb",
+  "#f1ecfb",
+  "#e6f7f4",
+];
+const avatarTextPalette = [
+  "#1c8747",
+  "#2b72b8",
+  "#a4700b",
+  "#c4443f",
+  "#6a4fc4",
+  "#0f8f7a",
+];
+function avatarTone(seed = "") {
+  const sum = [...seed].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = seed ? sum % avatarBgPalette.length : 0;
+  return { background: avatarBgPalette[index], color: avatarTextPalette[index] };
+}
+
+
 const normalizeFarmacias = (payload = []) =>
   payload.map((farmacia, index) => {
     const id = farmacia.idFarmacia ?? farmacia.id ?? String(index + 1);
@@ -106,7 +147,6 @@ const normalizeFarmacias = (payload = []) =>
     const email = farmacia.emailFarmacia ?? farmacia.email ?? "";
     const phone = farmacia.telFarmacia ?? farmacia.telefone ?? "";
     const cnes = farmacia.cnesFarmacia ?? farmacia.cnes ?? "";
-    const managerId = farmacia.idGerente ?? farmacia.gerenteId ?? null;
     const unit =
       farmacia.cidadeFarmacia ??
       farmacia.enderecoFarmacia ??
@@ -121,7 +161,8 @@ const normalizeFarmacias = (payload = []) =>
       email,
       phone,
       cnes,
-      idGerente: managerId,
+      photo: fotoPessoa(farmacia.fotoFarmacia),
+      idEndereco: farmacia.idEndereco ?? null,
       unit,
       status: "Ativo",
       cepFarmacia: farmacia.cepFarmacia ?? farmacia.cep ?? "",
@@ -131,7 +172,7 @@ const normalizeFarmacias = (payload = []) =>
         farmacia.complementoFarmacia ?? farmacia.complemento ?? "",
       bairroFarmacia: farmacia.bairroFarmacia ?? farmacia.bairro ?? "",
       cidadeFarmacia: farmacia.cidadeFarmacia ?? farmacia.cidade ?? "",
-      senhaFarmacia: farmacia.senhaFarmacia ?? "",
+      ufFarmacia: farmacia.ufFarmacia ?? farmacia.estadoFarmacia ?? "",
     };
   });
 
@@ -157,6 +198,7 @@ const normalizePacientes = (payload = []) =>
       name,
       email,
       unit,
+      photo: fotoPessoa(paciente.fotoPerfilPaciente) ?? paciente.photo,
       status: paciente.status || "Ativo",
       createdAt: paciente.createdAt ?? paciente.created_at ?? null,
       role: paciente.role ?? "Paciente",
@@ -188,6 +230,7 @@ const normalizeFuncionarios = (payload = []) =>
       name,
       email,
       unit,
+      photo: fotoPessoa(funcionario.fotoFuncionario ?? funcionario.fotoPerfilFuncionario) ?? funcionario.photo,
       role: funcionario.cargoFuncionario ?? funcionario.role ?? "Funcionario",
       shift: funcionario.turnoFuncionario ?? funcionario.shift ?? "",
       status: "Ativo",
@@ -198,8 +241,74 @@ const normalizeFuncionarios = (payload = []) =>
     };
   });
 
+// Apenas rotulo visual da trilha no topo (nao altera rotas nem dados).
+const breadcrumbLabels = {
+  medicamentos: "Medicamentos",
+  gerentes: "Gerentes",
+  farmacias: "Unidades",
+  pacientes: "Pacientes",
+  chamados: "Solicitações",
+};
+
+function Icon({ name, size = 17 }) {
+  const paths = {
+    pharmacy: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M12 6v6m-3-3h6M10 21v-5h4v5" /></>,
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.4-3.4" />
+      </>
+    ),
+    bell: (
+      <path d="M18 8a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14 18 8ZM13.7 19a2 2 0 0 1-3.4 0" />
+    ),
+    chevronDown: <path d="m6 9 6 6 6-6" />,
+    sliders: (
+      <>
+        <path d="M4 6h10m4 0h2M4 12h4m4 0h10M4 18h14m4 0h-2" />
+        <circle cx="16" cy="6" r="2" />
+        <circle cx="10" cy="12" r="2" />
+        <circle cx="20" cy="18" r="2" />
+      </>
+    ),
+    refresh: (
+      <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5" />
+    ),
+    dots: (
+      <>
+        <circle cx="5" cy="12" r="1.6" />
+        <circle cx="12" cy="12" r="1.6" />
+        <circle cx="19" cy="12" r="1.6" />
+      </>
+    ),
+    download: (
+      <path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" />
+    ),
+    chevronLeft: <path d="m14 6-6 6 6 6" />,
+    chevronRight: <path d="m10 6 6 6-6 6" />,
+  };
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
 export default function Admin() {
   const [data, setData] = useState(demoData);
+  const { pathname } = useLocation();
+  const currentSection = pathname.replace(/^\/admin\/?/, "").split("/")[0];
+  const currentLabel = breadcrumbLabels[currentSection] || "Dashboard";
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -216,12 +325,10 @@ export default function Admin() {
               Painel de administração
             </span>{" "}
             <span className="mgr-topbar-divider">/</span>{" "}
-            <strong>Rede Intermedi</strong>
+            <strong>{currentLabel}</strong>
           </span>
           <div className="mgr-account adm-account">
-            <span className="mgr-account-avatar" aria-hidden="true">
-              AL
-            </span>
+            <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
               <strong>Admin Local</strong>
               <small>Administrador da plataforma</small>
@@ -232,9 +339,11 @@ export default function Admin() {
             </Link>
           </div>
         </div>
-        <main className="mgr-main">
-          <Outlet context={{ data, setData }} />
-        </main>
+        <PerfilProvider plataforma="admin">
+          <main className="mgr-main">
+            <Outlet context={{ data, setData }} />
+          </main>
+        </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
@@ -274,8 +383,16 @@ function Dialog({ title, onClose, children }) {
 
 export function AdminDirectory({ section }) {
   const { data, setData } = useOutletContext();
+  const { abrirPerfil } = usePerfil();
+  // foto trocada no perfil: recarrega as listas para mostrar a nova
+  const [versao, setVersao] = useState(0);
+  useAoAlterarDados(() => setVersao((v) => v + 1));
+  const tipoPerfil = section === "gerentes" ? "gerente" : section === "farmacias" ? "farmacia" : section === "pacientes" ? "paciente" : null;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [unitFilter, setUnitFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [openRowMenu, setOpenRowMenu] = useState(null);
   const [modal, setModal] = useState(null);
   const [notice, setNotice] = useState("");
   const config = sections[section];
@@ -284,6 +401,13 @@ export function AdminDirectory({ section }) {
   const managers = section === "gerentes";
   const pharmacies = section === "farmacias";
   const patients = section === "pacientes";
+  const crud = managers || pharmacies || patients;
+  const pageSize = 8;
+
+  useEffect(() => {
+    setPage(1);
+    setOpenRowMenu(null);
+  }, [search, status, unitFilter, section]);
 
   useEffect(() => {
     if (section !== "gerentes" && section !== "farmacias") {
@@ -294,27 +418,7 @@ export function AdminDirectory({ section }) {
 
     async function loadGerentes() {
       try {
-        const response = await fetch("http://localhost:3000/gerente", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar os gerentes.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.gerente)
-            ? payload.gerente
-            : Array.isArray(payload?.gerentes)
-              ? payload.gerentes
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarGerentes();
 
         if (!cancelled) {
           setData((current) => ({
@@ -335,7 +439,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [section, setData]);
+  }, [section, setData, versao]);
 
   useEffect(() => {
     if (section !== "farmacias" && section !== "gerentes") {
@@ -346,27 +450,7 @@ export function AdminDirectory({ section }) {
 
     async function loadFarmacias() {
       try {
-        const response = await fetch("http://localhost:3000/farmacia", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar as farmácias.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.farmacia)
-            ? payload.farmacia
-            : Array.isArray(payload?.farmacias)
-              ? payload.farmacias
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarFarmacias();
 
         if (!cancelled) {
           setData((current) => ({
@@ -387,34 +471,14 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [section, setData]);
+  }, [section, setData, versao]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadFuncionarios() {
       try {
-        const response = await fetch("http://localhost:3000/funcionario", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar os funcionários.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.funcionario)
-            ? payload.funcionario
-            : Array.isArray(payload?.funcionarios)
-              ? payload.funcionarios
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarFuncionarios();
 
         if (!cancelled) {
           setData((current) => ({
@@ -435,7 +499,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [setData]);
+  }, [setData, versao]);
 
   useEffect(() => {
     if (section !== "pacientes") {
@@ -446,27 +510,7 @@ export function AdminDirectory({ section }) {
 
     async function loadPacientes() {
       try {
-        const response = await fetch("http://localhost:3000/paciente", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível buscar os pacientes.");
-        }
-
-        const payload = await response.json();
-        const rawList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.paciente)
-            ? payload.paciente
-            : Array.isArray(payload?.pacientes)
-              ? payload.pacientes
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : [];
+        const rawList = await listarPacientes();
 
         if (!cancelled) {
           setData((current) => ({
@@ -487,9 +531,7 @@ export function AdminDirectory({ section }) {
     return () => {
       cancelled = true;
     };
-  }, [section, setData]);
-
-  const [dataGerente, setDataGerente] = useState({});
+  }, [section, setData, versao]);
 
   const [nomeGerente, setNomeGerente] = useState("");
   const [emailGerente, setEmailGerente] = useState("");
@@ -503,41 +545,74 @@ export function AdminDirectory({ section }) {
   const [complementoGerente, setComplementoGerente] = useState("");
   const [bairroGerente, setBairroGerente] = useState("");
   const [cidadeGerente, setCidadeGerente] = useState("");
+  const [ufGerente, setUfGerente] = useState("");
+  const [farmaciaGerente, setFarmaciaGerente] = useState(null);
+  const [cadastrandoGerente, setCadastrandoGerente] = useState(false);
+  const [erroCadastroGerente, setErroCadastroGerente] = useState("");
 
   const [nomeFarmacia, setNomeFarmacia] = useState("");
   const [emailFarmacia, setEmailFarmacia] = useState("");
   const [telFarmacia, setTelFarmacia] = useState("");
   const [cnesFarmacia, setCnesFarmacia] = useState("");
-  const [senhaFarmacia, setSenhaFarmacia] = useState("");
   const [cepFarmacia, setCepFarmacia] = useState("");
   const [enderecoFarmacia, setEnderecoFarmacia] = useState("");
   const [numeroFarmacia, setNumeroFarmacia] = useState("");
   const [complementoFarmacia, setComplementoFarmacia] = useState("");
   const [bairroFarmacia, setBairroFarmacia] = useState("");
   const [cidadeFarmacia, setCidadeFarmacia] = useState("");
-  const [gerenteSearchFarmacia, setGerenteSearchFarmacia] = useState("");
-  const [gerentesFarmacia, setGerentesFarmacia] = useState([]);
-  const [showGerenteSuggestions, setShowGerenteSuggestions] = useState(false);
-
-  const gerenteOptions = (data.gerentes || []).filter((gerente) =>
-    normalize(`${gerente.name} ${gerente.email || ""}`).includes(
-      normalize(gerenteSearchFarmacia.trim()),
-    ),
-  );
+  const [ufFarmacia, setUfFarmacia] = useState("");
 
   const filtered = records.filter(
     (record) =>
       normalize(`${record.name} ${record.unit} ${record.email || ""}`).includes(
         normalize(search.trim()),
       ) &&
-      (!status || record.status === status),
+      (!status || record.status === status) &&
+      (!unitFilter || record.unit === unitFilter),
   );
   const restricted = records.filter((record) =>
     ["Bloqueado", "Banido"].includes(record.status),
   ).length;
+  const activeCount = records.filter((record) => record.status === "Ativo")
+    .length;
+  const unitOptions = Array.from(
+    new Set((records || []).map((record) => record.unit).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = crud
+    ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : filtered;
+  const pageStart = filtered.length ? (currentPage - 1) * pageSize + 1 : 0;
+  const pageEnd = Math.min(filtered.length, currentPage * pageSize);
+
+  function exportCsv() {
+    const header = ["Nome", "Unidade", "Situação"];
+    const rows = filtered.map((record) => [
+      record.name,
+      record.unit,
+      record.status,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(";"),
+      )
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${section}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const managerFarmacias = (data.farmacias || []).filter(
-    (farmacia) => String(farmacia.idGerente) === String(modal?.record?.id),
+    (farmacia) => String(farmacia.id) === String(modal?.record?.farmaciaId),
   );
 
   const managerFuncionarios = (data.funcionarios || []).filter((funcionario) =>
@@ -559,7 +634,7 @@ export function AdminDirectory({ section }) {
     if (managers) {
       try {
         const response = await fetch(
-          `http://localhost:3000/gerente/${encodeURIComponent(record.id)}`,
+          `${API_URL}/gerente/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -596,7 +671,7 @@ export function AdminDirectory({ section }) {
     if (pharmacies) {
       try {
         const response = await fetch(
-          `http://localhost:3000/farmacia/${encodeURIComponent(record.id)}`,
+          `${API_URL}/farmacia/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -633,7 +708,7 @@ export function AdminDirectory({ section }) {
     if (patients) {
       try {
         const response = await fetch(
-          `http://localhost:3000/paciente/${encodeURIComponent(record.id)}`,
+          `${API_URL}/paciente/${encodeURIComponent(record.id)}`,
           {
             method: "DELETE",
             headers: {
@@ -680,6 +755,16 @@ export function AdminDirectory({ section }) {
   }
   async function register(event) {
     event.preventDefault();
+    if (cadastrandoGerente) return;
+    setErroCadastroGerente("");
+    if (!farmaciaGerente) {
+      setErroCadastroGerente("Selecione uma farmácia cadastrada.");
+      return;
+    }
+    if (senhaGerente !== confirmarSenhaGerente) {
+      setErroCadastroGerente("As senhas não coincidem.");
+      return;
+    }
 
     const gerente = {
       nomeGerente,
@@ -693,12 +778,13 @@ export function AdminDirectory({ section }) {
       complementoGerente: complementoGerente || null,
       bairroGerente,
       cidadeGerente,
+      ufGerente,
+      fkIdFarmacia: Number(farmaciaGerente.idFarmacia),
     };
-
-    console.log("Dados enviados:", gerente);
+    setCadastrandoGerente(true);
 
     try {
-      const response = await fetch("http://localhost:3000/gerente", {
+      const response = await fetch(`${API_URL}/gerente`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -712,7 +798,12 @@ export function AdminDirectory({ section }) {
         throw new Error(result.error || "Erro ao cadastrar gerente");
       }
 
-      console.log("Gerente cadastrado:", result);
+      const [novoGerente] = normalizeGerentes([{
+        ...gerente,
+        ...result.recebido,
+        nomeFarmacia: farmaciaGerente.nomeFarmacia,
+      }]);
+      setData((current) => ({ ...current, gerentes: [...current.gerentes, novoGerente] }));
 
       setNotice(`${nomeGerente}: cadastrado com sucesso!`);
       setModal(null);
@@ -730,10 +821,15 @@ export function AdminDirectory({ section }) {
       setComplementoGerente("");
       setBairroGerente("");
       setCidadeGerente("");
+      setUfGerente("");
+      setFarmaciaGerente(null);
     } catch (error) {
       console.error("Erro ao cadastrar gerente:", error);
 
       setNotice(`Erro ao cadastrar gerente: ${error.message}`);
+      setErroCadastroGerente(error.message);
+    } finally {
+      setCadastrandoGerente(false);
     }
   }
 
@@ -742,24 +838,17 @@ export function AdminDirectory({ section }) {
       (item) => String(item.id) === String(record.id),
     );
 
-    const manager = (data.gerentes || []).find(
-      (item) =>
-        String(item.id) === String(farmacia?.idGerente ?? record.idGerente),
-    );
-
     setNomeFarmacia(farmacia?.name || record.name || "");
     setEmailFarmacia(farmacia?.email || record.email || "");
     setTelFarmacia(farmacia?.phone || record.phone || "");
     setCnesFarmacia(farmacia?.cnes || record.cnes || "");
-    setGerentesFarmacia(manager ? [manager] : []);
-    setGerenteSearchFarmacia("");
-    setSenhaFarmacia(farmacia?.senhaFarmacia || "");
     setCepFarmacia(farmacia?.cepFarmacia || "");
     setEnderecoFarmacia(farmacia?.enderecoFarmacia || "");
     setNumeroFarmacia(farmacia?.numeroFarmacia || "");
     setComplementoFarmacia(farmacia?.complementoFarmacia || "");
     setBairroFarmacia(farmacia?.bairroFarmacia || "");
     setCidadeFarmacia(farmacia?.cidadeFarmacia || farmacia?.unit || "");
+    setUfFarmacia(farmacia?.ufFarmacia || "");
     setModal({ type: "editFarmacia", record: farmacia || record });
   }
 
@@ -771,19 +860,18 @@ export function AdminDirectory({ section }) {
       emailFarmacia,
       telFarmacia,
       cnesFarmacia,
-      idGerente: gerentesFarmacia[0] ? Number(gerentesFarmacia[0].id) : null,
-      senhaFarmacia,
       cepFarmacia,
       enderecoFarmacia,
       numeroFarmacia,
       complementoFarmacia: complementoFarmacia || null,
       bairroFarmacia,
       cidadeFarmacia,
+      ufFarmacia,
     };
 
     try {
       const response = await fetch(
-        `http://localhost:3000/farmacia/${encodeURIComponent(modal.record.id)}`,
+        `${API_URL}/farmacia/${encodeURIComponent(modal.record.id)}`,
         {
           method: "PUT",
           headers: {
@@ -797,6 +885,7 @@ export function AdminDirectory({ section }) {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         const errorMessage =
+          (typeof result.error === "string" ? result.error : null) ||
           result.message ||
           result.error?.message ||
           result.error?.errstr ||
@@ -804,17 +893,9 @@ export function AdminDirectory({ section }) {
         throw new Error(errorMessage);
       }
 
-      const updatedFarmacia = {
-        ...modal.record,
-        id: String(modal.record.id),
-        name: nomeFarmacia,
-        email: emailFarmacia,
-        phone: telFarmacia,
-        cnes: cnesFarmacia,
-        idGerente: gerentesFarmacia[0] ? Number(gerentesFarmacia[0].id) : null,
-        unit: cidadeFarmacia || enderecoFarmacia || nomeFarmacia,
-        status: "Ativo",
-      };
+      const [updatedFarmacia] = normalizeFarmacias([{
+        ...farmacia, idFarmacia: modal.record.id, idEndereco: modal.record.idEndereco,
+      }]);
 
       setData((current) => ({
         ...current,
@@ -842,15 +923,13 @@ export function AdminDirectory({ section }) {
     setEmailFarmacia("");
     setTelFarmacia("");
     setCnesFarmacia("");
-    setGerenteSearchFarmacia("");
-    setGerentesFarmacia([]);
-    setSenhaFarmacia("");
     setCepFarmacia("");
     setEnderecoFarmacia("");
     setNumeroFarmacia("");
     setComplementoFarmacia("");
     setBairroFarmacia("");
     setCidadeFarmacia("");
+    setUfFarmacia("");
   }
 
   async function registerFarmacia(event) {
@@ -861,18 +940,17 @@ export function AdminDirectory({ section }) {
       emailFarmacia,
       telFarmacia,
       cnesFarmacia,
-      idGerente: gerentesFarmacia[0] ? Number(gerentesFarmacia[0].id) : null,
-      senhaFarmacia,
       cepFarmacia,
       enderecoFarmacia,
       numeroFarmacia,
       complementoFarmacia: complementoFarmacia || null,
       bairroFarmacia,
       cidadeFarmacia,
+      ufFarmacia,
     };
 
     try {
-      const response = await fetch("http://localhost:3000/farmacia", {
+      const response = await fetch(`${API_URL}/farmacia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -883,6 +961,7 @@ export function AdminDirectory({ section }) {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         const errorMessage =
+          (typeof result.error === "string" ? result.error : null) ||
           result.message ||
           result.error?.message ||
           result.error?.errstr ||
@@ -890,13 +969,7 @@ export function AdminDirectory({ section }) {
         throw new Error(errorMessage);
       }
 
-      const nextFarmacia = {
-        id: String(result?.farmacia?.id ?? Date.now()),
-        name: nomeFarmacia,
-        email: emailFarmacia,
-        unit: cidadeFarmacia || enderecoFarmacia || nomeFarmacia,
-        status: "Ativo",
-      };
+      const [nextFarmacia] = normalizeFarmacias([{ ...farmacia, ...result.recebido }]);
 
       setData((current) => ({
         ...current,
@@ -911,155 +984,507 @@ export function AdminDirectory({ section }) {
       setNotice(`Erro ao cadastrar farmácia: ${error.message}`);
     }
   }
+  const statNoun = {
+    gerentes: { total: "gerentes", active: "Gerentes ativos" },
+    farmacias: { total: "farmácias", active: "Farmácias ativas" },
+    pacientes: { total: "pacientes", active: "Pacientes ativos" },
+  }[section] || { total: config.label.toLowerCase(), active: "Ativos" };
+
+  const rowActionLabel = managers ? "Excluir" : tickets ? "Banir" : "Bloquear";
+
   return (
     <>
-      <header className="mgr-page-head mgr-page-head-featured">
-        <div>
-          <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
-          <h1>{config.title}</h1>
-          <p>{config.description}</p>
-        </div>
-        {managers && (
-          <button
-            className="mgr-primary"
-            onClick={() => setModal({ type: "register" })}
-          >
-            + Cadastrar gerente
-          </button>
-        )}
-        {pharmacies && (
-          <button
-            className="mgr-primary"
-            onClick={() => setModal({ type: "registerFarmacia" })}
-          >
-            + Cadastrar farmácia
-          </button>
-        )}
-      </header>
-      <div className="adm-overview">
-        <span>
-          <strong>{records.length}</strong> {config.label.toLowerCase()} na rede
-        </span>
-        <span>
-          {managers ? (
-            "Gestão de responsáveis"
-          ) : (
-            <>
-              <strong>{restricted}</strong> {tickets ? "banidos" : "bloqueados"}
-            </>
+      {crud ? (
+        <>
+          <header className="mgr-page-head mgr-page-head-featured adm-hero2">
+            <div>
+              <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
+              <h1>{config.label}</h1>
+              <p>{config.description}</p>
+            </div>
+            <div className="adm-hero2-actions">
+              <button
+                type="button"
+                className="adm-hero2-export"
+                onClick={exportCsv}
+              >
+                <Icon name="download" size={15} /> Exportar
+              </button>
+              {managers && (
+                <button
+                  className="mgr-primary"
+                  onClick={() => {
+                    setFarmaciaGerente(null);
+                    setErroCadastroGerente("");
+                    setModal({ type: "register" });
+                  }}
+                >
+                  + Cadastrar Gerente
+                </button>
+              )}
+              {pharmacies && (
+                <button
+                  className="mgr-primary"
+                  onClick={() => setModal({ type: "registerFarmacia" })}
+                >
+                  + Cadastrar Farmácia
+                </button>
+              )}
+            </div>
+          </header>
+
+          <div className="adm-stats-row">
+            <div className="adm-stat-card">
+              <span className="adm-stat-icon" aria-hidden="true">
+                <PersonaIcon
+                  role={
+                    managers ? "gerente" : patients ? "paciente" : "funcionario"
+                  }
+                  size={20}
+                />
+              </span>
+              <div>
+                <p>Total de {statNoun.total}</p>
+                <strong>{records.length}</strong>
+              </div>
+            </div>
+            <div className="adm-stat-card">
+              <span className="adm-stat-icon is-check" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
+              </span>
+              <div>
+                <p>{statNoun.active}</p>
+                <strong>{activeCount}</strong>
+              </div>
+            </div>
+          </div>
+
+          {notice && (
+            <p className="adm-notice" role="status">
+              {notice}
+            </p>
           )}
-        </span>
-      </div>
-      {notice && (
-        <p className="adm-notice" role="status">
-          {notice}
-        </p>
-      )}
-      <section className="mgr-panel" aria-labelledby="adm-list-title">
-        <div className="mgr-toolbar">
-          <h2 id="adm-list-title">
-            {config.label} <span className="mgr-badge">{records.length}</span>
-          </h2>
-          <input
-            type="search"
-            aria-label={`Buscar ${config.label.toLowerCase()}`}
-            placeholder={
-              tickets ? "Buscar chamado ou unidade…" : "Buscar nome ou unidade…"
-            }
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select
-            aria-label="Filtrar por situação"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="">Todas as situações</option>
-            {(tickets
-              ? ["Pendente", "Em andamento", "Resolvido", "Banido"]
-              : managers
-                ? ["Ativo"]
-                : ["Ativo", "Bloqueado"]
-            ).map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">{tickets ? "Chamado" : "Nome"}</th>
-                <th scope="col">Unidade</th>
-                <th scope="col">Situação</th>
-                <th scope="col">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((record) => (
-                <tr key={record.id}>
-                  <td>
-                    <strong>{record.name}</strong>
-                    <small>
-                      {tickets
-                        ? formatDate(record.date)
-                        : record.email || `Código: ${record.id.toUpperCase()}`}
-                    </small>
-                  </td>
-                  <td>{record.unit}</td>
-                  <td>
-                    <span
-                      className={`mgr-badge ${["Bloqueado", "Banido"].includes(record.status) ? "red" : record.status === "Pendente" ? "yellow" : "green"}`}
-                    >
-                      {record.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="adm-actions">
-                      <button
-                        className="mgr-text-button"
-                        aria-label={`Consultar ${record.name}`}
-                        onClick={() => setModal({ type: "details", record })}
-                      >
-                        Consultar
-                      </button>
-                      {pharmacies && (
-                        <button
-                          className="adm-edit-icon"
-                          type="button"
-                          aria-label={`Editar ${record.name}`}
-                          title="Editar farmácia"
-                          onClick={() => openEditFarmacia(record)}
-                        >
-                          ✎
-                        </button>
-                      )}
-                      <button
-                        className="adm-danger"
-                        disabled={["Bloqueado", "Banido"].includes(
-                          record.status,
+
+          <section className="mgr-panel adm-panel2" aria-labelledby="adm-list-title">
+            <div className="adm-toolbar2">
+              <label className="adm-search2">
+                <Icon name="search" size={15} />
+                <input
+                  type="search"
+                  aria-label={`Buscar ${config.label.toLowerCase()}`}
+                  placeholder="Buscar por nome, e-mail ou unidade…"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+              <select
+                aria-label="Filtrar por unidade"
+                value={unitFilter}
+                onChange={(event) => setUnitFilter(event.target.value)}
+              >
+                <option value="">Todas as unidades</option>
+                {unitOptions.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Filtrar por situação"
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="">Todos os status</option>
+                {(managers ? ["Ativo"] : ["Ativo", "Bloqueado"]).map(
+                  (value) => (
+                    <option key={value}>{value}</option>
+                  ),
+                )}
+              </select>
+              <button
+                type="button"
+                className="adm-icon-btn"
+                disabled
+                title="Filtros avançados — em breve"
+              >
+                <Icon name="sliders" size={16} />
+              </button>
+              <button
+                type="button"
+                className="adm-icon-btn"
+                disabled
+                title="Atualizar — em breve"
+              >
+                <Icon name="refresh" size={16} />
+              </button>
+              <button
+                type="button"
+                className="adm-icon-btn"
+                disabled
+                title="Mais opções — em breve"
+              >
+                <Icon name="dots" size={16} />
+              </button>
+            </div>
+            {managers || patients ? (
+              <GradePessoas rotulo={config.label}>
+                {paginated.map((record) => {
+                  const blocked = ["Bloqueado", "Banido"].includes(record.status);
+                  return (
+                    <li key={record.id}>
+                      <CartaoPessoa
+                        role={managers ? "gerente" : "paciente"}
+                        nome={record.name}
+                        foto={record.photo}
+                        papel={managers ? ["Gerente", record.crf].filter(Boolean).join(" · ") : "Paciente"}
+                        selo={<span className={`mgr-badge ${blocked ? "red" : "green"}`}>{record.status}</span>}
+                        linhas={[
+                          ["pharmacy", managers ? record.unit : null],
+                          ["map", patients && record.unit !== "Unidade não informada" ? record.unit : null],
+                          ["mail", record.email],
+                          ["phone", record.phone],
+                        ]}
+                        onAbrir={(el) => abrirPerfil(tipoPerfil, record.id, el)}
+                        acoes={(
+                          <div className="adm-row-menu-wrap">
+                            <button
+                              type="button"
+                              className="adm-row-menu-trigger"
+                              aria-label={`Mais ações: ${record.name}`}
+                              aria-expanded={openRowMenu === record.id}
+                              onClick={() => setOpenRowMenu((current) => (current === record.id ? null : record.id))}
+                            >
+                              <Icon name="dots" size={16} />
+                            </button>
+                            {openRowMenu === record.id && (
+                              <>
+                                <div data-sem-perfil className="adm-menu-backdrop" onClick={() => setOpenRowMenu(null)} />
+                                <div className="adm-row-menu" role="menu">
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={(event) => {
+                                      setOpenRowMenu(null);
+                                      abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("article"));
+                                    }}
+                                  >
+                                    Consultar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="is-danger"
+                                    disabled={blocked}
+                                    onClick={() => {
+                                      setModal({ type: "confirm", record });
+                                      setOpenRowMenu(null);
+                                    }}
+                                  >
+                                    {rowActionLabel}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         )}
-                        aria-label={`${config.action}: ${record.name}`}
-                        onClick={() => setModal({ type: "confirm", record })}
+                      />
+                    </li>
+                  );
+                })}
+              </GradePessoas>
+            ) : (
+              <div className="mgr-table-wrap">
+                <table className="adm-table2">
+                  <thead>
+                    <tr>
+                      <th scope="col">Nome</th>
+                      <th scope="col">Unidade</th>
+                      <th scope="col">Situação</th>
+                      <th scope="col">Último acesso</th>
+                      <th scope="col">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginated.map((record) => {
+                      const tone = avatarTone(record.name);
+                      const blocked = ["Bloqueado", "Banido"].includes(
+                        record.status,
+                      );
+                      return (
+                        <tr
+                          key={record.id}
+                          {...propsLinha((el) => abrirPerfil(tipoPerfil, record.id, el), `Abrir perfil de ${record.name}`)}
+                        >
+                          <td>
+                            <div className="adm-name-cell">
+                              {pharmacies && record.photo ? (
+                                <span className="adm-avatar-circle pharmacy-avatar perfil-avatar-lista">
+                                  <img src={record.photo} alt="" />
+                                </span>
+                              ) : pharmacies ? <span
+                                className="adm-avatar-circle pharmacy-avatar"
+                                style={{
+                                  background: tone.background,
+                                  color: tone.color,
+                                }}
+                                aria-hidden="true"
+                              >
+                                <Icon name="pharmacy" size={20} />
+                              </span> : <PersonaAvatar role={managers ? "gerente" : patients ? "paciente" : "funcionario"} photo={record.photo} name={record.name} />}
+                              <span>
+                                <strong>{record.name}</strong>
+                                <small>
+                                  {record.email ||
+                                    `Código: ${record.id.toUpperCase()}`}
+                                </small>
+                              </span>
+                            </div>
+                          </td>
+                          <td>{record.unit}</td>
+                          <td>
+                            <span
+                              className={`mgr-badge ${blocked ? "red" : "green"}`}
+                            >
+                              {record.status}
+                            </span>
+                          </td>
+                          <td className="adm-muted-cell">—</td>
+                          <td>
+                            <div className="adm-row-menu-wrap">
+                              <button
+                                type="button"
+                                className="adm-row-menu-trigger"
+                                aria-label={`Mais ações: ${record.name}`}
+                                aria-expanded={openRowMenu === record.id}
+                                onClick={() =>
+                                  setOpenRowMenu((current) =>
+                                    current === record.id ? null : record.id,
+                                  )
+                                }
+                              >
+                                <Icon name="dots" size={16} />
+                              </button>
+                              {openRowMenu === record.id && (
+                                <>
+                                  <div
+                                    data-sem-perfil
+                                    className="adm-menu-backdrop"
+                                    onClick={() => setOpenRowMenu(null)}
+                                  />
+                                  <div className="adm-row-menu" role="menu">
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={(event) => {
+                                        setOpenRowMenu(null);
+                                        abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("tr"));
+                                      }}
+                                    >
+                                      Consultar
+                                    </button>
+                                    {pharmacies && (
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => {
+                                          openEditFarmacia(record);
+                                          setOpenRowMenu(null);
+                                        }}
+                                      >
+                                        Editar
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      className="is-danger"
+                                      disabled={blocked}
+                                      onClick={() => {
+                                        setModal({ type: "confirm", record });
+                                        setOpenRowMenu(null);
+                                      }}
+                                    >
+                                      {rowActionLabel}
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {!filtered.length && (
+              <p className="mgr-empty">
+                Nenhum registro encontrado. Tente outra busca ou situação.
+              </p>
+            )}
+            <div className="adm-pagination">
+              <p className="mgr-table-note" role="status">
+                {pageStart}–{pageEnd} de {filtered.length} registros
+              </p>
+              {totalPages > 1 && (
+                <div className="adm-pager">
+                  <button
+                    type="button"
+                    className="adm-pager-btn"
+                    disabled={currentPage === 1}
+                    aria-label="Página anterior"
+                    onClick={() => setPage((value) => Math.max(1, value - 1))}
+                  >
+                    <Icon name="chevronLeft" size={15} />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                    (number) => (
+                      <button
+                        key={number}
+                        type="button"
+                        className={`adm-pager-btn${number === currentPage ? " is-active" : ""}`}
+                        aria-current={number === currentPage ? "page" : undefined}
+                        onClick={() => setPage(number)}
                       >
-                        {managers ? "Excluir" : tickets ? "Banir" : "Bloquear"}
+                        {number}
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!filtered.length && (
-          <p className="mgr-empty">
-            Nenhum registro encontrado. Tente outra busca ou situação.
-          </p>
-        )}
-        <p className="mgr-table-note" role="status">
-          {filtered.length} de {records.length} registros
-        </p>
-      </section>
+                    ),
+                  )}
+                  <button
+                    type="button"
+                    className="adm-pager-btn"
+                    disabled={currentPage === totalPages}
+                    aria-label="Próxima página"
+                    onClick={() =>
+                      setPage((value) => Math.min(totalPages, value + 1))
+                    }
+                  >
+                    <Icon name="chevronRight" size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <header className="mgr-page-head mgr-page-head-featured">
+            <div>
+              <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
+              <h1>{config.title}</h1>
+              <p>{config.description}</p>
+            </div>
+          </header>
+          <div className="adm-overview">
+            <span>
+              <strong>{records.length}</strong> {config.label.toLowerCase()} na
+              rede
+            </span>
+            <span>
+              <strong>{restricted}</strong> {tickets ? "banidos" : "bloqueados"}
+            </span>
+          </div>
+          {notice && (
+            <p className="adm-notice" role="status">
+              {notice}
+            </p>
+          )}
+          <section className="mgr-panel" aria-labelledby="adm-list-title">
+            <div className="mgr-toolbar">
+              <h2 id="adm-list-title">
+                {config.label}{" "}
+                <span className="mgr-badge">{records.length}</span>
+              </h2>
+              <input
+                type="search"
+                aria-label={`Buscar ${config.label.toLowerCase()}`}
+                placeholder="Buscar chamado ou unidade…"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <select
+                aria-label="Filtrar por situação"
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="">Todas as situações</option>
+                {["Pendente", "Em andamento", "Resolvido", "Banido"].map(
+                  (value) => (
+                    <option key={value}>{value}</option>
+                  ),
+                )}
+              </select>
+            </div>
+            <div className="mgr-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Chamado</th>
+                    <th scope="col">Unidade</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((record) => (
+                    <tr
+                      key={record.id}
+                      {...propsLinha(() => setModal({ type: "details", record }), `Consultar ${record.name}`)}
+                    >
+                      <td>
+                        <strong>{record.name}</strong>
+                        <small>{formatDate(record.date)}</small>
+                      </td>
+                      <td>{record.unit}</td>
+                      <td>
+                        <span
+                          className={`mgr-badge ${["Bloqueado", "Banido"].includes(record.status) ? "red" : record.status === "Pendente" ? "yellow" : "green"}`}
+                        >
+                          {record.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="adm-actions">
+                          <button
+                            className="mgr-text-button"
+                            aria-label={`Consultar ${record.name}`}
+                            onClick={() =>
+                              setModal({ type: "details", record })
+                            }
+                          >
+                            Consultar
+                          </button>
+                          <button
+                            className="adm-danger"
+                            disabled={["Bloqueado", "Banido"].includes(
+                              record.status,
+                            )}
+                            aria-label={`${config.action}: ${record.name}`}
+                            onClick={() =>
+                              setModal({ type: "confirm", record })
+                            }
+                          >
+                            Banir
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!filtered.length && (
+              <p className="mgr-empty">
+                Nenhum registro encontrado. Tente outra busca ou situação.
+              </p>
+            )}
+            <p className="mgr-table-note" role="status">
+              {filtered.length} de {records.length} registros
+            </p>
+          </section>
+        </>
+      )}
       {modal?.type === "editFarmacia" && (
         <Dialog title="Editar farmácia" onClose={() => setModal(null)}>
           <form className="mgr-form" onSubmit={updateFarmacia}>
@@ -1114,92 +1539,6 @@ export function AdminDirectory({ section }) {
                   placeholder="Número CNES"
                 />
               </label>
-              <label>
-                Senha da farmácia
-                <input
-                  name="senhaFarmacia"
-                  value={senhaFarmacia}
-                  onChange={({ target }) => setSenhaFarmacia(target.value)}
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Crie uma senha"
-                />
-              </label>
-            </div>
-            <div className="adm-gerente-search-wrap">
-              <label className="adm-gerente-search-label">
-                Gerentes da farmácia
-                <input
-                  name="gerenteSearchFarmacia"
-                  value={gerenteSearchFarmacia}
-                  onFocus={() => setShowGerenteSuggestions(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowGerenteSuggestions(false), 150)
-                  }
-                  onChange={({ target }) =>
-                    setGerenteSearchFarmacia(target.value)
-                  }
-                  placeholder="Buscar gerente por nome ou e-mail"
-                  autoComplete="off"
-                  className="adm-gerente-search-input"
-                />
-                {showGerenteSuggestions && (
-                  <div className="adm-gerente-suggestions">
-                    {gerenteOptions.length ? (
-                      gerenteOptions.map((gerente) => (
-                        <button
-                          key={gerente.id}
-                          type="button"
-                          className={`adm-gerente-option ${gerentesFarmacia.some((item) => item.id === gerente.id) ? "active" : ""}`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => {
-                            if (
-                              gerentesFarmacia.some(
-                                (item) => item.id === gerente.id,
-                              )
-                            ) {
-                              setGerentesFarmacia((current) =>
-                                current.filter(
-                                  (item) => item.id !== gerente.id,
-                                ),
-                              );
-                            } else {
-                              setGerentesFarmacia((current) => [
-                                ...current,
-                                gerente,
-                              ]);
-                            }
-                            setGerenteSearchFarmacia("");
-                            setShowGerenteSuggestions(false);
-                          }}
-                        >
-                          <span className="adm-gerente-option-name">
-                            {gerente.name}
-                          </span>
-                          <span className="adm-gerente-option-email">
-                            {gerente.email}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <span className="adm-gerente-empty">
-                        Nenhum gerente encontrado
-                      </span>
-                    )}
-                  </div>
-                )}
-              </label>
-              <div className="adm-gerente-selected">
-                <span className="adm-gerente-selected-title">
-                  Selecionados:
-                </span>
-                <span className="adm-gerente-selected-list">
-                  {gerentesFarmacia.length
-                    ? gerentesFarmacia.map((item) => item.name).join(", ")
-                    : "Nenhum"}
-                </span>
-              </div>
             </div>
             <div className="mgr-form-row">
               <label>
@@ -1274,6 +1613,12 @@ export function AdminDirectory({ section }) {
                 />
               </label>
             </div>
+            <label>
+              UF
+              <input name="ufFarmacia" value={ufFarmacia}
+                onChange={({ target }) => setUfFarmacia(target.value.toUpperCase())}
+                required maxLength={2} pattern="[A-Za-z]{2}" placeholder="SP" />
+            </label>
             <div className="mgr-modal-actions">
               <button
                 className="mgr-secondary"
@@ -1346,92 +1691,6 @@ export function AdminDirectory({ section }) {
                   placeholder="Número CNES"
                 />
               </label>
-              <label>
-                Senha da farmácia
-                <input
-                  name="senhaFarmacia"
-                  value={senhaFarmacia}
-                  onChange={({ target }) => setSenhaFarmacia(target.value)}
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Crie uma senha"
-                />
-              </label>
-            </div>
-            <div className="adm-gerente-search-wrap">
-              <label className="adm-gerente-search-label">
-                Gerentes da farmácia
-                <input
-                  name="gerenteSearchFarmacia"
-                  value={gerenteSearchFarmacia}
-                  onFocus={() => setShowGerenteSuggestions(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowGerenteSuggestions(false), 150)
-                  }
-                  onChange={({ target }) =>
-                    setGerenteSearchFarmacia(target.value)
-                  }
-                  placeholder="Buscar gerente por nome ou e-mail"
-                  autoComplete="off"
-                  className="adm-gerente-search-input"
-                />
-                {showGerenteSuggestions && (
-                  <div className="adm-gerente-suggestions">
-                    {gerenteOptions.length ? (
-                      gerenteOptions.map((gerente) => (
-                        <button
-                          key={gerente.id}
-                          type="button"
-                          className={`adm-gerente-option ${gerentesFarmacia.some((item) => item.id === gerente.id) ? "active" : ""}`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => {
-                            if (
-                              gerentesFarmacia.some(
-                                (item) => item.id === gerente.id,
-                              )
-                            ) {
-                              setGerentesFarmacia((current) =>
-                                current.filter(
-                                  (item) => item.id !== gerente.id,
-                                ),
-                              );
-                            } else {
-                              setGerentesFarmacia((current) => [
-                                ...current,
-                                gerente,
-                              ]);
-                            }
-                            setGerenteSearchFarmacia("");
-                            setShowGerenteSuggestions(false);
-                          }}
-                        >
-                          <span className="adm-gerente-option-name">
-                            {gerente.name}
-                          </span>
-                          <span className="adm-gerente-option-email">
-                            {gerente.email}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <span className="adm-gerente-empty">
-                        Nenhum gerente encontrado
-                      </span>
-                    )}
-                  </div>
-                )}
-              </label>
-              <div className="adm-gerente-selected">
-                <span className="adm-gerente-selected-title">
-                  Selecionados:
-                </span>
-                <span className="adm-gerente-selected-list">
-                  {gerentesFarmacia.length
-                    ? gerentesFarmacia.map((item) => item.name).join(", ")
-                    : "Nenhum"}
-                </span>
-              </div>
             </div>
             <div className="mgr-form-row">
               <label>
@@ -1506,6 +1765,12 @@ export function AdminDirectory({ section }) {
                 />
               </label>
             </div>
+            <label>
+              UF
+              <input name="ufFarmacia" value={ufFarmacia}
+                onChange={({ target }) => setUfFarmacia(target.value.toUpperCase())}
+                required maxLength={2} pattern="[A-Za-z]{2}" placeholder="SP" />
+            </label>
             <div className="mgr-modal-actions">
               <button
                 className="mgr-secondary"
@@ -1524,6 +1789,7 @@ export function AdminDirectory({ section }) {
       {modal?.type === "register" && (
         <Dialog title="Cadastrar gerente" onClose={() => setModal(null)}>
           <form className="mgr-form" onSubmit={register}>
+            <FarmaciaSelect value={farmaciaGerente} onChange={setFarmaciaGerente} />
             <label>
               Nome completo
               <input
@@ -1618,33 +1884,7 @@ export function AdminDirectory({ section }) {
                 />
               </label>
             </div>
-            {/* <label>
-              Funcionário vinculado
-              <select name="idFuncionario" required defaultValue="">
-                <option value="" disabled>
-                  Selecione um funcionário
-                </option>
-                {data.funcionarios.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.name} · {employee.id.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </label> */}
-            {/* <label>
-              Unidade
-              <input
-                name="unit"
-                required
-                maxLength={150}
-                placeholder="Nome da farmácia"
-              />
-            </label> */}
 
-            {/* <label>
-                ID do gerente
-                <input value="Gerado automaticamente" readOnly />
-              </label> */}
             <label>
               CEP
               <input
@@ -1705,7 +1945,6 @@ export function AdminDirectory({ section }) {
                   value={complementoGerente}
                   onChange={({ target }) => setComplementoGerente(target.value)}
                   type="text"
-                  required
                   // autoComplete="new-password"
                   placeholder="Ex. Apartamento, casa, andar, etc."
                   onInput={(event) =>
@@ -1754,9 +1993,13 @@ export function AdminDirectory({ section }) {
               </label>
             </div>
 
-            <p className="adm-hint">
-              O cadastro é apenas demonstrativo e não cria uma conta real.
-            </p>
+            <label>
+              UF
+              <input name="ufGerente" value={ufGerente}
+                onChange={({ target }) => setUfGerente(target.value.toUpperCase())}
+                required maxLength={2} pattern="[A-Za-z]{2}" placeholder="SP" />
+            </label>
+            {erroCadastroGerente && <p role="alert">{erroCadastroGerente}</p>}
             <div className="mgr-modal-actions">
               <button
                 className="mgr-secondary"
@@ -1765,8 +2008,8 @@ export function AdminDirectory({ section }) {
               >
                 Cancelar
               </button>
-              <button className="mgr-primary" type="submit">
-                Cadastrar gerente
+              <button className="mgr-primary" type="submit" disabled={cadastrandoGerente || !farmaciaGerente}>
+                {cadastrandoGerente ? "Cadastrando…" : "Cadastrar gerente"}
               </button>
             </div>
           </form>
@@ -1811,11 +2054,11 @@ export function AdminDirectory({ section }) {
                   <dt>Gerente responsável</dt>
                   <dd>
                     {(() => {
-                      const manager = data.gerentes.find(
+                      const managers = data.gerentes.filter(
                         (item) =>
-                          String(item.id) === String(modal.record.idGerente),
+                          String(item.farmaciaId) === String(modal.record.id),
                       );
-                      return manager?.name || "Não informado";
+                      return managers.map((manager) => manager.name).join(", ") || "Não informado";
                     })()}
                   </dd>
                 </div>

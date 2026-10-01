@@ -78,7 +78,7 @@ function capsuleVertices() {
   }
   return new Float32Array(vertices);
 }
-export default function Pill3D() {
+export default function Pill3D({ paused = false }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -143,12 +143,12 @@ export default function Pill3D() {
       };
       const tick = time => {
         const delta = lastTime === null ? 16 : Math.min(time - lastTime, 50);
-        if (!motion.matches) {
+        if (!motion.matches && !paused) {
           angle = (angle + delta * Math.PI * 2 / 14000) % (Math.PI * 2);
         }
         lastTime = time;
         draw();
-        if (!motion.matches) frame = requestAnimationFrame(tick);
+        if (!motion.matches && !paused) frame = requestAnimationFrame(tick);
       };
       const updateAnimation = () => {
         cancelAnimationFrame(frame);
@@ -189,7 +189,7 @@ export default function Pill3D() {
       console.warn("Pill3D: using fallback image.", error);
       cleanupGPU();
     }
-  }, []);
+  }, [paused]);
 
   return (
     <div className="hero-pill-3d" role="img" aria-label="Pílula verde e branca em 3D que gira">

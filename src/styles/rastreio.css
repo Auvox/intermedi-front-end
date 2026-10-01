@@ -1,0 +1,206 @@
+/* =====================================================================
+   Rastreamento de entregas entre farmácias
+   Cores da persona (--persona*) com alternativas para fora do .mgr-shell
+   ===================================================================== */
+
+.rastreio, .andamento, .rastreio-mini { --r-cor: var(--persona, #168b4b); --r-escura: var(--persona-dark, #173f2c); --r-suave: var(--persona-soft, #edf7f0); --r-borda: var(--persona-border, #cfe4d7); --r-texto: #1d2f25; --r-mudo: #6b7d72; }
+
+/* ---------- Cartão ---------- */
+.rastreio {
+  display: grid; gap: 18px; padding: 22px 24px; border: 1px solid #e2e8e4; border-radius: 16px;
+  background: #fff; color: var(--r-texto); box-shadow: 0 1px 2px #10281a0d, 0 4px 16px #10281a08;
+  font: 14px/1.5 'DM Sans', system-ui, sans-serif; text-align: left;
+}
+.rastreio + .rastreio { margin-top: 16px; }
+.rastreio-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.rastreio-topo-texto { min-width: 0; display: grid; gap: 4px; }
+.rastreio-rotulo { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 12.5px; font-weight: 700; letter-spacing: .2px; color: var(--r-cor); }
+.rastreio-rotulo-ponto { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.rastreio-a_caminho .rastreio-rotulo-ponto { animation: rastreio-pulso 1.6s ease-out infinite; }
+.rastreio-aguardando .rastreio-rotulo { color: #a3660b; }
+.rastreio-entregue .rastreio-rotulo { color: #17783f; }
+.rastreio-recusado .rastreio-rotulo, .rastreio-cancelado .rastreio-rotulo { color: #b43d3d; }
+.rastreio-titulo { margin: 0 !important; font: 700 24px/1.2 'DM Sans', system-ui, sans-serif !important; letter-spacing: -.5px !important; color: var(--r-texto) !important; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.rastreio-item { margin: 2px 0 0; font-size: 13px; color: var(--r-mudo); }
+.rastreio-item strong { color: #33463b; font-weight: 600; }
+.rastreio-topo .remedio-foto { flex-shrink: 0; }
+
+/* ---------- Mapa (trajeto) ---------- */
+.rastreio-mapa {
+  padding: 16px 16px 20px; border: 1px solid #e6ece8; border-radius: 14px;
+  background:
+    radial-gradient(circle, #dfe7e2 1px, transparent 1.3px) 0 0 / 14px 14px,
+    linear-gradient(180deg, #f9fbfa, #f2f6f3);
+}
+.rastreio-pontas { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 30px; }
+.rastreio-ponta { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rastreio-ponta > span:not(.rastreio-pino) { display: grid; min-width: 0; }
+.rastreio-ponta.destino { text-align: right; justify-content: flex-end; }
+.rastreio-ponta small { font-size: 11.5px; color: var(--r-mudo); overflow-wrap: anywhere; }
+.rastreio-ponta small:first-child { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #8a998f; }
+.rastreio-ponta strong { font-size: 13.5px; font-weight: 700; color: var(--r-texto); overflow-wrap: anywhere; }
+.rastreio-pino { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--r-cor); background: #fff; color: var(--r-cor); box-shadow: 0 2px 6px #10281a14; }
+.rastreio-pino.destino { background: var(--r-cor); color: #fff; }
+
+/* ---------- Estrada ---------- */
+.rastreio-estrada { position: relative; display: block; height: 12px; margin: 0 16px; }
+.rastreio-asfalto { position: absolute; inset: 0; border-radius: 6px; background: #d6dfda; overflow: hidden; }
+.rastreio-asfalto::after { content: ""; position: absolute; left: 4px; right: 4px; top: 5px; height: 2px; background: repeating-linear-gradient(90deg, #fff 0 10px, transparent 10px 20px); opacity: .9; }
+.rastreio-percorrido { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, var(--r-borda), var(--r-cor)); transition: width 1s linear; }
+.rastreio-ponto {
+  position: absolute; top: 50%; z-index: 1; width: 16px; height: 16px; border-radius: 50%;
+  transform: translate(-50%, -50%); background: #fff; border: 3px solid #c3cec7; box-sizing: border-box;
+}
+.rastreio-ponto.feito { background: var(--r-cor); border-color: #fff; box-shadow: 0 0 0 2px var(--r-cor); }
+.rastreio-ponto.atual { background: #fff; border-color: var(--r-cor); animation: rastreio-anel 1.8s ease-out infinite; }
+.rastreio-caminhao { position: absolute; bottom: 7px; z-index: 2; width: 64px; transform: translateX(-50%); transition: left 1s linear; line-height: 0; }
+.rastreio-caminhao-svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 3px 3px #10281a26); }
+.rastreio-aguardando .rastreio-caminhao, .rastreio-estrada-aguardando .rastreio-caminhao { filter: grayscale(.7); opacity: .7; }
+
+.rastreio-bau { fill: #fff; stroke: var(--r-cor); stroke-width: 2; }
+.rastreio-cruz { fill: var(--r-cor); }
+.rastreio-cabine { fill: var(--r-cor); }
+.rastreio-janela { fill: #e3f4ea; }
+.rastreio-chassi { fill: var(--r-escura); }
+.rastreio-roda circle { fill: #26302a; }
+.rastreio-roda .rastreio-calota { fill: #cfd8d3; }
+.rastreio-raio { stroke: #cfd8d3; stroke-width: 1.6; stroke-linecap: round; }
+.rastreio-roda { transform-box: view-box; }
+.rastreio-vento { stroke: #9fb3a7; stroke-width: 2; stroke-linecap: round; opacity: 0; }
+
+.rastreio-caminhao.andando .rastreio-roda { animation: rastreio-gira .55s linear infinite; }
+.rastreio-caminhao.andando .rastreio-carro { animation: rastreio-balanco .45s ease-in-out infinite alternate; }
+.rastreio-caminhao.andando .rastreio-vento { animation: rastreio-vento .9s ease-in-out infinite; }
+
+/* Compacta (listas e faixa) */
+.rastreio-estrada.compacta { display: inline-block; flex-shrink: 0; width: 132px; height: 6px; margin: 0 14px; vertical-align: middle; }
+.rastreio-estrada.compacta .rastreio-asfalto::after { display: none; }
+.rastreio-estrada.compacta .rastreio-caminhao { width: 30px; bottom: 3px; }
+.rastreio-estrada.compacta .rastreio-vento { display: none; }
+
+/* ---------- Linha do tempo ---------- */
+.rastreio-etapas { list-style: none; margin: 0; padding: 0; }
+.rastreio-etapa { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 14px; padding-bottom: 16px; }
+.rastreio-etapa:last-child { padding-bottom: 0; }
+.rastreio-etapa::before { content: ""; position: absolute; left: 10px; top: 16px; bottom: -4px; width: 2px; border-radius: 1px; background: #dfe6e1; }
+.rastreio-etapa:last-child::before { display: none; }
+.rastreio-etapa.feito::before { background: var(--r-cor); }
+.rastreio-etapa.atual::before { background: repeating-linear-gradient(180deg, #cdd7d1 0 4px, transparent 4px 8px); }
+.rastreio-etapa-marca { position: relative; z-index: 1; justify-self: center; margin-top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #c9d3cd; }
+.rastreio-etapa.feito .rastreio-etapa-marca { background: var(--r-cor); border-color: var(--r-cor); }
+.rastreio-etapa.atual .rastreio-etapa-marca { margin-top: 1px; width: 20px; height: 20px; background: #fff; border: 6px solid var(--r-escura); box-shadow: 0 0 0 4px var(--r-suave); }
+.rastreio-a_caminho .rastreio-etapa.atual .rastreio-etapa-marca { animation: rastreio-anel 1.8s ease-out infinite; }
+.rastreio-etapa.erro .rastreio-etapa-marca { margin-top: 1px; width: 20px; height: 20px; background: #fff; border: 6px solid #c94a4a; }
+.rastreio-etapa strong { display: block; font-size: 14px; font-weight: 600; color: #6b7d72; }
+.rastreio-etapa.atual strong, .rastreio-etapa.erro strong { font-size: 16px; font-weight: 700; color: var(--r-texto); }
+.rastreio-etapa.futuro strong { color: #a9b6ae; font-weight: 500; }
+.rastreio-etapa p { margin: 2px 0 0; font-size: 13.5px; color: #3f5247; }
+.rastreio-etapa time { display: block; margin-top: 2px; font-size: 12px; color: #8a998f; font-variant-numeric: tabular-nums; }
+
+.rastreio-acoes { display: flex; }
+.rastreio-botao {
+  flex: 1; height: 44px; border: 0; border-radius: 10px; background: var(--r-suave); color: var(--r-cor);
+  font: 600 14px 'DM Sans', system-ui, sans-serif; cursor: pointer; transition: filter .12s ease;
+}
+.rastreio-botao:hover { filter: brightness(.97); }
+.rastreio-botao:focus-visible { outline: 3px solid var(--r-cor); outline-offset: 2px; }
+
+/* ---------- Mini (listas) ---------- */
+.rastreio-mini { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 0; font-size: 12px; color: #4d5f55; font-variant-numeric: tabular-nums; }
+.rastreio-mini .rastreio-estrada.compacta { margin-left: 16px; }
+.rastreio-mini-texto strong { color: var(--r-cor); font-weight: 700; }
+.rastreio-mini.rastreio-entregue .rastreio-mini-texto strong { color: #17783f; }
+.rastreio-mini.rastreio-aguardando .rastreio-mini-texto strong { color: #a3660b; }
+.chamado-item .rastreio-mini { margin-top: 6px; }
+
+/* ---------- Faixa "em andamento" (tela principal) ---------- */
+.andamento {
+  position: relative; overflow: hidden; display: grid; gap: 4px; margin: 0 0 22px; padding: 10px 12px 8px;
+  border: 1px solid var(--r-borda); border-radius: 14px;
+  background: linear-gradient(90deg, var(--persona-tint, #f6faf7), #fff 70%);
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+.andamento::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, #ffffffb3 50%, transparent 65%);
+  transform: translateX(-100%); animation: andamento-brilho 6s ease-in-out 1s infinite;
+}
+.andamento-selo { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 2px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--r-cor); }
+.andamento-selo b { min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--r-cor); color: #fff; font-size: 10.5px; text-align: center; letter-spacing: 0; }
+.andamento-pulso { width: 7px; height: 7px; border-radius: 50%; background: var(--r-cor); animation: rastreio-pulso 1.8s ease-out infinite; }
+.andamento ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.andamento-item {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; width: 100%; padding: 7px 8px;
+  border: 0; border-radius: 10px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.andamento-item:hover { background: #ffffffd9; }
+.andamento-item:focus-visible { outline: 3px solid var(--r-cor); outline-offset: -1px; }
+.andamento-icone { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; background: var(--r-suave); color: var(--r-cor); }
+.andamento-icone.aguardando { background: #fff4df; color: #a3660b; }
+.andamento-texto { display: grid; flex: 1; min-width: 0; }
+.andamento-texto strong { font-size: 13px; font-weight: 600; color: var(--r-texto); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.andamento-texto small { font-size: 12px; color: var(--r-mudo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.andamento .rastreio-estrada.compacta { width: 170px; }
+.andamento-ir { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--r-cor); opacity: .75; transition: opacity .12s ease; }
+.andamento-item:hover .andamento-ir { opacity: 1; }
+.andamento-mais { margin: 0 0 2px 12px; font-size: 12px; color: var(--r-mudo); }
+
+/* ---------- Notificações (sino) ---------- */
+.rastreio-notificacoes li a { display: flex !important; gap: 10px; align-items: flex-start; }
+.rastreio-notificacao-icone { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 26px; height: 26px; margin-top: 1px; border-radius: 8px; background: #eef3f0; color: #4d6a59; }
+.rastreio-notificacao-icone.entregue { background: #e7f6ec; color: #17783f; }
+.rastreio-notificacao-icone.saiu, .rastreio-notificacao-icone.transito, .rastreio-notificacao-icone.chegando { background: #f1ebfb; color: #6a3fb0; }
+.chamado-bell-panel .rastreio-notificacao-desc { color: #5d6f64 !important; font-size: 11.5px !important; }
+
+/* ---------- Animações ---------- */
+@keyframes rastreio-pulso { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+.andamento-pulso { color: var(--r-cor); }
+@keyframes rastreio-anel { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--r-cor) 40%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
+@keyframes rastreio-gira { to { transform: rotate(360deg); } }
+@keyframes rastreio-balanco { from { transform: translateY(0); } to { transform: translateY(-.8px); } }
+@keyframes rastreio-vento { 0% { opacity: 0; transform: translateX(4px); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateX(-6px); } }
+@keyframes andamento-brilho { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rastreio-percorrido, .rastreio-caminhao { transition: none; }
+  .rastreio *, .andamento *, .andamento::after, .rastreio-mini * { animation: none !important; }
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 760px) {
+  .rastreio { padding: 18px 16px; gap: 16px; }
+  .rastreio-titulo { font-size: 21px !important; }
+  .rastreio-topo .remedio-foto { width: 52px; height: 52px; }
+  .rastreio-mapa { padding: 14px 10px 18px; }
+  .rastreio-pontas { margin-bottom: 28px; }
+  .rastreio-pino { width: 28px; height: 28px; }
+  .rastreio-caminhao { width: 52px; }
+  .andamento .rastreio-estrada.compacta { display: none; }
+  .andamento-ir { display: none; }
+}
+
+/* Botão "Ver detalhes" e versão enxuta dentro das tabelas de chamado */
+.rastreio-ver { margin-left: 10px; padding: 2px 9px; border: 1px solid var(--persona-border, #cfe4d7); border-radius: 999px; background: #fff; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--persona, #168b4b); cursor: pointer; white-space: nowrap; }
+.rastreio-ver:hover { background: var(--persona-soft, #edf7f0); }
+.rastreio-ver[aria-expanded="true"] { background: var(--persona-soft, #edf7f0); }
+td > .rastreio-ver { display: inline-block; margin: 6px 0 0; }
+.rastreio-linha-aberta > td { padding: 4px 0 16px !important; background: none !important; cursor: default; }
+.rastreio-min { gap: 14px; padding: 16px 18px; border-color: #e7ece9; box-shadow: none; background: #fbfcfb; }
+.rastreio-min .rastreio-titulo { font-size: 18px !important; letter-spacing: -.3px !important; }
+.rastreio-min .rastreio-item { font-size: 12px; }
+.rastreio-min .rastreio-mapa { padding: 10px 4px 14px; border: 0; background: none; }
+.rastreio-min .rastreio-pontas { margin-bottom: 26px; }
+.rastreio-min .rastreio-pino { width: 26px; height: 26px; box-shadow: none; }
+.rastreio-min .rastreio-ponta small:first-child { display: none; }
+.rastreio-min .rastreio-ponta strong { font-size: 12.5px; }
+.rastreio-min .rastreio-estrada { height: 6px; }
+.rastreio-min .rastreio-asfalto::after { display: none; }
+.rastreio-min .rastreio-ponto { width: 11px; height: 11px; border-width: 2px; }
+.rastreio-min .rastreio-caminhao { width: 46px; bottom: 4px; }
+.rastreio-min .rastreio-etapa { padding-bottom: 8px; gap: 10px; }
+.rastreio-min .rastreio-etapa strong { font-size: 13px; }
+.rastreio-min .rastreio-etapa.atual strong { font-size: 14px; }
+.rastreio-min .rastreio-etapa.atual .rastreio-etapa-marca { width: 16px; height: 16px; border-width: 5px; box-shadow: none; }
+.rastreio-min .rastreio-etapa time { display: inline; margin-left: 8px; font-size: 11.5px; }
+.rastreio-min .rastreio-etapa p { font-size: 12.5px; }
+.rastreio-min .rastreio-etapa:not(.atual) div { display: flex; align-items: baseline; flex-wrap: wrap; }

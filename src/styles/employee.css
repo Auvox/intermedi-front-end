@@ -1,4 +1,45 @@
 .emp-shell { background: #f5f8fc; }
+.emp-service-form { padding: 24px; }
+.emp-service-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 20px; }
+.emp-service-medicines { border: 1px solid #dfe8e1; border-radius: 12px; padding: 18px; min-width: 0; display: grid; gap: 16px; }
+.emp-service-medicines legend { padding: 0 8px; font-size: 14px; font-weight: 600; color: #395242; }
+.emp-service-item { display: grid; grid-template-columns: minmax(0, 1fr) 110px auto; gap: 12px; align-items: end; }
+.emp-service-form textarea { border: 1px solid #dfe8e1; }
+.emp-service-form input[readonly] { background: #edf5fd; }
+.emp-service-form button:disabled, .emp-shell .mgr-page-head button:disabled { opacity: .55; cursor: not-allowed; }
+.emp-service-success { padding: 16px 20px; border: 1px solid #cadfd1; background: #edf5ef; color: #217343; border-radius: 12px; margin-bottom: 20px; }
+.emp-service-modal { width: 760px; }
+.emp-service-link { display: inline-flex; align-items: center; gap: 12px; padding: 0; border: 0; background: transparent; color: #294b39; text-align: left; }
+.emp-service-link:hover strong { color: #197144; text-decoration: underline; text-underline-offset: 3px; }
+.emp-service-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: #e8f5ec; color: #19864b; }
+.emp-service-link > span:last-child { display: grid; gap: 3px; }
+.emp-service-link strong { font-size: 12px; font-weight: 600; }
+.emp-service-link small { margin: 0; color: #819087; font-size: 10px; }
+.emp-service-details { display: grid; gap: 22px; }
+.emp-service-details section { padding-bottom: 20px; border-bottom: 1px solid #e5ece7; }
+.emp-service-details section:last-of-type { padding-bottom: 0; border-bottom: 0; }
+.emp-service-details h3 { margin: 0 0 13px; color: #214a32; }
+.emp-service-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; margin: 0; }
+.emp-service-details dl div { min-width: 0; padding: 9px 0; border-bottom: 1px solid #eef3ef; }
+.emp-service-details dt { margin-bottom: 3px; color: #809087; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+.emp-service-details dd { margin: 0; color: #345340; font-size: 12px; overflow-wrap: anywhere; }
+.emp-service-detail-wide { grid-column: 1 / -1; }
+.emp-service-detail-medicines { display: grid; gap: 10px; }
+.emp-service-detail-medicines article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 18px; padding: 14px 16px; border: 1px solid #dce9df; border-radius: 11px; background: #f8fbf9; }
+.emp-service-detail-medicines article div { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.emp-service-detail-medicines article strong { color: #254b34; font-size: 13px; }
+.emp-service-detail-medicines article span,
+.emp-service-detail-medicines article small { color: #75877a; font-size: 10px; }
+.emp-service-detail-medicines article b { color: #187b45; font-size: 12px; }
+.emp-service-detail-medicines article p,
+.emp-service-detail-medicines article small { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 760px) {
+  .emp-service-form { padding: 16px; }
+  .emp-service-item { grid-template-columns: minmax(0, 1fr); }
+  .emp-service-medicines { padding: 12px; }
+  .emp-service-details dl { grid-template-columns: 1fr; }
+  .emp-service-detail-wide { grid-column: auto; }
+}
 .emp-shell .mgr-page-head-featured { background: linear-gradient(115deg, #205e94, #2f80c4); border-color: #2874b2; }
 .emp-shell .mgr-page-head-featured .mgr-eyebrow { color: #c6e6ff; }
 .emp-shell .mgr-page-head-featured p { color: #deedfa; }

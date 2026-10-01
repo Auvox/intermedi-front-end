@@ -3,7 +3,7 @@ import mancha from "../../assets/mancha.png";
 import fundoCruz from "../../assets/fundoCruz.png";
 import logoI from "../../assets/logoI.png";
 
-function HeroSection() {
+function HeroSection({ paused = false }) {
   return (
     <section className="lp-hero" id="inicio">
       {/* Background decorativo da cruz no fundo esquerdo */}
@@ -17,6 +17,7 @@ function HeroSection() {
             <strong>
               med
               <img src={logoI} alt="I" className="lp-hero-logo-i" />
+              <span className="a11y-image-letter">i</span>
               camentos
             </strong>
           </h1>
@@ -39,7 +40,7 @@ function HeroSection() {
             <img src={mancha} alt="" className="lp-hero-mancha" aria-hidden />
 
             {/* Pílula principal */}
-            <Pill3D />
+            <Pill3D paused={paused} />
 
             {/* FLOATING CARD 1: Medicamento (Fica em cima/esquerda da pílula) */}
             <div className="lp-float-card card-medicamento">

@@ -149,6 +149,8 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  /* clip: recorta sem permitir rolagem (focar o botão rolava o cabeçalho) */
+  overflow: clip;
   padding: 32px;
   border: 1px solid #225d3d;
   border-radius: 19px;

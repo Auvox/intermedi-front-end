@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import AccessibilityMenu from "../components/layout/AccessibilityMenu";
+import useAccessibility from "../hooks/useAccessibility";
 import "../styles/LandingPage.css";
 
 import Nav from "../components/layout/Nav";
@@ -12,6 +14,8 @@ import Footer from "../components/layout/Footer";
 import MapSection from "../components/sections/MapSection.jsx";
 
 export default function LandingPage() {
+  const rootRef = useRef(null);
+  const { preferences, toggle, reset } = useAccessibility(rootRef);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("#inicio");
@@ -51,7 +55,8 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="lp-root">
+    <div ref={rootRef} className={`lp-root ${Object.keys(preferences).filter(key => preferences[key]).map(key => `a11y-${key}`).join(" ")}`}>
+      <AccessibilityMenu preferences={preferences} onChange={toggle} onReset={reset} />
 
       {/* ══════════ NAV ══════════ */}
       <Nav scrolled={scrolled} menuOpen={menuOpen} setMenuOpen={setMenuOpen} activeSection={activeSection} />
@@ -60,7 +65,7 @@ export default function LandingPage() {
       <MobileMenu menuOpen={menuOpen} setMenuOpen={setMenuOpen} activeSection={activeSection} />
 
       {/* ══════════ HERO ══════════ */}
-      <HeroSection />
+      <HeroSection paused={preferences.motion} />
       <KeywordRibbon />
 
       {/* ══════════ WHY ══════════ */}
@@ -73,7 +78,7 @@ export default function LandingPage() {
       <PartnersSection />
 
       {/* ══════════ MAP ══════════ */}
-      <MapSection />
+      <MapSection paused={preferences.motion} />
       
       {/* ══════════ FOOTER ══════════ */}
       <Footer />
