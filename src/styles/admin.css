@@ -564,6 +564,16 @@
   font-size: 11px;
   font-weight: 700;
 }
+/* Mantém a foto da farmácia dentro do avatar da própria linha. */
+.adm-avatar-circle.perfil-avatar-lista {
+  overflow: hidden;
+}
+.adm-avatar-circle.perfil-avatar-lista > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .adm-muted-cell {
   color: #a0a0a0;
 }

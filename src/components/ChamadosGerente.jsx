@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ManagerIcon from "./ManagerIcon";
-import { DespachoResumo } from "./Chamados";
+import { ChamadoModal, DespachoResumo } from "./Chamados";
 import { ListaRastreio } from "./Rastreio";
 import { disponibilidadeChamado, redistribuirChamado, responderChamado } from "../services/api";
 import { prioridadeChamado, resumoRemedios, tempoDesde } from "../services/chamados";
@@ -147,11 +147,16 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const [nomeConfirmacao, setNomeConfirmacao] = useState("");
+  const envioEmCurso = useRef(false);
+  const nomeGerente = (chamado.gerentes ?? []).find((g) => Number(g.idGerente) === Number(idGerente))?.nomeGerente ?? "";
+  const nomeConfere = Boolean(nomeGerente.trim()) && nomeConfirmacao.trim().normalize("NFC") === nomeGerente.trim().normalize("NFC");
   const aceitar = modo === "aceitar";
   const nome = chamado.funcionario?.nomeFuncionario || "funcionário";
 
   function escolher(novoModo) {
     setModo(novoModo);
+    setNomeConfirmacao("");
     setTexto("");
     setErroCampo("");
     setErro("");
@@ -165,17 +170,20 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
       return;
     }
     setErroCampo("");
+    setNomeConfirmacao("");
     setConfirmando(true);
   }
 
   async function enviar() {
-    if (enviando) return;
+    if (envioEmCurso.current || (aceitar && !nomeConfere)) return;
+    envioEmCurso.current = true;
     setEnviando(true);
     setErro("");
     try {
       const resposta = await responderChamado(chamado.idChamado, {
         idGerente: Number(idGerente),
         aceitar,
+        ...(aceitar && { nomeGerenteConfirmacao: nomeConfirmacao.trim() }),
         ...(texto.trim() && { resposta: texto.trim() }),
       });
       onRespondido(resposta.chamado, resposta.despacho ?? []);
@@ -184,6 +192,7 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
       setConfirmando(false);
       if (error.status === 409) onConflito?.(error.message);
     } finally {
+      envioEmCurso.current = false;
       setEnviando(false);
     }
   }
@@ -226,7 +235,30 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
       />
       {erroCampo && <small className="chamado-field-error" id={erroId}>{erroCampo}</small>}
       {erro && <p role="alert">{erro}</p>}
-      {confirmando ? (
+      {confirmando && aceitar ? (
+        <ChamadoModal title={`Confirmar aceite do chamado #${chamado.idChamado}`} onClose={(event) => {
+          event?.preventDefault?.();
+          if (!envioEmCurso.current) { setConfirmando(false); setNomeConfirmacao(""); }
+        }}>
+          <div className="mgr-form">
+            <p>Ao confirmar, o chamado será aberto para a rede e os pedidos de medicamentos serão enviados.</p>
+            {nomeGerente ? <label htmlFor={`${uid}-confirmacao`}>Para confirmar, digite <strong>{nomeGerente}</strong> abaixo.</label>
+              : <p role="alert">Não foi possível identificar o gerente responsável. Atualize a página antes de aceitar.</p>}
+            <input id={`${uid}-confirmacao`} type="text" value={nomeConfirmacao}
+              aria-label="Nome completo do gerente para confirmar" autoComplete="off" autoFocus
+              disabled={enviando || !nomeGerente}
+              onChange={(event) => setNomeConfirmacao(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void enviar(); } }} />
+            <div className="mgr-modal-actions">
+              <button type="button" className="mgr-secondary" disabled={enviando}
+                onClick={() => { setConfirmando(false); setNomeConfirmacao(""); }}>Cancelar</button>
+              <button type="button" className="mgr-primary" disabled={enviando || !nomeConfere} onClick={enviar}>
+                {enviando ? "Enviando..." : "Confirmar aceite e pedir à rede"}
+              </button>
+            </div>
+          </div>
+        </ChamadoModal>
+      ) : confirmando ? (
         <div className="chamado-confirmar" role="group" aria-label="Confirmar resposta">
           <p>
             {aceitar ? "Aceitar e pedir à rede" : "Recusar"} a solicitação #{chamado.idChamado} de {nome}?
