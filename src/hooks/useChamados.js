@@ -6,7 +6,7 @@ import {
   listarPedidosGerente,
   normalizeFuncionario,
 } from "../services/api";
-import { INTERVALO_A_CAMINHO, dataDoChamado, entregaRecente, temACaminho } from "../services/chamados";
+import { INTERVALO_A_CAMINHO, dataDoChamado, temACaminho } from "../services/chamados";
 import { readEmployeeSession } from "../services/employeeSession";
 
 export const INTERVALO_CHAMADOS = 30000;
@@ -214,67 +214,6 @@ export function useChamadosGerente(idGerente) {
     interval: (lista) => (temACaminho(lista ?? []) ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS),
   });
   return { chamados: data ?? [], carregado: data !== null, ...rest };
-}
-
-// Remédios que chegaram (pedidos entre farmácias com status "recebida").
-// tipos: "enviados" = chegou na farmácia deste gerente; "recebidos" = ele forneceu.
-// - onNovas(entregas): chamado quando uma entrega aparece enquanto a tela está aberta
-// - naoLidas: entregas das últimas 24 h ainda não vistas no sino (guardado no
-//   navegador por `escopo`, então quem estava fora vê o badge ao voltar)
-export function useEntregas(idGerente, { tipos = ["enviados"], escopo, onNovas } = {}) {
-  const chaveTipos = tipos.join(",");
-  const fetcher = useCallback(
-    async (options) => {
-      const listas = await Promise.all(
-        chaveTipos.split(",").map((tipo) =>
-          listarPedidosGerente(idGerente, tipo, "", options).then((data) =>
-            (data.pedidos ?? []).map((p) => ({ ...p, tipo })),
-          ),
-        ),
-      );
-      return listas.flat();
-    },
-    [idGerente, chaveTipos],
-  );
-  const { data, loading, error, reload, retry } = usePolling(fetcher, {
-    enabled: Boolean(idGerente),
-    // a cada 5 s enquanto houver remédio a caminho: a notificação sai logo que chega
-    interval: (lista) => ((lista ?? []).some((p) => p.status === "enviada") ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS),
-  });
-
-  const entregas = (data ?? [])
-    .filter(entregaRecente)
-    .sort((a, b) => String(b.dataRecebimento).localeCompare(String(a.dataRecebimento)));
-
-  // Aviso na hora: compara com as entregas já conhecidas nesta sessão
-  const conhecidas = useRef(null);
-  const callback = useRef(onNovas);
-  useEffect(() => { callback.current = onNovas; });
-  useEffect(() => { conhecidas.current = null; }, [idGerente]);
-  useEffect(() => {
-    if (!data) return;
-    const recebidas = data.filter((p) => p.status === "recebida");
-    const chave = (p) => `${p.tipo}:${p.idRedistribuicao}`;
-    if (conhecidas.current) {
-      const novas = recebidas.filter((p) => !conhecidas.current.has(chave(p)));
-      if (novas.length) callback.current?.(novas);
-    }
-    conhecidas.current = new Set(recebidas.map(chave));
-  }, [data]);
-
-  // Não lidas: mais novas que a última vez que o sino foi aberto
-  const chaveLido = `intermedi.entregas.lido.${escopo}`;
-  const [lidos, setLidos] = useState({});
-  const lidoAte = lidos[chaveLido] ?? lerEscolha(chaveLido);
-  const naoLidas = entregas.filter((p) => String(p.dataRecebimento) > lidoAte).length;
-  function marcarLidas() {
-    const maisNova = entregas[0]?.dataRecebimento;
-    if (!maisNova || maisNova <= lidoAte) return;
-    salvarEscolha(chaveLido, maisNova);
-    setLidos((atual) => ({ ...atual, [chaveLido]: maisNova }));
-  }
-  const isNaoLida = (p) => String(p.dataRecebimento) > lidoAte;
-  return { entregas, naoLidas, isNaoLida, marcarLidas, loading, error, reload, retry };
 }
 
 // Um gerente da farmácia (para o funcionário consultar os pedidos da unidade dele)

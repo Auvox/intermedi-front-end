@@ -33,6 +33,8 @@ export default function useResumo(tipo, id, periodo) {
   const [versao, setVersao] = useState(0);
   const chavePeriodo = JSON.stringify(periodo ?? {});
   const chaveAtual = useRef(null);
+  // atualizar(): consulta de novo sem esmaecer a tela (acompanhamento de entrega)
+  const silencioso = useRef(false);
 
   useEffect(() => {
     if (!tipo || !id) return undefined;
@@ -47,7 +49,9 @@ export default function useResumo(tipo, id, periodo) {
     // setState só no retorno da API (nada síncrono no effect)
     Promise.resolve()
       .then(() => {
-        if (!controller.signal.aborted) {
+        const calado = silencioso.current && mesmoPerfil;
+        silencioso.current = false;
+        if (!controller.signal.aborted && !calado) {
           setEstado((atual) => ({ data: mesmoPerfil ? atual.data : null, loading: true, error: "" }));
         }
         return carregar({ signal: controller.signal });
@@ -63,7 +67,11 @@ export default function useResumo(tipo, id, periodo) {
   }, [tipo, id, chavePeriodo, versao]);
 
   const reload = useCallback(() => setVersao((v) => v + 1), []);
-  return { ...estado, reload };
+  const atualizar = useCallback(() => {
+    silencioso.current = true;
+    setVersao((v) => v + 1);
+  }, []);
+  return { ...estado, reload, atualizar };
 }
 
 // Avisa as listas que algo mudou (ex.: foto trocada) para elas recarregarem

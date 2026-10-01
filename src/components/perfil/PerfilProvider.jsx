@@ -13,7 +13,8 @@ const PARAM_SECAO = "secao";
 // voltar do navegador fecha a página de perfil e o link pode ser compartilhado.
 // gerenteAtual: { id, idFarmacia } — define de quem o gerente pode trocar a foto.
 // (Sem useCallback/useMemo manuais: o React Compiler memoiza.)
-export default function PerfilProvider({ plataforma, gerenteAtual = null, children }) {
+// idFarmacia: farmácia do funcionário (o gerente usa a de gerenteAtual)
+export default function PerfilProvider({ plataforma, gerenteAtual = null, idFarmacia = null, children }) {
   const [params, setParams] = useSearchParams();
   const pilha = lerPilha(params.get("perfil"));
   const topo = pilha.at(-1) ?? null;
@@ -106,10 +107,15 @@ export default function PerfilProvider({ plataforma, gerenteAtual = null, childr
     return false;
   }
 
-  const valorFora = { abrirPerfil, plataforma, dentroDoPainel: false };
+  // farmácia de quem está vendo (gerente): define se ele é o fornecedor de um pedido
+  const idFarmaciaAtual = gerenteAtual?.idFarmacia ?? idFarmacia ?? null;
+  const idGerenteAtual = gerenteAtual?.id ?? null;
+  const valorFora = { abrirPerfil, plataforma, idFarmaciaAtual, idGerenteAtual, dentroDoPainel: false };
   const valorDentro = {
     abrirPerfil: empilhar,
     plataforma,
+    idFarmaciaAtual,
+    idGerenteAtual,
     dentroDoPainel: true,
     periodo,
     mudarPeriodo,

@@ -1,11 +1,10 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
+import { CartaoPessoa, DirectoryStats, GradePessoas, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
 import { usePerfil } from "../components/perfil/perfilContext";
-import { propsLinha } from "../services/perfil";
 import { unit } from "./managerData";
 import useApiList from "../hooks/useApiList";
 import {
@@ -17,9 +16,11 @@ import {
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
 import { ToastRegion } from "../components/Chamados";
-import { SinoEntregas } from "../components/NotificacoesEntregas";
-import { useEntregas, useFarmaciaDoFuncionario, useGerenteDaFarmacia, useToast } from "../hooks/useChamados";
-import { textoEntregas } from "../services/chamados";
+import { SinoFuncionario } from "../components/NotificacoesEntregas";
+import { FaixaEmAndamento } from "../components/Rastreio";
+import { useFarmaciaDoFuncionario, useGerenteDaFarmacia, useToast } from "../hooks/useChamados";
+import { useNotificacoesRastreio, usePedidosDoFuncionario } from "../hooks/useRastreio";
+import { emAndamento } from "../services/rastreio";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
@@ -39,15 +40,17 @@ export default function Employee() {
   const employeeName = session?.name || "Funcionário Local";
   const employeeUnit = session?.unitName || unit;
 
-  // Notificação de remédios que chegaram na farmácia do funcionário: consulta os
-  // pedidos "enviados" da unidade pelo gerente dela (não há endpoint por farmácia)
+  // Rastreamento: cada etapa da entrega dos chamados que o funcionário abriu e a
+  // chegada dos remédios que outras pessoas da unidade pediram (os pedidos da
+  // unidade vêm pelo gerente dela; não há endpoint por farmácia)
   const funcionario = useFarmaciaDoFuncionario();
   const idGerenteUnidade = useGerenteDaFarmacia(funcionario.idFarmacia);
   const [toast, notify] = useToast(8000);
-  const entregas = useEntregas(idGerenteUnidade, {
-    tipos: ["enviados"],
+  const fonteRastreio = usePedidosDoFuncionario(funcionario.idFuncionario, idGerenteUnidade);
+  const rastreio = useNotificacoesRastreio(fonteRastreio.pedidos, {
     escopo: `funcionario:${funcionario.idFuncionario}:${funcionario.idFarmacia}`,
-    onNovas: (novas) => notify(textoEntregas(novas)),
+    pronto: fonteRastreio.carregado,
+    onNovos: (texto) => notify(texto),
   });
 
 
@@ -287,7 +290,7 @@ export default function Employee() {
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{employeeUnit}</strong>
           </span>
-          <SinoEntregas entregas={entregas} />
+          <SinoFuncionario rastreio={rastreio} fonte={fonteRastreio} />
           <div className="mgr-account emp-account">
             <button
               type="button"
@@ -307,9 +310,9 @@ export default function Employee() {
             </Link>
           </div>
         </div>
-        <PerfilProvider plataforma="funcionario">
+        <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
           <main className="mgr-main directory-layout">
-            <Outlet />
+            <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados }} />
           </main>
         </PerfilProvider>
         <footer className="mgr-footer">
@@ -420,8 +423,16 @@ function PageHeader({ title, description, count, label, icon, results }) {
   </>;
 }
 
+// Chamados do funcionário ainda em processo (aguardando gerente, fornecedor ou a caminho)
+function emProcesso(chamados = []) {
+  return chamados
+    .filter((c) => c.status === "pendente" || c.status === "em_andamento")
+    .map((c) => ({ chamado: c, pedidos: (c.pedidos ?? []).filter(emAndamento) }));
+}
+
 export function EmployeePatients() {
   const { abrirPerfil } = usePerfil();
+  const { chamadosDoFuncionario } = useOutletContext() ?? {};
   const [search, setSearch] = useState("");
   const { items: patients, loading, error } = useApiList(listarPacientes, normalizePaciente);
 
@@ -441,6 +452,10 @@ export function EmployeePatients() {
         label="Total de pacientes"
         icon="heart"
       />
+      <FaixaEmAndamento
+        chamados={emProcesso(chamadosDoFuncionario)}
+        onAbrirChamado={(c, el) => abrirPerfil("chamado", c.idChamado, el)}
+      />
       <section className="mgr-panel" aria-labelledby="emp-patients-title">
         <div className="mgr-toolbar">
           <h2 id="emp-patients-title">
@@ -454,28 +469,24 @@ export function EmployeePatients() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Paciente</th>
-                <th scope="col">Código</th>
-                <th scope="col">Unidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((patient) => (
-                <tr key={patient.id} {...propsLinha((el) => abrirPerfil("paciente", patient.id, el), `Abrir perfil de ${patient.name}`)}>
-                  <td>
-                    <PersonCell name={patient.name} detail={patient.email} role="paciente" photo={patient.photo} />
-                  </td>
-                  <td>{String(patient.id).toUpperCase()}</td>
-                  <td>{readEmployeeSession()?.unitName || unit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <GradePessoas rotulo="Pacientes">
+          {filtered.map((patient) => (
+            <li key={patient.id}>
+              <CartaoPessoa
+                role="paciente"
+                nome={patient.name}
+                foto={patient.photo}
+                papel={`Paciente · código ${String(patient.id).toUpperCase()}`}
+                linhas={[
+                  ["mail", patient.email],
+                  ["phone", patient.phone],
+                  ["pharmacy", readEmployeeSession()?.unitName || unit],
+                ]}
+                onAbrir={(el) => abrirPerfil("paciente", patient.id, el)}
+              />
+            </li>
+          ))}
+        </GradePessoas>
         {!loading && !error && !filtered.length && (
           <p className="mgr-empty">
             Nenhum paciente encontrado. Tente outro nome ou código.

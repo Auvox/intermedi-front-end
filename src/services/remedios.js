@@ -29,6 +29,16 @@ export const VIAS_ADMINISTRACAO = ["oral", "tópica", "injetável", "nasal", "of
 export const tarja = (valor) => TARJAS[valor] ?? TARJAS.sem_tarja;
 export const tipo = (valor) => TIPOS[valor] ?? valor ?? "";
 export const situacao = (valor) => SITUACOES[valor] ?? { label: valor || "—", tone: "neutral" };
+// Linhas de estoque que não vêm do /estoque (ex.: resumo do remédio) não trazem
+// "situacao": calcula com a mesma regra do back-end
+export function comSituacao(item) {
+  const qtd = Number(item.quantidade) || 0;
+  return {
+    ...item,
+    vencido: Boolean(item.vencido),
+    situacao: item.situacao ?? (qtd === 0 ? "zerado" : qtd <= Number(item.estoqueMinimo ?? 0) ? "critico" : "ok"),
+  };
+}
 
 // Datas de cadastro vêm em UTC ("AAAA-MM-DD HH:MM:SS")
 export function formatarDataHora(valor) {

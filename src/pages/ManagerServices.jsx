@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DirectoryStats } from "../components/Directory";
-import ManagerIcon from "../components/ManagerIcon";
 import { ErroComRetry } from "../components/Chamados";
 import { usePerfil } from "../components/perfil/perfilContext";
 import { propsLinha } from "../services/perfil";
 import useApiList from "../hooks/useApiList";
 import { listarServicos, normalizeText } from "../services/api";
 import { formatarDataChamado } from "../services/chamados";
+import TicketServico from "../components/TicketServico";
 
 const mostrar = (valor) => (valor === null || valor === undefined || valor === "" ? "Não informado" : valor);
 
@@ -103,31 +103,23 @@ export default function ManagerServices() {
           <ErroComRetry message={error} onRetry={reload} />
         ) : (
           <>
-            <div className="mgr-table-wrap">
+            <div className="mgr-table-wrap cp-lista">
               <table>
                 <thead>
                   <tr>
-                    <th scope="col">Serviço</th>
+                    <th scope="col">Comprovante</th>
                     <th scope="col">Paciente</th>
-                    <th scope="col">Funcionário</th>
+                    <th scope="col">Atendido por</th>
                     <th scope="col">Farmácia</th>
-                    <th scope="col">Medicamentos</th>
-                    <th scope="col">Data</th>
+                    <th scope="col" className="cp-lista-num">Itens</th>
+                    <th scope="col" className="cp-lista-num">Data e hora</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtrados.map((s) => (
                     <tr key={s.idServico} {...propsLinha((el) => abrirPerfil("servico", s.idServico, el), `Abrir serviço nº ${s.idServico}`)}>
                       <td>
-                        <button
-                          type="button"
-                          className="emp-service-link"
-                          aria-label={`Consultar serviço nº ${s.idServico}`}
-                          onClick={(e) => abrirPerfil("servico", s.idServico, e.currentTarget.closest("tr"))}
-                        >
-                          <span className="emp-service-icon"><ManagerIcon name="clipboard" size={19} /></span>
-                          <span><strong>Serviço nº {s.idServico}</strong><small>Ver informações</small></span>
-                        </button>
+                        <TicketServico servico={s} onAbrir={(el) => abrirPerfil("servico", s.idServico, el)} />
                       </td>
                       <td>
                         <button type="button" className="perfil-link" onClick={(e) => abrirPerfil("paciente", s.idPaciente, e.currentTarget)}>
@@ -145,14 +137,11 @@ export default function ManagerServices() {
                         </button>
                       </td>
                       <td>{mostrar(s.nomeFarmacia)}</td>
-                      <td>
-                        {s.totalMedicamentos} {Number(s.totalMedicamentos) === 1 ? "item" : "itens"}
-                        <small>
-                          {Number(s.quantidadeTotal || 0).toLocaleString("pt-BR")}{" "}
-                          {Number(s.quantidadeTotal) === 1 ? "unidade" : "unidades"}
-                        </small>
-                      </td>
-                      <td>{formatarDataChamado(s.dataServico)}</td>
+                      <td className="cp-lista-num">
+                            <strong className="cp-mono">{Number(s.quantidadeTotal || 0).toLocaleString("pt-BR")} un.</strong>
+                            <small>{s.totalMedicamentos} {Number(s.totalMedicamentos) === 1 ? "remédio" : "remédios"}</small>
+                          </td>
+                      <td className="cp-lista-num cp-mono cp-lista-data">{formatarDataChamado(s.dataServico)}</td>
                     </tr>
                   ))}
                 </tbody>

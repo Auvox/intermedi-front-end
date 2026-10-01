@@ -11,7 +11,7 @@ import { BarraEstoque, FotoRemedio, SituacaoBadges } from "../Remedios";
 import { fotoPessoa } from "../../services/api";
 import { useFocoTitulo } from "../../hooks/useResumo";
 import { PRIORIDADE_CHAMADO, STATUS_CHAMADO, formatarDataChamado } from "../../services/chamados";
-import { formatarValidade } from "../../services/remedios";
+import { comSituacao, formatarValidade } from "../../services/remedios";
 import { numero, turno } from "../../services/perfil";
 
 // =====================================================================
@@ -19,25 +19,31 @@ import { numero, turno } from "../../services/perfil";
 // =====================================================================
 
 // Página inteira de um perfil: cabeçalho (hero), período, tabs e conteúdo da tab.
-// montar(data) → { cabecalho, periodo?, semPeriodo?: [ids], abas: [[id, rótulo, () => conteúdo, contador?]] }
+// montar(data) → { cabecalho | topo, periodo?, semPeriodo?: [ids],
+//                   abas: [[id, rótulo, () => conteúdo, contador?, total?]] }
+// topo: cabeçalho próprio (ex.: farmácia) no lugar do PerfilCabecalho.
+// total: { valor, rotulo, detalhe } mostrado em destaque no início da tab.
 // O seletor de período só aparece nas tabs que dependem dele ("detalhes" nunca depende).
-export function PerfilLayout({ estado, montar }) {
+// variante "instituicao" (farmácia) ou "produto" (remédio): esqueleto no formato da página
+export function PerfilLayout({ estado, montar, variante }) {
   const { secao, mudarSecao } = usePerfil();
   return (
-    <EstadoPerfil estado={estado}>
+    <EstadoPerfil estado={estado} variante={variante}>
       {estado.data && (() => {
-        const { cabecalho, periodo, semPeriodo = [], abas } = montar(estado.data);
+        const { cabecalho, topo, periodo, semPeriodo = [], abas: todas } = montar(estado.data);
+        const abas = todas.filter(Boolean);
         const ativa = abas.some(([id]) => id === secao) ? secao : abas[0][0];
         const atual = abas.find(([id]) => id === ativa);
         const conteudo = (
           <>
-            {periodo && !["detalhes", ...semPeriodo].includes(ativa) && <Periodo info={periodo} />}
+            {atual[4] && <TotalAba {...atual[4]} />}
+            {periodo && !["detalhes", "sobre", ...semPeriodo].includes(ativa) && <Periodo info={periodo} />}
             {atual[2]()}
           </>
         );
         return (
           <>
-            <PerfilCabecalho {...cabecalho} />
+            {topo ?? <PerfilCabecalho {...cabecalho} />}
             {abas.length > 1 ? (
               <Abas abas={abas} ativa={ativa} onTrocar={mudarSecao}>{conteudo}</Abas>
             ) : (
@@ -50,8 +56,22 @@ export function PerfilLayout({ estado, montar }) {
   );
 }
 
+// Total da tab em destaque: número grande na cor da página + o que ele conta
+export function TotalAba({ valor, rotulo, detalhe }) {
+  return (
+    <div className="perfil-total">
+      <strong className="perfil-total-valor">{valor}</strong>
+      <span className="perfil-total-texto">
+        <span className="perfil-total-rotulo">{rotulo}</span>
+        {detalhe && <small>{detalhe}</small>}
+      </span>
+    </div>
+  );
+}
+
 // Cabeçalho em faixa: avatar, nome, subtítulo, selos, informações e ações
-export function PerfilCabecalho({ foto, role, icone, nome, sobretitulo, subtitulo, selos, meta, acoes }) {
+// destaque: quadro à direita com o dado mais importante do perfil (ex.: estoque do remédio)
+export function PerfilCabecalho({ foto, role, icone, nome, sobretitulo, subtitulo, selos, meta, acoes, destaque }) {
   const titulo = useFocoTitulo();
   return (
     <header className={`perfil-hero perfil-hero-${role || "detalhe"}`}>
@@ -81,14 +101,40 @@ export function PerfilCabecalho({ foto, role, icone, nome, sobretitulo, subtitul
           </ul>
         )}
       </div>
-      {acoes && <div className="perfil-hero-acoes">{acoes}</div>}
+      {destaque ? (
+        <div className="perfil-hero-lado">
+          {destaque}
+          {acoes && <div className="perfil-hero-acoes">{acoes}</div>}
+        </div>
+      ) : acoes && <div className="perfil-hero-acoes">{acoes}</div>}
     </header>
   );
 }
 
 // Carregando (skeleton), erro com "Tentar de novo" e troca de período esmaecida
-export function EstadoPerfil({ estado, children }) {
+export function EstadoPerfil({ estado, variante, children }) {
   const { data, loading, error, reload } = estado;
+  if (!data && loading && variante === "instituicao") {
+    return (
+      <div className="perfil-skeleton inst-skeleton" role="status" aria-label="Carregando farmácia">
+        <div className="inst-sk-topo"><span /><div><i /><i /><i /></div></div>
+        <div className="inst-sk-faixa">{[0, 1, 2, 3].map((i) => <div key={i}><i /><i /><i /></div>)}</div>
+        <div className="inst-sk-abas">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} />)}</div>
+        <div className="inst-sk-corpo"><span /><span /></div>
+      </div>
+    );
+  }
+  if (!data && loading && variante === "produto") {
+    return (
+      <div className="perfil-skeleton prod-skeleton" role="status" aria-label="Carregando remédio">
+        <div className="prod-sk-topo">
+          <span className="prod-sk-foto" />
+          <div><i /><i /><i /><span className="prod-sk-quadro" /></div>
+        </div>
+        <div className="inst-sk-abas">{[0, 1, 2, 3].map((i) => <i key={i} />)}</div>
+      </div>
+    );
+  }
   if (!data && loading) {
     return (
       <div className="perfil-skeleton" role="status" aria-label="Carregando perfil">
@@ -473,15 +519,15 @@ export function EstoqueAtencao({ estoque, acao, largo = false }) {
 }
 
 // Tab "Estoque": KPIs + precisa de atenção
-export function AbaEstoque({ estoque, link }) {
+export function AbaEstoque({ estoque, link, kpis = true }) {
   return (
     <>
-      <Kpis>
+      {kpis && <Kpis>
         <CardNumero titulo="Itens no estoque" valor={numero(estoque?.totalItens)} icone="box" detalhe={`${numero(estoque?.unidades)} unidades`} />
         <CardNumero titulo="Críticos" valor={numero(estoque?.criticos)} icone="alert" />
         <CardNumero titulo="Zerados" valor={numero(estoque?.zerados)} icone="pill" />
         <CardNumero titulo="Vencidos" valor={numero(estoque?.vencidos)} icone="clock" />
-      </Kpis>
+      </Kpis>}
       <Grade>
         <EstoqueAtencao estoque={estoque} acao={link} largo />
       </Grade>
@@ -490,16 +536,19 @@ export function AbaEstoque({ estoque, link }) {
 }
 
 // Farmácias que têm o remédio (perfil do remédio)
+// A farmácia de quem está vendo aparece primeiro, marcada como "Sua farmácia"
 export function EstoqueNaRede({ farmacias = [] }) {
-  const { abrirPerfil } = usePerfil();
+  const { abrirPerfil, idFarmaciaAtual } = usePerfil();
   if (!farmacias.length) return <p className="perfil-vazio">Nenhuma farmácia tem este remédio em estoque.</p>;
+  const minha = (f) => idFarmaciaAtual && String(f.idFarmacia) === String(idFarmaciaAtual);
+  const ordenadas = [...farmacias.filter(minha), ...farmacias.filter((f) => !minha(f))].map(comSituacao);
   return (
     <ListaCompacta
       rotulo="Farmácias com este remédio"
-      itens={farmacias.map((f) => ({
+      itens={ordenadas.map((f) => ({
         chave: f.idFarmacia,
         inicio: <span className="perfil-lista-icone"><ManagerIcon name="pharmacy" size={16} /></span>,
-        titulo: f.nomeFarmacia,
+        titulo: minha(f) ? <>{f.nomeFarmacia} <span className="perfil-sua-farmacia">Sua farmácia</span></> : f.nomeFarmacia,
         subtitulo: `Lote ${f.lote || "—"} · validade ${formatarValidade(f.validade)}`,
         lateral: <span className="perfil-estoque-lateral"><BarraEstoque quantidade={f.quantidade} minimo={f.estoqueMinimo} /><SituacaoBadges item={f} /></span>,
         rotulo: `Abrir perfil da ${f.nomeFarmacia}`,

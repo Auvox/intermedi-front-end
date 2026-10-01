@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
-import { ContagemEntrega, ErroComRetry, StatusPedidoBadge } from "../components/Chamados";
+import { ErroComRetry, StatusPedidoBadge } from "../components/Chamados";
+import { RastreioMini } from "../components/Rastreio";
 import { FotoRemedio, TarjaBadge } from "../components/Remedios";
 import { usePerfil } from "../components/perfil/perfilContext";
 import { propsLinha } from "../services/perfil";
@@ -223,7 +224,8 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
       )}
       {p.status === "enviada" && (
         <p className="chamado-pedido-impacto">
-          Enviado por {p.nomeGerenteResposta || "você"} · <ContagemEntrega dataPrevistaChegada={p.dataPrevistaChegada} />
+          Enviado por {p.nomeGerenteResposta || "você"}
+          <RastreioMini pedido={p} perspectiva="fornecedor" />
         </p>
       )}
       {p.status === "recebida" && (
@@ -319,7 +321,7 @@ function PedidosEnviados({ pedidos }) {
               </td>
               <td>
                 {p.status === "enviada" ? (
-                  <ContagemEntrega dataPrevistaChegada={p.dataPrevistaChegada} />
+                  <RastreioMini pedido={p} />
                 ) : p.status === "recebida" ? (
                   formatarDataChamado(p.dataRecebimento)
                 ) : (

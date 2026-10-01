@@ -17,22 +17,78 @@ export function PersonCell({ name = "Não informado", detail, role = "paciente",
   </div>;
 }
 
-// onAbrir(funcionario, elemento): a linha inteira e "Consultar" abrem o perfil.
-// onExcluir(funcionario): botão extra na coluna de ações.
-export function TeamTable({ employees, onAbrir, onExcluir }) {
-  const acoes = Boolean(onAbrir || onExcluir);
-  return <div className="mgr-table-wrap"><table>
-    <thead><tr><th scope="col">Nome</th><th scope="col">Cargo</th><th scope="col">Turno</th><th scope="col">Matrícula</th>{acoes && <th scope="col">Ações</th>}</tr></thead>
-    <tbody>{employees.map(employee => <tr
-      key={employee.id}
-      {...(onAbrir ? propsLinha((el) => onAbrir(employee, el), `Abrir perfil de ${employee.name}`) : {})}
+const ROTULO_PAPEL = { paciente: "Paciente", funcionario: "Funcionário", gerente: "Gerente" };
+
+// Cartão de pessoa no formato do perfil dela: faixa colorida, avatar sobre a
+// faixa, nome, papel e dados de contato. O cartão inteiro abre o perfil.
+// linhas: [[ícone, texto]] · selo: status no canto · acoes: botões extras no rodapé
+export function CartaoPessoa({ role, nome, foto, papel, linhas = [], selo, acoes, onAbrir }) {
+  return (
+    <article
+      {...propsLinha((el) => onAbrir(el), `Abrir perfil de ${nome}`)}
+      className={`perfil-linha cartao-pessoa cartao-pessoa-${role}`}
     >
-      <td><PersonCell name={employee.name} detail={employee.email} role="funcionario" photo={employee.photo} /></td>
-      <td>{employee.role || "—"}</td><td>{turno(employee.shift)}</td><td>{employee.matricula || "—"}</td>
-      {acoes && <td><div className="remedio-acoes">
-        {onAbrir && <button type="button" className="directory-row-action" aria-label={`Consultar ${employee.name}`} onClick={(e) => onAbrir(employee, e.currentTarget.closest("tr"))}>Consultar</button>}
-        {onExcluir && <button type="button" className="directory-row-action remedio-acao-perigo" aria-label={`Excluir ${employee.name}`} onClick={() => onExcluir(employee)}>Excluir</button>}
-      </div></td>}
-    </tr>)}</tbody>
-  </table></div>;
+      <div className="cartao-pessoa-faixa" aria-hidden="true" />
+      {selo && <span className="cartao-pessoa-selo">{selo}</span>}
+      <div className="cartao-pessoa-corpo">
+        <PersonaAvatar className="cartao-pessoa-avatar" role={role} photo={foto} name={nome} />
+        <p className="cartao-pessoa-papel">{papel || ROTULO_PAPEL[role]}</p>
+        <h3>{nome}</h3>
+        {linhas.filter((l) => l && l[1]).length > 0 && (
+          <ul className="cartao-pessoa-linhas">
+            {linhas.filter((l) => l && l[1]).map(([icone, texto]) => (
+              <li key={`${icone}-${texto}`}><ManagerIcon name={icone} size={14} /><span>{texto}</span></li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <footer className="cartao-pessoa-rodape">
+        <button type="button" className="cartao-pessoa-ver" onClick={(e) => onAbrir(e.currentTarget.closest("article"))}>
+          Ver perfil <span aria-hidden="true">→</span>
+        </button>
+        {acoes}
+      </footer>
+    </article>
+  );
+}
+
+// Grade de cartões (substitui as tabelas de pessoas)
+export function GradePessoas({ children, rotulo }) {
+  return <ul className="grade-pessoas" aria-label={rotulo}>{children}</ul>;
+}
+
+// Funcionários em cartões.
+// onAbrir(funcionario, elemento): o cartão e "Ver perfil" abrem o perfil.
+// onExcluir(funcionario): botão extra no rodapé.
+export function TeamTable({ employees, onAbrir, onExcluir }) {
+  return (
+    <GradePessoas rotulo="Funcionários">
+      {employees.map((employee) => (
+        <li key={employee.id}>
+          <CartaoPessoa
+            role="funcionario"
+            nome={employee.name}
+            foto={employee.photo}
+            papel={[employee.role, turno(employee.shift)].filter((v) => v && v !== "—").join(" · ")}
+            linhas={[
+              ["id", employee.matricula && `Matrícula ${employee.matricula}`],
+              ["mail", employee.email],
+              ["phone", employee.phone],
+            ]}
+            onAbrir={(el) => onAbrir?.(employee, el)}
+            acoes={onExcluir && (
+              <button
+                type="button"
+                className="cartao-pessoa-acao perigo"
+                aria-label={`Excluir ${employee.name}`}
+                onClick={() => onExcluir(employee)}
+              >
+                Excluir
+              </button>
+            )}
+          />
+        </li>
+      ))}
+    </GradePessoas>
+  );
 }
