@@ -1,27 +1,31 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ManagerIcon from "./ManagerIcon";
 import { DespachoResumo } from "./Chamados";
-import { ListaEntregas } from "./NotificacoesEntregas";
+import { ListaRastreio } from "./Rastreio";
 import { disponibilidadeChamado, redistribuirChamado, responderChamado } from "../services/api";
-import { chaveEntrega, prioridadeChamado, resumoRemedios, tempoDesde } from "../services/chamados";
+import { prioridadeChamado, resumoRemedios, tempoDesde } from "../services/chamados";
 
 // Sininho do topo: chamados pendentes da equipe, pedidos de outras farmácias e
-// remédios entregues (que chegaram aqui ou que esta farmácia forneceu).
-export function NotificacoesGerente({ gerente, pendentes, pedidos, entregas }) {
+// o rastreamento das entregas (o que a farmácia pediu e o que ela está enviando).
+export function NotificacoesGerente({ gerente, pendentes, pedidos, rastreio }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
   const painelId = useId();
-  // Entregas que eram novas quando o sino abriu (abrir já marca como lidas)
-  const [entregasNovas, setEntregasNovas] = useState(() => new Set());
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Atualizações de entrega que eram novas quando o sino abriu (abrir já marca como lidas)
+  const [novos, setNovos] = useState(() => new Set());
   const totalPedidos = pedidos?.totalPendentes ?? 0;
-  const totalEntregas = entregas?.naoLidas ?? 0;
+  const totalEntregas = rastreio?.naoLidos ?? 0;
   const total = pendentes.totalPendentes + totalPedidos + totalEntregas;
+  // o pedido abre na página de rastreamento, por cima da tela atual
+  const linkPedido = (e) => `${location.pathname}?perfil=pedido:${e.pedido.idRedistribuicao}`;
 
   function alternar() {
-    if (!aberto && entregas) {
-      setEntregasNovas(new Set(entregas.entregas.filter(entregas.isNaoLida).map(chaveEntrega)));
-      entregas.marcarLidas();
+    if (!aberto && rastreio) {
+      setNovos(new Set(rastreio.eventos.filter(rastreio.isNaoLido).map((e) => e.chave)));
+      rastreio.marcarLidos();
     }
     setAberto((v) => !v);
   }
@@ -50,7 +54,7 @@ export function NotificacoesGerente({ gerente, pendentes, pedidos, entregas }) {
         className="mgr-notifications"
         aria-expanded={aberto}
         aria-controls={painelId}
-        aria-label={`Notificações: ${pendentes.totalPendentes} ${pendentes.totalPendentes === 1 ? "chamado pendente" : "chamados pendentes"}, ${totalPedidos} ${totalPedidos === 1 ? "pedido da rede" : "pedidos da rede"} e ${totalEntregas} ${totalEntregas === 1 ? "entrega nova" : "entregas novas"}`}
+        aria-label={`Notificações: ${pendentes.totalPendentes} ${pendentes.totalPendentes === 1 ? "chamado pendente" : "chamados pendentes"}, ${totalPedidos} ${totalPedidos === 1 ? "pedido da rede" : "pedidos da rede"} e ${totalEntregas} ${totalEntregas === 1 ? "atualização de entrega" : "atualizações de entrega"}`}
         onClick={alternar}
       >
         <ManagerIcon name="bell" size={17} />
@@ -115,24 +119,15 @@ export function NotificacoesGerente({ gerente, pendentes, pedidos, entregas }) {
           <Link className="chamado-bell-all" to="/gerente/pedidos" onClick={() => setAberto(false)}>
             Ver pedidos da rede →
           </Link>
-          {entregas && (
+          {rastreio && (
             <>
-              <p className="chamado-bell-title chamado-bell-secao">Remédios entregues</p>
-              {entregas.loading ? (
-                <p className="chamado-bell-empty" role="status">Carregando…</p>
-              ) : entregas.error ? (
-                <div className="chamado-bell-empty" role="alert">
-                  <p>{entregas.error}</p>
-                  <button type="button" className="mgr-text-button" onClick={entregas.retry}>Tentar de novo</button>
-                </div>
-              ) : (
-                <ListaEntregas
-                  entregas={entregas.entregas}
-                  isNaoLida={(p) => entregasNovas.has(chaveEntrega(p))}
-                  link={(p) => (p.tipo === "recebidos" ? "/gerente/pedidos" : "/gerente/pedidos?aba=enviados")}
-                  onNavegar={() => setAberto(false)}
-                />
-              )}
+              <p className="chamado-bell-title chamado-bell-secao">Rastreamento das entregas</p>
+              <ListaRastreio
+                eventos={rastreio.eventos}
+                isNovo={(e) => novos.has(e.chave)}
+                linkPara={linkPedido}
+                onAbrir={(e) => { setAberto(false); navigate(linkPedido(e)); }}
+              />
             </>
           )}
         </div>

@@ -20,7 +20,6 @@ import useApiList from "../hooks/useApiList";
 import {
   useChamadosGerente,
   useChamadosPendentes,
-  useEntregas,
   usePedidosRecebidosPendentes,
   usePolling,
   useIdGerente,
@@ -47,6 +46,9 @@ import {
   TentarDeNovo,
 } from "../components/ChamadosGerente";
 import { EstoqueTabela } from "../components/Remedios";
+import { FaixaEmAndamento, RastreioEntrega } from "../components/Rastreio";
+import { useNotificacoesRastreio, usePedidosDoGerente } from "../hooks/useRastreio";
+import { emAndamento, pedidosDoChamadoParaRastrear } from "../services/rastreio";
 import { ordenarEstoque } from "../services/remedios";
 import {
   STATUS_CHAMADO,
@@ -54,7 +56,6 @@ import {
   dataDoChamado,
   formatarDataChamado,
   resumoRemedios,
-  textoEntregas,
   statusChamado,
   tempoDesde,
 } from "../services/chamados";
@@ -188,11 +189,13 @@ export default function Manager() {
   const pedidosRede = usePedidosRecebidosPendentes(gerente.idGerente, {
     onNovoPedido: (pedido) => notify(`Novo pedido da rede: ${pedido.mensagem}`),
   });
-  // Remédios que chegaram: aqui (pedidos enviados) ou na farmácia que esta forneceu (recebidos)
-  const entregas = useEntregas(gerente.idGerente, {
-    tipos: ["enviados", "recebidos"],
+  // Rastreamento das entregas: o que a farmácia pediu (solicitante) e o que ela
+  // está enviando (fornecedor). Cada marco da viagem vira notificação.
+  const pedidosRastreio = usePedidosDoGerente(gerente.idGerente);
+  const rastreio = useNotificacoesRastreio(pedidosRastreio.pedidos, {
     escopo: `gerente:${gerente.idGerente}`,
-    onNovas: (novas) => notify(textoEntregas(novas)),
+    pronto: pedidosRastreio.carregado,
+    onNovos: (texto) => notify(texto),
   });
   useEffect(() => {
     document.title = "Área do gerente | Intermedi";
@@ -222,7 +225,7 @@ export default function Manager() {
               options={gerente.gerentes.map((g) => [g.id, g.nome])}
             />
           )}
-          <NotificacoesGerente gerente={gerente} pendentes={pendentes} pedidos={pedidosRede} entregas={entregas} />
+          <NotificacoesGerente gerente={gerente} pendentes={pendentes} pedidos={pedidosRede} rastreio={rastreio} />
           <AccountControls
             user={
               user || { id: "", name: gerente.nome || "Gerente", email: "", role: "gerente" }
@@ -237,6 +240,7 @@ export default function Manager() {
               gerente,
               pendentes,
               pedidosRede,
+              pedidosRastreio,
               notify,
               user: user || {
                 id: "",
@@ -257,7 +261,12 @@ export default function Manager() {
   );
 }
 export function ManagerDashboard() {
-  const { user, gerente, pendentes, pedidosRede } = useOutletContext();
+  const { user, gerente, pendentes, pedidosRede, pedidosRastreio } = useOutletContext();
+  const { abrirPerfil } = usePerfil();
+  // pedidos desta farmácia em andamento (os que ela precisa aceitar já têm o aviso abaixo)
+  const emCurso = (pedidosRastreio?.pedidos ?? []).filter(
+    (p) => emAndamento(p) && !(p.perspectiva === "fornecedor" && p.status === "solicitada"),
+  );
   const buscarEstoque = useCallback(
     (options) => listarEstoqueGerente(gerente.idGerente, {}, options),
     [gerente.idGerente],
@@ -280,6 +289,10 @@ export function ManagerDashboard() {
             Abrir chamados <span>↗</span>
           </Link>
         }
+      />
+      <FaixaEmAndamento
+        pedidos={emCurso}
+        onAbrirPedido={(p, el) => abrirPerfil("pedido", p.idRedistribuicao, el)}
       />
       <Stats
         items={[
@@ -1206,6 +1219,8 @@ function ChamadoDetalhe({ chamado, idGerente, onRespondido, onAtualizado, onConf
   const [semFornecedor, setSemFornecedor] = useState(false);
   const pendente = chamado.status === "pendente";
   const temSemFornecedor = (chamado.remedios ?? []).some((r) => r.situacao === "sem_fornecedor");
+  // entregas ainda em curso aparecem com o rastreamento completo
+  const aCaminho = pedidosDoChamadoParaRastrear(chamado).filter(emAndamento);
   return (
     <div className="chamado-detalhe">
       {aviso && <p className="chamado-inline-error chamado-aviso" role="alert">{aviso}</p>}
@@ -1256,6 +1271,18 @@ function ChamadoDetalhe({ chamado, idGerente, onRespondido, onAtualizado, onConf
           )}
           {chamado.status !== "recusado" && chamado.status !== "cancelado" && (
             <>
+              {aCaminho.length > 0 && (
+                <>
+                  <h3>Rastreamento</h3>
+                  {aCaminho.map((p) => (
+                    <RastreioEntrega
+                      key={p.idRedistribuicao}
+                      pedido={p}
+                      onAbrir={(el) => abrirPerfil("pedido", p.idRedistribuicao, el)}
+                    />
+                  ))}
+                </>
+              )}
               <h3>Entrega dos remédios</h3>
               <ProgressoChamado chamado={chamado} />
               <AcompanhamentoRemedios chamado={chamado} linhaDoTempo onAbrirRemedio={(idRemedio) => abrirPerfil("remedio", idRemedio)} />

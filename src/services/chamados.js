@@ -64,33 +64,6 @@ export function progressoChamado(chamado) {
   return { recebidos, total };
 }
 
-// Entregas entre farmácias: pedido que chegou (status "recebida") nas últimas 24 h
-const JANELA_ENTREGAS_MS = 24 * 60 * 60 * 1000;
-export function entregaRecente(pedido) {
-  const chegada = dataDoChamado(pedido.dataRecebimento);
-  return pedido.status === "recebida" && Boolean(chegada) && Date.now() - chegada.getTime() < JANELA_ENTREGAS_MS;
-}
-export const chaveEntrega = (p) => `${p.tipo}:${p.idRedistribuicao}`;
-export const itemEntregue = (p) =>
-  `${p.quantidade}× ${[p.nomeRemedio, p.dosagemRemedio].filter(Boolean).join(" ")}`;
-
-// Texto da notificação. tipo "enviados": chegou na minha farmácia;
-// "recebidos": eu forneci e o remédio chegou na outra farmácia.
-export function textoEntregas(entregas) {
-  const chegaram = entregas.filter((p) => p.tipo !== "recebidos");
-  const forneci = entregas.filter((p) => p.tipo === "recebidos");
-  const partes = [];
-  if (chegaram.length) {
-    partes.push(`Remédios entregues na sua farmácia: ${chegaram
-      .map((p) => `${itemEntregue(p)} (de ${p.nomeFarmaciaOrigem})`).join(", ")}.`);
-  }
-  if (forneci.length) {
-    partes.push(`Entrega concluída: ${forneci
-      .map((p) => `${itemEntregue(p)} chegou à ${p.nomeFarmaciaDestino}`).join(", ")}.`);
-  }
-  return partes.join(" ");
-}
-
 // "1:42" a partir de segundos
 export function formatarContagem(segundos) {
   const s = Math.max(0, Math.ceil(segundos));

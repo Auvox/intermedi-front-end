@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import ManagerIcon from "./ManagerIcon";
+import { RastreioMini } from "./Rastreio";
 import { useContagemRegressiva } from "../hooks/useChamados";
 import {
   formatarContagem,
@@ -146,6 +147,8 @@ function Passo({ estado, children }) {
 // linhaDoTempo: Pedido à rede → Aceito pela farmácia → A caminho → Recebido
 // onAbrirRemedio(idRemedio): torna o nome do remédio clicável (abre o perfil)
 export function AcompanhamentoRemedios({ chamado, linhaDoTempo = false, onAbrirRemedio }) {
+  // linha completa do pedido (com envio e farmácias) para o caminhãozinho
+  const pedidoCompleto = (id) => (chamado.pedidos ?? []).find((x) => x.idRedistribuicao === id);
   return (
     <ul className="chamado-itens" aria-label="Remédios do chamado">
       {(chamado.remedios ?? []).map((r) => {
@@ -170,7 +173,9 @@ export function AcompanhamentoRemedios({ chamado, linhaDoTempo = false, onAbrirR
             {p?.nomeFarmaciaFornecedora && s !== "sem_fornecedor" && (
               <small>Fornecido por <strong>{p.nomeFarmaciaFornecedora}</strong></small>
             )}
-            {s === "a_caminho" && <ContagemEntrega dataPrevistaChegada={p?.dataPrevistaChegada} />}
+            {s === "a_caminho" && (pedidoCompleto(p?.idRedistribuicao)
+              ? <RastreioMini pedido={pedidoCompleto(p.idRedistribuicao)} />
+              : <ContagemEntrega dataPrevistaChegada={p?.dataPrevistaChegada} />)}
             {s === "recebido" && p?.dataRecebimento && (
               <small className="chamado-item-ok">Chegou em {formatarDataChamado(p.dataRecebimento)}</small>
             )}

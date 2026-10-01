@@ -3,7 +3,6 @@ import { usePerfil } from "./perfilContext";
 import { Detalhes, Grade, LinkPerfil, PerfilLayout, Secao } from "./Blocos";
 import {
   AcompanhamentoRemedios,
-  ContagemEntrega,
   HistoricoPedidos,
   PrioridadeBadge,
   ProgressoChamado,
@@ -12,18 +11,38 @@ import {
   StatusPedidoBadge,
 } from "../Chamados";
 import { FotoRemedio, TarjaBadge } from "../Remedios";
+import { RastreioEntrega } from "../Rastreio";
 import { usePerfilDados } from "../../hooks/useResumo";
+import { perspectivaDe, useAtualizacaoPeriodica } from "../../hooks/useRastreio";
+import { emAndamento, itemDoPedido, pedidosDoChamadoParaRastrear } from "../../services/rastreio";
 import { formatarDataChamado, tempoDesde } from "../../services/chamados";
 import { numero, turno } from "../../services/perfil";
 
 // GET /chamado/:id
 export function DetalheChamado({ id }) {
-  const { abrirPerfil } = usePerfil();
+  const { abrirPerfil, idFarmaciaAtual } = usePerfil();
   const estado = usePerfilDados("chamado", id, (c) => `Chamado #${c.idChamado}`);
+  // acompanha a entrega sozinho enquanto houver remédio pedido ou a caminho
+  const rastreaveis = estado.data ? pedidosDoChamadoParaRastrear(estado.data) : [];
+  useAtualizacaoPeriodica(rastreaveis.some(emAndamento) || estado.data?.status === "pendente", estado.atualizar);
   return (
     <PerfilLayout
       estado={estado}
-      montar={(c) => ({
+      montar={(c) => {
+        // uma entrega por remédio (o último pedido de cada um)
+        const abaRastreio = () => ["rastreio", "Rastreamento", () => (
+          <div className="perfil-rastreios">
+            {rastreaveis.map((p) => (
+              <RastreioEntrega
+                key={p.idRedistribuicao}
+                pedido={p}
+                perspectiva={perspectivaDe(p, idFarmaciaAtual)}
+                onAbrir={(el) => abrirPerfil("pedido", p.idRedistribuicao, el)}
+              />
+            ))}
+          </div>
+        ), numero(rastreaveis.length)];
+        return {
         cabecalho: {
           icone: "ticket",
           nome: c.titulo,
@@ -36,6 +55,7 @@ export function DetalheChamado({ id }) {
           ],
         },
         abas: [
+          rastreaveis.length > 0 && c.status === "em_andamento" && abaRastreio(),
           ["resumo", "Resumo", () => (
             <Grade>
               <Secao titulo="Solicitação">
@@ -61,6 +81,7 @@ export function DetalheChamado({ id }) {
               </Secao>
             </Grade>
           ), numero(c.remedios?.length)],
+          rastreaveis.length > 0 && c.status !== "em_andamento" && abaRastreio(),
           c.pedidos?.length > 0 && ["pedidos", "Pedidos à rede", () => (
             <Grade>
               <Secao titulo="Pedidos a outras farmácias" largo>
@@ -69,7 +90,8 @@ export function DetalheChamado({ id }) {
             </Grade>
           ), numero(c.pedidos.length)],
         ].filter(Boolean),
-      })}
+        };
+      }}
     />
   );
 }
@@ -134,29 +156,33 @@ export function DetalheServico({ id }) {
 
 // GET /redistribuicao/:id
 export function DetalhePedido({ id }) {
+  const { idFarmaciaAtual } = usePerfil();
   const estado = usePerfilDados("pedido", id, (p) => `Pedido #${p.idRedistribuicao}`);
+  useAtualizacaoPeriodica(Boolean(estado.data && emAndamento(estado.data)), estado.atualizar);
   return (
     <PerfilLayout
       estado={estado}
       montar={(p) => ({
         cabecalho: {
           icone: "truck",
-          nome: p.mensagem || `Pedido #${p.idRedistribuicao}`,
+          nome: itemDoPedido(p),
           sobretitulo: `Pedido à rede #${p.idRedistribuicao}`,
+          subtitulo: `${p.nomeFarmaciaOrigem} → ${p.nomeFarmaciaDestino}`,
           selos: <><StatusPedidoBadge status={p.status} /><TarjaBadge valor={p.tarjaRemedio} /></>,
           meta: [
             ["calendar", `Solicitado ${tempoDesde(p.dataSolicitacao)}`],
-            ["pill", <LinkPerfil key="r" tipo="remedio" id={p.idRemedio}>{`${p.quantidade}× ${[p.nomeRemedio, p.dosagemRemedio].filter(Boolean).join(" ")}`}</LinkPerfil>],
+            ["pill", <LinkPerfil key="r" tipo="remedio" id={p.idRemedio}>{`Ver ${p.nomeRemedio}`}</LinkPerfil>],
+            p.idChamado && ["ticket", <LinkPerfil key="c" tipo="chamado" id={p.idChamado}>{`Chamado #${p.idChamado}`}</LinkPerfil>],
           ],
         },
         abas: [
-          ["resumo", "Resumo", () => (
+          ["rastreio", "Rastreamento", () => (
+            <div className="perfil-rastreios">
+              <RastreioEntrega pedido={p} perspectiva={perspectivaDe(p, idFarmaciaAtual)} />
+            </div>
+          )],
+          ["resumo", "Detalhes", () => (
             <Grade>
-              {p.status === "enviada" && (
-                <Secao titulo="Entrega" largo>
-                  <p className="perfil-texto"><ContagemEntrega dataPrevistaChegada={p.dataPrevistaChegada} /></p>
-                </Secao>
-              )}
               <Secao titulo="Farmácias e gerentes">
                 <Detalhes itens={[
                   ["Fornecedora", <LinkPerfil key="o" tipo="farmacia" id={p.idFarmaciaOrigem}>{p.nomeFarmaciaOrigem}</LinkPerfil>],

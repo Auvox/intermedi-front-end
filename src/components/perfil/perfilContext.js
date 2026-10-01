@@ -5,6 +5,7 @@ import { createContext, useContext } from "react";
 export const PerfilContext = createContext({
   abrirPerfil: () => {},
   plataforma: null,
+  idFarmaciaAtual: null,
   dentroDoPainel: false,
 });
 

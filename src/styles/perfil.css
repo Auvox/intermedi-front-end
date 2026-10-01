@@ -188,6 +188,9 @@ tr.perfil-linha:focus-visible td { background-color: var(--persona-soft, #eef7f1
 .perfil-detalhes dt { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #8a998f; }
 .perfil-detalhes dd { margin: 3px 0 0; font-size: 14px; color: var(--perfil-texto, #1d2f25); overflow-wrap: anywhere; }
 
+.perfil-rastreios { display: grid; gap: 18px; max-width: 880px; }
+.perfil-rastreios .rastreio + .rastreio { margin-top: 0; }
+
 /* ---------- Gráfico ---------- */
 .perfil-grafico { margin: 0; }
 .perfil-grafico-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12px; font-weight: 600; color: #4b6456; margin-bottom: 8px; }

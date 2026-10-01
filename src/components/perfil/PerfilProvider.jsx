@@ -106,10 +106,13 @@ export default function PerfilProvider({ plataforma, gerenteAtual = null, childr
     return false;
   }
 
-  const valorFora = { abrirPerfil, plataforma, dentroDoPainel: false };
+  // farmácia de quem está vendo (gerente): define se ele é o fornecedor de um pedido
+  const idFarmaciaAtual = gerenteAtual?.idFarmacia ?? null;
+  const valorFora = { abrirPerfil, plataforma, idFarmaciaAtual, dentroDoPainel: false };
   const valorDentro = {
     abrirPerfil: empilhar,
     plataforma,
+    idFarmaciaAtual,
     dentroDoPainel: true,
     periodo,
     mudarPeriodo,
