@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import ManagerIcon from "./ManagerIcon";
 import { FotoRemedio } from "./Remedios";
 import { useEnderecosFarmacias, useRelogio } from "../hooks/useRastreio";
@@ -128,12 +128,12 @@ function Estrada({ rastreio: r, agora, compacta = false, rotulo }) {
 
 // Cartão completo de rastreamento (tela do pedido, do chamado e detalhe do gerente)
 // perspectiva: "solicitante" (quem pediu) | "fornecedor" (quem enviou)
-export function RastreioEntrega({ pedido, perspectiva = "solicitante", onAbrir }) {
+export function RastreioEntrega({ pedido, perspectiva = "solicitante", onAbrir, minimalista = false }) {
   const uid = useId();
   const { rastreio: r, agora } = useRastreio(pedido);
   const curtas = r.inicio !== null && r.fim !== null && r.fim - r.inicio < 3600000;
   return (
-    <section className={`rastreio rastreio-${r.estado}`} aria-labelledby={`${uid}-titulo`}>
+    <section className={`rastreio rastreio-${r.estado}${minimalista ? " rastreio-min" : ""}`} aria-labelledby={`${uid}-titulo`}>
       <header className="rastreio-topo">
         <div className="rastreio-topo-texto">
           <p className="rastreio-rotulo">
@@ -149,7 +149,7 @@ export function RastreioEntrega({ pedido, perspectiva = "solicitante", onAbrir }
             {pedido.idChamado ? ` · chamado #${pedido.idChamado}` : ""}
           </p>
         </div>
-        <FotoRemedio foto={pedido.fotoRemedio} nome={pedido.nomeRemedio} tamanho="md" />
+        {!minimalista && <FotoRemedio foto={pedido.fotoRemedio} nome={pedido.nomeRemedio} tamanho="md" />}
       </header>
 
       <div className="rastreio-mapa">
@@ -349,5 +349,36 @@ export function ListaRastreio({ eventos, isNovo, linkPara, onAbrir, vazio = "Nen
         </li>
       ))}
     </ul>
+  );
+}
+
+// Linha de tabela com o caminhãozinho: "Ver detalhes" abre o rastreamento completo
+// (versão enxuta) numa linha logo abaixo, ocupando a largura da tabela.
+// celulas(botao) devolve as <td> da linha; botao é null quando não há pedido.
+export function LinhaRastreavel({ pedido, colSpan, celulas }) {
+  const [aberto, setAberto] = useState(false);
+  const uid = useId();
+  const botao = pedido ? (
+    <button
+      type="button"
+      className="rastreio-ver"
+      aria-expanded={aberto}
+      aria-controls={uid}
+      onClick={() => setAberto((v) => !v)}
+    >
+      {aberto ? "Ocultar detalhes" : "Ver detalhes"}
+    </button>
+  ) : null;
+  return (
+    <>
+      <tr>{celulas(botao)}</tr>
+      {pedido && aberto && (
+        <tr className="rastreio-linha-aberta" data-sem-perfil>
+          <td colSpan={colSpan} id={uid} data-sem-perfil>
+            <RastreioEntrega pedido={pedido} minimalista />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

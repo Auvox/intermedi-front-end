@@ -4,7 +4,9 @@ import PerfilGerente from "./PerfilGerente";
 import PerfilFarmacia from "./PerfilFarmacia";
 import PerfilRemedio from "./PerfilRemedio";
 import PerfilPaciente from "./PerfilPaciente";
-import { DetalheChamado, DetalhePedido, DetalheServico } from "./Detalhes";
+import { DetalhePedido } from "./Detalhes";
+import ComprovanteServico from "./ComprovanteServico";
+import RelatorioChamado from "./RelatorioChamado";
 import ManagerIcon from "../ManagerIcon";
 import "../../styles/perfil.css";
 
@@ -14,8 +16,8 @@ const CONTEUDO = {
   farmacia: PerfilFarmacia,
   remedio: PerfilRemedio,
   paciente: PerfilPaciente,
-  chamado: DetalheChamado,
-  servico: DetalheServico,
+  chamado: RelatorioChamado,
+  servico: ComprovanteServico,
   pedido: DetalhePedido,
 };
 const NOMES_TIPO = {

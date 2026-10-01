@@ -1,21 +1,13 @@
 import { useCallback, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
-import {
-  AcompanhamentoRemedios,
-  ErroComRetry,
-  PrioridadeBadge,
-  ProgressoChamado,
-  RespostaChamado,
-  SeletorPersona,
-  StatusChamadoBadge,
-} from "../components/Chamados";
+import { ErroComRetry, SeletorPersona } from "../components/Chamados";
+import CartaoChamado from "../components/CartaoChamado";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
-import { propsLinha } from "../services/perfil";
 import useApiList from "../hooks/useApiList";
 import { INTERVALO_CHAMADOS, useFuncionarioAtual, usePolling } from "../hooks/useChamados";
 import { listarChamadosFuncionario, listarRemedios } from "../services/api";
-import { INTERVALO_A_CAMINHO, STATUS_CHAMADO, formatarDataChamado, temACaminho } from "../services/chamados";
+import { INTERVALO_A_CAMINHO, STATUS_CHAMADO, temACaminho } from "../services/chamados";
 
 // "Minhas solicitações": chamados de reposição abertos pelo funcionário.
 export default function EmployeeTickets() {
@@ -112,34 +104,7 @@ export default function EmployeeTickets() {
                   <ul className="chamado-list">
                     {chamados.map((c) => (
                       <li key={c.idChamado}>
-                        <article
-                          {...propsLinha((el) => abrirPerfil("chamado", c.idChamado, el), `Abrir chamado #${c.idChamado}: ${c.titulo}`)}
-                          className="perfil-linha chamado-card"
-                        >
-                          <div className="chamado-card-head">
-                            <h3 id={`chamado-${c.idChamado}`}>{c.titulo}</h3>
-                            <div className="chamado-card-badges">
-                              <PrioridadeBadge prioridade={c.prioridade} />
-                              <StatusChamadoBadge status={c.status} />
-                            </div>
-                          </div>
-                          <p className="chamado-card-meta">
-                            #{c.idChamado} · {formatarDataChamado(c.dataAbertura)} · {c.farmacia?.nomeFarmacia}
-                          </p>
-                          {!["pendente", "recusado", "cancelado"].includes(c.status) && <ProgressoChamado chamado={c} />}
-                          <AcompanhamentoRemedios chamado={c} />
-                          {c.status === "resolvido" && (
-                            <p className="chamado-resolvido">Todos os remédios chegaram ✔</p>
-                          )}
-                          {c.descricao && <p className="chamado-card-desc">{c.descricao}</p>}
-                          {c.resposta ? (
-                            <RespostaChamado chamado={c} />
-                          ) : (
-                            c.status === "pendente" && (
-                              <p className="chamado-aguardando">Aguardando resposta do gerente.</p>
-                            )
-                          )}
-                        </article>
+                        <CartaoChamado chamado={c} onAbrir={(chamado, el) => abrirPerfil("chamado", chamado.idChamado, el)} />
                       </li>
                     ))}
                   </ul>

@@ -1,5 +1,5 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
+import { CartaoPessoa, DirectoryStats, GradePessoas, TeamTable } from "../components/Directory";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -11,7 +11,7 @@ import {
 import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
 import { usePerfil } from "../components/perfil/perfilContext";
-import { propsLinha } from "../services/perfil";
+import { mascararCpf, propsLinha } from "../services/perfil";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
@@ -26,33 +26,20 @@ import {
   useToast,
 } from "../hooks/useChamados";
 import {
-  AcompanhamentoRemedios,
-  ChamadoModal,
-  DespachoResumo,
   ErroComRetry,
-  HistoricoPedidos,
   PrioridadeBadge,
-  ProgressoChamado,
-  RemediosChamadoTable,
-  RespostaChamado,
   SeletorPersona,
   StatusChamadoBadge,
   ToastRegion,
 } from "../components/Chamados";
-import {
-  DisponibilidadeRede,
-  NotificacoesGerente,
-  ResponderChamado,
-  TentarDeNovo,
-} from "../components/ChamadosGerente";
+import { NotificacoesGerente } from "../components/ChamadosGerente";
 import { EstoqueTabela } from "../components/Remedios";
-import { FaixaEmAndamento, RastreioEntrega } from "../components/Rastreio";
+import { FaixaEmAndamento } from "../components/Rastreio";
 import { useNotificacoesRastreio, usePedidosDoGerente } from "../hooks/useRastreio";
-import { emAndamento, pedidosDoChamadoParaRastrear } from "../services/rastreio";
+import { emAndamento } from "../services/rastreio";
 import { ordenarEstoque } from "../services/remedios";
 import {
   STATUS_CHAMADO,
-  TURNO_FUNCIONARIO,
   dataDoChamado,
   formatarDataChamado,
   resumoRemedios,
@@ -394,7 +381,7 @@ export function ManagerDashboard() {
                 </small>
               </div>
               <PrioridadeBadge prioridade={c.prioridade} />
-              <Link to={`/gerente/chamados?chamado=${c.idChamado}`}>
+              <Link to={`/gerente/chamados?perfil=chamado:${c.idChamado}`}>
                 Abrir chamado →
               </Link>
             </div>
@@ -981,33 +968,28 @@ export function ManagerPatients() {
         ) : error ? (
           <p className="mgr-empty" role="alert">{error}</p>
         ) : (
-          <div className="mgr-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Paciente</th>
-                  <th>CPF</th>
-                  <th>Telefone</th>
-                  <th>Cidade</th>
-                  <th>Remédio frequente</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p) => (
-                  <tr key={p.id} {...propsLinha((el) => abrirPerfil("paciente", p.id, el), `Abrir perfil de ${p.name}`)}>
-                    <td>
-                      <PersonCell name={p.name} detail={p.email} role="paciente" photo={p.photo} />
-                    </td>
-                    <td>{p.cpf || "—"}</td>
-                    <td>{p.phone || "—"}</td>
-                    <td>{[p.city, p.state].filter(Boolean).join(" / ") || "—"}</td>
-                    <td>{p.frequentMedicine || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <>
+            <GradePessoas rotulo="Pacientes">
+              {filtered.map((p) => (
+                <li key={p.id}>
+                  <CartaoPessoa
+                    role="paciente"
+                    nome={p.name}
+                    foto={p.photo}
+                    papel={p.frequentMedicine ? `Usa ${p.frequentMedicine}` : "Paciente"}
+                    linhas={[
+                      ["id", p.cpf && `CPF ${mascararCpf(p.cpf)}`],
+                      ["phone", p.phone],
+                      ["map", [p.city, p.state].filter(Boolean).join(" / ")],
+                      ["mail", p.email],
+                    ]}
+                    onAbrir={(el) => abrirPerfil("paciente", p.id, el)}
+                  />
+                </li>
+              ))}
+            </GradePessoas>
             {!filtered.length && <Empty />}
-          </div>
+          </>
         )}
         <p className="mgr-table-note" role="status">
           {filtered.length} de {patients.length} pacientes
@@ -1017,23 +999,35 @@ export function ManagerPatients() {
   );
 }
 export function ManagerTickets() {
-  const { gerente, pendentes, notify } = useOutletContext();
+  const { gerente, pendentes } = useOutletContext();
   const [params, setParams] = useSearchParams();
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
-  const { chamados, carregado, loading, error, reload, retry, setData } = useChamadosGerente(gerente.idGerente);
+  const { chamados, carregado, loading, error, reload, retry } = useChamadosGerente(gerente.idGerente);
+  const { abrirPerfil } = usePerfil();
 
   // Chegou solicitação nova no sininho: atualiza a lista também
-  const { totalPendentes, reload: reloadPendentes, removerPendente } = pendentes;
+  const { totalPendentes, reload: reloadPendentes } = pendentes;
   useEffect(() => {
     if (carregado) reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPendentes]);
 
-  const idSelecionado = params.get("chamado");
-  const selected = idSelecionado
-    ? chamados.find((c) => String(c.idChamado) === idSelecionado)
-    : null;
+  // Link antigo (?chamado=ID, ex.: favoritos): abre o relatório do chamado
+  const idAntigo = params.get("chamado");
+  useEffect(() => {
+    if (!idAntigo) return;
+    const next = new URLSearchParams(params);
+    next.delete("chamado");
+    next.set("perfil", `chamado:${idAntigo}`);
+    setParams(next, { replace: true });
+  }, [idAntigo, params, setParams]);
+  // Respondeu ou pediu de novo no relatório: atualiza a lista e o sininho
+  useAoAlterarDados((detalhe) => {
+    if (detalhe?.tipo !== "chamado") return;
+    reload();
+    reloadPendentes();
+  });
   const contar = (valor) => chamados.filter((c) => c.status === valor).length;
   const termo = normalizeText(search.trim());
   const tickets = chamados.filter(
@@ -1044,31 +1038,7 @@ export function ManagerTickets() {
       ).includes(termo),
   );
 
-  function abrir(idChamado) {
-    const next = new URLSearchParams(params);
-    next.set("chamado", idChamado);
-    setParams(next);
-  }
-  function close() {
-    const next = new URLSearchParams(params);
-    next.delete("chamado");
-    setParams(next);
-  }
-  function atualizar(atualizado) {
-    setData((lista) =>
-      (lista ?? []).map((c) => (c.idChamado === atualizado.idChamado ? atualizado : c)),
-    );
-  }
-  function respondido(atualizado) {
-    atualizar(atualizado);
-    removerPendente(atualizado.idChamado);
-    notify(atualizado.status !== "recusado" ? "Chamado aceito e pedido à rede" : "Chamado recusado");
-  }
-  function conflito() {
-    reload();
-    reloadPendentes();
-  }
-
+  const abrir = (idChamado, elemento) => abrirPerfil("chamado", idChamado, elemento);
   const header = (
     <Header
       title="Cada chamado importa."
@@ -1138,7 +1108,7 @@ export function ManagerTickets() {
                 {tickets.map((c) => (
                   <tr
                     key={c.idChamado}
-                    {...propsLinha(() => abrir(c.idChamado), `Abrir chamado #${c.idChamado}`)}
+                    {...propsLinha((el) => abrir(c.idChamado, el), `Abrir chamado #${c.idChamado}`)}
                     className={`perfil-linha${c.status === "pendente" ? " chamado-row-pendente" : ""}`}
                   >
                     <td>
@@ -1159,7 +1129,7 @@ export function ManagerTickets() {
                         type="button"
                         className="mgr-text-button"
                         aria-label={`Abrir chamado #${c.idChamado}`}
-                        onClick={() => abrir(c.idChamado)}
+                        onClick={(e) => abrir(c.idChamado, e.currentTarget)}
                       >
                         {c.status === "pendente" ? "Responder ↗" : "Abrir chamado ↗"}
                       </button>
@@ -1179,126 +1149,7 @@ export function ManagerTickets() {
           {tickets.length} de {chamados.length} chamados · Atualiza automaticamente (a cada 5 s enquanto há remédio a caminho)
         </p>
       </section>
-      {idSelecionado && (
-        <ChamadoModal
-          title={selected ? selected.titulo : `Chamado #${idSelecionado}`}
-          onClose={close}
-        >
-          {!selected ? (
-            loading || !carregado ? (
-              <p className="mgr-empty" role="status">Carregando chamado…</p>
-            ) : (
-              <p className="mgr-empty" role="alert">Chamado não encontrado nesta farmácia.</p>
-            )
-          ) : (
-            <ChamadoDetalhe
-              key={selected.idChamado}
-              chamado={selected}
-              idGerente={gerente.idGerente}
-              onRespondido={respondido}
-              onAtualizado={atualizar}
-              onConflito={conflito}
-            />
-          )}
-        </ChamadoModal>
-      )}
     </>
   );
 }
 
-function ChamadoDetalhe({ chamado, idGerente, onRespondido, onAtualizado, onConflito }) {
-  const f = chamado.funcionario ?? {};
-  const { abrirPerfil } = usePerfil();
-  const linkPerfil = (tipo, id, texto) => (id ? (
-    <button type="button" className="perfil-link" onClick={(e) => abrirPerfil(tipo, id, e.currentTarget)}>{texto}</button>
-  ) : texto || "—");
-  // 409: o formulário some quando a lista recarrega, então o aviso fica aqui
-  const [aviso, setAviso] = useState("");
-  // Resultado do aceite (para qual farmácia cada remédio foi pedido)
-  const [despacho, setDespacho] = useState(null);
-  const [semFornecedor, setSemFornecedor] = useState(false);
-  const pendente = chamado.status === "pendente";
-  const temSemFornecedor = (chamado.remedios ?? []).some((r) => r.situacao === "sem_fornecedor");
-  // entregas ainda em curso aparecem com o rastreamento completo
-  const aCaminho = pedidosDoChamadoParaRastrear(chamado).filter(emAndamento);
-  return (
-    <div className="chamado-detalhe">
-      {aviso && <p className="chamado-inline-error chamado-aviso" role="alert">{aviso}</p>}
-      <div className="mgr-ticket-meta">
-        <StatusChamadoBadge status={chamado.status} />
-        <PrioridadeBadge prioridade={chamado.prioridade} />
-        <span>#{chamado.idChamado}</span>
-      </div>
-      <dl className="chamado-dados">
-        <div><dt>Funcionário</dt><dd>{linkPerfil("funcionario", f.idFuncionario, f.nomeFuncionario)}</dd></div>
-        <div><dt>Matrícula</dt><dd>{f.matriculaFuncionario || "—"}</dd></div>
-        <div><dt>Cargo</dt><dd>{f.cargoFuncionario || "—"}</dd></div>
-        <div><dt>Turno</dt><dd>{TURNO_FUNCIONARIO[f.turnoFuncionario] || f.turnoFuncionario || "—"}</dd></div>
-        <div><dt>Farmácia</dt><dd>{linkPerfil("farmacia", chamado.farmacia?.idFarmacia, chamado.farmacia?.nomeFarmacia)}</dd></div>
-        <div><dt>Aberto em</dt><dd>{formatarDataChamado(chamado.dataAbertura)}</dd></div>
-      </dl>
-      {chamado.descricao && <p className="mgr-description">{chamado.descricao}</p>}
-      {pendente ? (
-        <>
-          <h3>Remédios solicitados</h3>
-          <RemediosChamadoTable remedios={chamado.remedios} />
-          <h3>Disponibilidade na rede</h3>
-          <DisponibilidadeRede
-            chamado={chamado}
-            idGerente={idGerente}
-            onCarregado={(dados) => setSemFornecedor(dados.todosTemFornecedor === false)}
-          />
-          <ResponderChamado
-            chamado={chamado}
-            idGerente={idGerente}
-            avisoSemFornecedor={semFornecedor}
-            onRespondido={(atualizado, resultado) => {
-              setDespacho(resultado);
-              onRespondido(atualizado);
-            }}
-            onConflito={(mensagem) => {
-              setAviso(mensagem);
-              onConflito();
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <RespostaChamado chamado={chamado} />
-          {despacho && <DespachoResumo despacho={despacho} />}
-          {chamado.status === "resolvido" && (
-            <p className="chamado-resolvido" role="status">Todos os remédios chegaram ✔</p>
-          )}
-          {chamado.status !== "recusado" && chamado.status !== "cancelado" && (
-            <>
-              {aCaminho.length > 0 && (
-                <>
-                  <h3>Rastreamento</h3>
-                  {aCaminho.map((p) => (
-                    <RastreioEntrega
-                      key={p.idRedistribuicao}
-                      pedido={p}
-                      onAbrir={(el) => abrirPerfil("pedido", p.idRedistribuicao, el)}
-                    />
-                  ))}
-                </>
-              )}
-              <h3>Entrega dos remédios</h3>
-              <ProgressoChamado chamado={chamado} />
-              <AcompanhamentoRemedios chamado={chamado} linhaDoTempo onAbrirRemedio={(idRemedio) => abrirPerfil("remedio", idRemedio)} />
-              {chamado.status === "em_andamento" && temSemFornecedor && (
-                <TentarDeNovo chamado={chamado} idGerente={idGerente} onRedistribuido={onAtualizado} />
-              )}
-              {chamado.pedidos?.length > 0 && (
-                <>
-                  <h3>Histórico de pedidos à rede</h3>
-                  <HistoricoPedidos pedidos={chamado.pedidos} />
-                </>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-}

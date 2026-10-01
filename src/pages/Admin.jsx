@@ -1,4 +1,5 @@
 import PersonaAvatar from "../components/PersonaAvatar";
+import { CartaoPessoa, GradePessoas } from "../components/Directory";
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
@@ -1125,107 +1126,50 @@ export function AdminDirectory({ section }) {
                 <Icon name="dots" size={16} />
               </button>
             </div>
-            <div className="mgr-table-wrap">
-              <table className="adm-table2">
-                <thead>
-                  <tr>
-                    <th scope="col">Nome</th>
-                    <th scope="col">Unidade</th>
-                    <th scope="col">Situação</th>
-                    <th scope="col">Último acesso</th>
-                    <th scope="col">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.map((record) => {
-                    const tone = avatarTone(record.name);
-                    const blocked = ["Bloqueado", "Banido"].includes(
-                      record.status,
-                    );
-                    return (
-                      <tr
-                        key={record.id}
-                        {...propsLinha((el) => abrirPerfil(tipoPerfil, record.id, el), `Abrir perfil de ${record.name}`)}
-                      >
-                        <td>
-                          <div className="adm-name-cell">
-                            {pharmacies && record.photo ? (
-                              <span className="adm-avatar-circle pharmacy-avatar perfil-avatar-lista">
-                                <img src={record.photo} alt="" />
-                              </span>
-                            ) : pharmacies ? <span
-                              className="adm-avatar-circle pharmacy-avatar"
-                              style={{
-                                background: tone.background,
-                                color: tone.color,
-                              }}
-                              aria-hidden="true"
-                            >
-                              <Icon name="pharmacy" size={20} />
-                            </span> : <PersonaAvatar role={managers ? "gerente" : patients ? "paciente" : "funcionario"} photo={record.photo} name={record.name} />}
-                            <span>
-                              <strong>{record.name}</strong>
-                              <small>
-                                {record.email ||
-                                  `Código: ${record.id.toUpperCase()}`}
-                              </small>
-                            </span>
-                          </div>
-                        </td>
-                        <td>{record.unit}</td>
-                        <td>
-                          <span
-                            className={`mgr-badge ${blocked ? "red" : "green"}`}
-                          >
-                            {record.status}
-                          </span>
-                        </td>
-                        <td className="adm-muted-cell">—</td>
-                        <td>
+            {managers || patients ? (
+              <GradePessoas rotulo={config.label}>
+                {paginated.map((record) => {
+                  const blocked = ["Bloqueado", "Banido"].includes(record.status);
+                  return (
+                    <li key={record.id}>
+                      <CartaoPessoa
+                        role={managers ? "gerente" : "paciente"}
+                        nome={record.name}
+                        foto={record.photo}
+                        papel={managers ? ["Gerente", record.crf].filter(Boolean).join(" · ") : "Paciente"}
+                        selo={<span className={`mgr-badge ${blocked ? "red" : "green"}`}>{record.status}</span>}
+                        linhas={[
+                          ["pharmacy", managers ? record.unit : null],
+                          ["map", patients && record.unit !== "Unidade não informada" ? record.unit : null],
+                          ["mail", record.email],
+                          ["phone", record.phone],
+                        ]}
+                        onAbrir={(el) => abrirPerfil(tipoPerfil, record.id, el)}
+                        acoes={(
                           <div className="adm-row-menu-wrap">
                             <button
                               type="button"
                               className="adm-row-menu-trigger"
                               aria-label={`Mais ações: ${record.name}`}
                               aria-expanded={openRowMenu === record.id}
-                              onClick={() =>
-                                setOpenRowMenu((current) =>
-                                  current === record.id ? null : record.id,
-                                )
-                              }
+                              onClick={() => setOpenRowMenu((current) => (current === record.id ? null : record.id))}
                             >
                               <Icon name="dots" size={16} />
                             </button>
                             {openRowMenu === record.id && (
                               <>
-                                <div
-                                  data-sem-perfil
-                                  className="adm-menu-backdrop"
-                                  onClick={() => setOpenRowMenu(null)}
-                                />
+                                <div data-sem-perfil className="adm-menu-backdrop" onClick={() => setOpenRowMenu(null)} />
                                 <div className="adm-row-menu" role="menu">
                                   <button
                                     type="button"
                                     role="menuitem"
                                     onClick={(event) => {
                                       setOpenRowMenu(null);
-                                      abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("tr"));
+                                      abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("article"));
                                     }}
                                   >
                                     Consultar
                                   </button>
-                                  {pharmacies && (
-                                    <button
-                                      type="button"
-                                      role="menuitem"
-                                      onClick={() => {
-                                        openEditFarmacia(record);
-                                        setOpenRowMenu(null);
-                                      }}
-                                    >
-                                      Editar
-                                    </button>
-                                  )}
                                   <button
                                     type="button"
                                     role="menuitem"
@@ -1242,13 +1186,138 @@ export function AdminDirectory({ section }) {
                               </>
                             )}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      />
+                    </li>
+                  );
+                })}
+              </GradePessoas>
+            ) : (
+              <div className="mgr-table-wrap">
+                <table className="adm-table2">
+                  <thead>
+                    <tr>
+                      <th scope="col">Nome</th>
+                      <th scope="col">Unidade</th>
+                      <th scope="col">Situação</th>
+                      <th scope="col">Último acesso</th>
+                      <th scope="col">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginated.map((record) => {
+                      const tone = avatarTone(record.name);
+                      const blocked = ["Bloqueado", "Banido"].includes(
+                        record.status,
+                      );
+                      return (
+                        <tr
+                          key={record.id}
+                          {...propsLinha((el) => abrirPerfil(tipoPerfil, record.id, el), `Abrir perfil de ${record.name}`)}
+                        >
+                          <td>
+                            <div className="adm-name-cell">
+                              {pharmacies && record.photo ? (
+                                <span className="adm-avatar-circle pharmacy-avatar perfil-avatar-lista">
+                                  <img src={record.photo} alt="" />
+                                </span>
+                              ) : pharmacies ? <span
+                                className="adm-avatar-circle pharmacy-avatar"
+                                style={{
+                                  background: tone.background,
+                                  color: tone.color,
+                                }}
+                                aria-hidden="true"
+                              >
+                                <Icon name="pharmacy" size={20} />
+                              </span> : <PersonaAvatar role={managers ? "gerente" : patients ? "paciente" : "funcionario"} photo={record.photo} name={record.name} />}
+                              <span>
+                                <strong>{record.name}</strong>
+                                <small>
+                                  {record.email ||
+                                    `Código: ${record.id.toUpperCase()}`}
+                                </small>
+                              </span>
+                            </div>
+                          </td>
+                          <td>{record.unit}</td>
+                          <td>
+                            <span
+                              className={`mgr-badge ${blocked ? "red" : "green"}`}
+                            >
+                              {record.status}
+                            </span>
+                          </td>
+                          <td className="adm-muted-cell">—</td>
+                          <td>
+                            <div className="adm-row-menu-wrap">
+                              <button
+                                type="button"
+                                className="adm-row-menu-trigger"
+                                aria-label={`Mais ações: ${record.name}`}
+                                aria-expanded={openRowMenu === record.id}
+                                onClick={() =>
+                                  setOpenRowMenu((current) =>
+                                    current === record.id ? null : record.id,
+                                  )
+                                }
+                              >
+                                <Icon name="dots" size={16} />
+                              </button>
+                              {openRowMenu === record.id && (
+                                <>
+                                  <div
+                                    data-sem-perfil
+                                    className="adm-menu-backdrop"
+                                    onClick={() => setOpenRowMenu(null)}
+                                  />
+                                  <div className="adm-row-menu" role="menu">
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={(event) => {
+                                        setOpenRowMenu(null);
+                                        abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("tr"));
+                                      }}
+                                    >
+                                      Consultar
+                                    </button>
+                                    {pharmacies && (
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => {
+                                          openEditFarmacia(record);
+                                          setOpenRowMenu(null);
+                                        }}
+                                      >
+                                        Editar
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      className="is-danger"
+                                      disabled={blocked}
+                                      onClick={() => {
+                                        setModal({ type: "confirm", record });
+                                        setOpenRowMenu(null);
+                                      }}
+                                    >
+                                      {rowActionLabel}
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {!filtered.length && (
               <p className="mgr-empty">
                 Nenhum registro encontrado. Tente outra busca ou situação.

@@ -76,7 +76,7 @@ export function NotificacoesGerente({ gerente, pendentes, pedidos, rastreio }) {
             <ul>
               {pendentes.pendentes.slice(0, 5).map((c) => (
                 <li key={c.idChamado}>
-                  <Link to={`/gerente/chamados?chamado=${c.idChamado}`} onClick={() => setAberto(false)}>
+                  <Link to={`/gerente/chamados?perfil=chamado:${c.idChamado}`} onClick={() => setAberto(false)}>
                     <strong>{c.funcionario?.nomeFuncionario}</strong> solicitou {resumoRemedios(c.remedios)}
                     <small>
                       <span className={c.prioridade === "urgente" ? "chamado-urgente-text" : undefined}>

@@ -1,11 +1,10 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { DirectoryStats, PersonCell, TeamTable } from "../components/Directory";
+import { CartaoPessoa, DirectoryStats, GradePessoas, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
 import { usePerfil } from "../components/perfil/perfilContext";
-import { propsLinha } from "../services/perfil";
 import { unit } from "./managerData";
 import useApiList from "../hooks/useApiList";
 import {
@@ -311,7 +310,7 @@ export default function Employee() {
             </Link>
           </div>
         </div>
-        <PerfilProvider plataforma="funcionario">
+        <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
           <main className="mgr-main directory-layout">
             <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados }} />
           </main>
@@ -470,28 +469,24 @@ export function EmployeePatients() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-        <div className="mgr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Paciente</th>
-                <th scope="col">Código</th>
-                <th scope="col">Unidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((patient) => (
-                <tr key={patient.id} {...propsLinha((el) => abrirPerfil("paciente", patient.id, el), `Abrir perfil de ${patient.name}`)}>
-                  <td>
-                    <PersonCell name={patient.name} detail={patient.email} role="paciente" photo={patient.photo} />
-                  </td>
-                  <td>{String(patient.id).toUpperCase()}</td>
-                  <td>{readEmployeeSession()?.unitName || unit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <GradePessoas rotulo="Pacientes">
+          {filtered.map((patient) => (
+            <li key={patient.id}>
+              <CartaoPessoa
+                role="paciente"
+                nome={patient.name}
+                foto={patient.photo}
+                papel={`Paciente · código ${String(patient.id).toUpperCase()}`}
+                linhas={[
+                  ["mail", patient.email],
+                  ["phone", patient.phone],
+                  ["pharmacy", readEmployeeSession()?.unitName || unit],
+                ]}
+                onAbrir={(el) => abrirPerfil("paciente", patient.id, el)}
+              />
+            </li>
+          ))}
+        </GradePessoas>
         {!loading && !error && !filtered.length && (
           <p className="mgr-empty">
             Nenhum paciente encontrado. Tente outro nome ou código.
