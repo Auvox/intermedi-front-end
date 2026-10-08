@@ -17,8 +17,6 @@
 .partner-tags { display: flex; flex-wrap: wrap; list-style: none; gap: 8px; padding: 0; margin: 22px 0 26px; }
 .partner-tags li { font-size: 10px; color: #547363; padding: 5px 10px; background: #f3f7f4; border-radius: 6px; }
 .partner-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 18px; border-top: 1px solid #e8efea; color: #007b50; font-size: 12px; font-weight: 600; text-decoration: none; min-height: 44px; }
-.partner-link svg { width: 24px; height: 24px; padding: 3px; border-radius: 50%; background: #edf6f0; transition: transform .2s; }
-.partner-link:hover svg { transform: translate(2px, -2px); }
 .partner-link:focus-visible { outline: 2px solid #009e67; outline-offset: 5px; border-radius: 4px; }
 @media (max-width: 700px) {
   .partner-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -26,4 +24,4 @@
   .partner-body { padding: 26px 24px 22px; }
   .partner-wordmark { font-size: 24px; }
 }
-@media (prefers-reduced-motion: reduce) { .partner-card, .partner-link svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .partner-card { transition: none; } }

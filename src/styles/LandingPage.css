@@ -143,9 +143,10 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 }
 
 .lp-hero-content { display: flex; flex-direction: column; min-width: 0; }
-.hero-signature { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 26px 0 0; padding-left: 12px; border-left: 2px solid #009e67; text-align: left; font-size: 12px; line-height: 1.7; letter-spacing: -.1px; }
-.hero-signature strong { color: #315347; font-weight: 500; }
-.hero-signature span { color: #718078; }
+.hero-signature { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px; max-width: 100%; margin: 26px 0 0; padding: 2px 0 2px 12px; text-align: left; font-size: 12px; line-height: 1.7; }
+.hero-signature::before { content: ""; position: absolute; inset: 3px auto 3px 0; width: 2px; border-radius: 2px; background: linear-gradient(180deg, #009e67, #c9e5d8); }
+.hero-signature strong { color: #315347; font-size: inherit; font-weight: 500; letter-spacing: -.1px; }
+.hero-signature span { color: #62756a; }
 .hero-signature-phrases { display: grid; min-width: 0; max-width: 100%; }
 .hero-signature-phrase { grid-area: 1 / 1; visibility: hidden; }
 .hero-signature-phrase.is-active { visibility: visible; animation: signatureEnter .4s ease-out both; }
@@ -357,7 +358,8 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
   .lp-hero-inner { grid-template-columns: minmax(0, 1fr); text-align: center; gap: 24px; }
   .lp-hero-content { align-items: center; }
   .lp-hero-title { margin: 0 0 20px; }
-  .hero-signature { justify-content: center; padding-left: 0; border-left: 0; text-align: center; }
+  .hero-signature { justify-content: center; padding: 0; text-align: center; }
+  .hero-signature::before { display: none; }
   .lp-hero-sub { margin: 0 auto 32px; }
   .lp-hero-visual { order: -1; width: 100%; max-width: 400px; margin: 0 auto; }
   .lp-hero-img-wrap { width: 65%; aspect-ratio: 1; }

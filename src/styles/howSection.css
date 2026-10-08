@@ -3,10 +3,10 @@
 .lp-how .lp-section-head { margin-bottom: 38px; }
 .journey { position: relative; max-width: 1080px; margin: 0 auto; }
 .journey-route, .journey-car-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.journey-car-layer { z-index: 3; }
+.journey-car-layer { z-index: 1; }
 .journey-road { stroke: #eaf3ed; stroke-width: 22; stroke-linecap: round; }
 .journey-road-line { stroke: #82ad8c; stroke-width: 1.5; stroke-dasharray: 4 9; }
-.journey-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); height: 400px; list-style: none; padding: 0; margin: 0; }
+.journey-steps { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); height: 400px; list-style: none; padding: 0; margin: 0; }
 .journey-step { position: relative; text-align: left; min-width: 0; }
 .journey-copy { position: absolute; top: 27px; left: 50%; width: 205px; max-width: calc(100% - 28px); transform: translateX(-50%); }
 .journey-number { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 25px; padding: 0 8px; border: 1px solid #dce8d7; border-radius: 8px; background: #eef5e7; color: #4f7157; font-size: 10px; font-weight: 600; letter-spacing: 1px; margin-bottom: 12px; }
@@ -23,9 +23,8 @@
 .journey-step-button { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; text-align: left; font: inherit; cursor: pointer; color: inherit; border-radius: 18px; }
 .journey-title, .journey-description { display: block; }
 .journey-stop { width: 66px; height: 66px; border-radius: 20px; background: #fff; box-shadow: 0 0 0 6px #fff, 0 6px 16px #18492d08; }
-.journey-stop svg { transition: opacity .2s; }
+.journey-stop, .journey-number, .journey-title { transition: background-color .4s ease-in-out, color .4s ease-in-out, border-color .4s ease-in-out, box-shadow .4s ease-in-out, transform .25s ease-in-out; }
 .journey-step.is-selected .journey-stop { background: #edf8f1; border-color: #009e67; box-shadow: 0 0 0 6px #fff, 0 0 0 7px #c9e8d7; }
-.journey-step.is-selected .journey-stop svg { opacity: 0; }
 .journey-step.is-selected .journey-number { background: #e6f5ec; color: #00794f; border-color: #b9dfca; }
 .journey-step.is-selected .journey-title { color: #00865a; }
 .journey-step-button:focus-visible { outline: 2px solid #009e67; outline-offset: 5px; }
@@ -53,4 +52,4 @@
   .journey-stop svg { width: 25px; height: 25px; }
   .journey-stem { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .journey-stop { transition: none; } .journey-step:hover .journey-stop { transform: translate(-50%, -50%); } }
+@media (prefers-reduced-motion: reduce) { .journey-stop, .journey-number, .journey-title { transition: none; } .journey-step:hover .journey-stop { transform: translate(-50%, -50%); } }

@@ -110,13 +110,18 @@ function HowSection() {
           </svg>
           <svg className="journey-car-layer" viewBox={`0 0 ${route.width} ${route.height}`} fill="none" aria-hidden="true">
             <g ref={car} style={{ visibility: selected === null ? "hidden" : "visible" }}>
-              <ellipse cy="12" rx="21" ry="3" fill="#173e2b" opacity=".12" />
-              <rect x="-22" y="-14" width="27" height="20" rx="3" fill="#fff" stroke="#236845" strokeWidth="1.5" />
-              <path d="M5-9h9l7 9v6H5Z" fill="#eaf6ef" stroke="#236845" strokeWidth="1.5" strokeLinejoin="round" />
-              <path d="M9-6h4l4 6H9Z" fill="#bce5d1" />
-              <path d="M-11-9v9M-15-4.5h8M18 3h3" stroke="#236845" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="-13" cy="6" r="4" fill="#236845" /><circle cx="13" cy="6" r="4" fill="#236845" />
-              <circle cx="-13" cy="6" r="1.5" fill="#fff" /><circle cx="13" cy="6" r="1.5" fill="#fff" />
+              <rect x="-23" y="-11" width="48" height="26" rx="9" fill="#173e2b" opacity=".12" />
+              <g fill="#236845">
+                <rect x="-16" y="-14" width="8" height="5" rx="2" />
+                <rect x="-16" y="9" width="8" height="5" rx="2" />
+                <rect x="10" y="-14" width="8" height="5" rx="2" />
+                <rect x="10" y="9" width="8" height="5" rx="2" />
+              </g>
+              <rect x="-24" y="-11" width="48" height="22" rx="7" fill="#fff" stroke="#236845" strokeWidth="1.5" />
+              <path d="M5-10v20M13-8h5q3 8 0 16h-5q2-8 0-16Z" fill="#bce5d1" stroke="#236845" strokeWidth="1.2" strokeLinejoin="round" />
+              <rect x="-20" y="-8" width="21" height="16" rx="3" fill="#eaf6ef" />
+              <path d="M-10-4v8M-14 0h8" stroke="#236845" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M22-7v3M22 4v3" stroke="#82ad8c" strokeWidth="2" strokeLinecap="round" />
             </g>
           </svg>
           <ol className="journey-steps" aria-label="Etapas do pedido">
