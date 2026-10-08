@@ -36,6 +36,7 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-page .auth-home:hover { background: #dff4e9; border-color: #82c7a8; box-shadow: 0 4px 10px #173b2510; }
 .auth-page .auth-home:active { background: #cfeedd; box-shadow: none; }
 .auth-content { width: 100%; max-width: 550px; margin: auto; padding: 24px 0; }
+.auth-theme-welcome .auth-content { padding-bottom: 72px; }
 .auth-page h1 { font-family: 'Sora', sans-serif; font-size: clamp(28px, 2.8vw, 39px); line-height: 1.24; letter-spacing: -1.6px; font-weight: 600; margin: 0 0 16px; color: var(--auth-ink); }
 .auth-page h1 em { color: var(--auth-green); font-style: normal; }
 .auth-intro { color: #6b8190; font-size: 13px; line-height: 1.8; margin: 0; }
@@ -142,6 +143,7 @@ body:has(.auth-page) { background: #fff; margin: 0; }
   .auth-main { padding-top: 18px; padding-bottom: 16px; }
   .auth-header img { width: 94px; }
   .auth-content { padding-top: 16px; padding-bottom: 16px; }
+  .auth-theme-welcome .auth-content { padding-bottom: 64px; }
   .auth-persona-heading { margin-bottom: 20px; }
   .auth-form { gap: 12px; }
   .auth-form input { padding-top: 10px; padding-bottom: 10px; }

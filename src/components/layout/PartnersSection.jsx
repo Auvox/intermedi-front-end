@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import "../../styles/partnerAudience.css";
 
 function AudienceIcon({ name }) {
@@ -15,7 +14,7 @@ function NetworkArt() {
     <span className="network-node node-two"><AudienceIcon name="store" /></span>
     <span className="network-node node-three">+</span>
     <span className="network-node node-four">+</span>
-    <div className="network-center"><span>intermedi<span className="network-dot">.</span></span><small>O cuidado conecta.</small></div>
+    <div className="network-center"><span>SUS</span><small>Sistema Único de Saúde</small></div>
   </div>;
 }
 
@@ -24,13 +23,13 @@ function NeighborhoodArt() {
     <div className="neighborhood-map"><div className="map-block block-one" /><div className="map-block block-two" /><div className="map-block block-three" /><div className="map-road road-one" /><div className="map-road road-two" /><div className="map-road road-three" /></div>
     <span className="neighborhood-radius" /><span className="neighborhood-location"><i /></span>
     <span className="neighborhood-pin pin-one"><AudienceIcon name="store" /></span><span className="neighborhood-pin pin-two"><AudienceIcon name="store" /></span>
-    <div className="neighborhood-label"><span className="neighborhood-label-icon"><AudienceIcon name="pin" /></span><div><strong>O cuidado está por perto.</strong><small>Encontre sua próxima conexão.</small></div></div>
+    <div className="neighborhood-label"><span className="neighborhood-label-icon"><AudienceIcon name="pin" /></span><div><strong>Farmácia Popular</strong><small>Programa do Ministério da Saúde</small></div></div>
   </div>;
 }
 
 const audiences = [
-  { id: 'business', title: <>Sua farmácia.<br /><em>Novas possibilidades.</em></>, name: 'Farmácias & distribuidores', description: 'Conecte sua operação a uma rede que aproxima fornecedores, organiza o estoque e faz o cuidado chegar mais longe.', benefits: ['Gestão de estoque', 'Compras simplificadas', 'Fornecedores confiáveis', 'Relatórios inteligentes'] },
-  { id: 'consumer', title: <>Sua saúde.<br /><em>Mais perto de você.</em></>, name: 'Consumidores', description: 'Menos procura, mais cuidado. Encontre medicamentos e conheça as farmácias que fazem parte da sua região.', benefits: ['Busca de medicamentos', 'Comparação de preços', 'Farmácias na sua região', 'Consulta de disponibilidade'] },
+  { id: 'business', title: <>SUS<br /><em>Sistema Único de Saúde.</em></>, name: 'Saúde pública', description: 'Uma rede pública de saúde que reúne ações e serviços para cuidar da população brasileira.', benefits: ['Atenção à saúde', 'Rede pública', 'Assistência farmacêutica', 'Cuidado à população'], url: 'https://www.gov.br/saude/pt-br/sus', link: 'Conheça o SUS' },
+  { id: 'consumer', title: <>Farmácia Popular<br /><em>Acesso a medicamentos.</em></>, name: 'Programa Farmácia Popular do Brasil', description: 'Uma alternativa de acesso a medicamentos essenciais por meio de farmácias participantes do programa.', benefits: ['Medicamentos essenciais', 'Farmácias participantes', 'Assistência farmacêutica', 'Informações do programa'], url: 'https://www.gov.br/saude/pt-br/composicao/sectics/farmacia-popular', link: 'Conheça o Farmácia Popular' },
 ];
 
 export default function PartnersSection() {
@@ -42,13 +41,13 @@ export default function PartnersSection() {
           Parceiros de <span className="green">Confiança</span>{" "}
           <span className="chevron-right" aria-hidden="true">◀</span>
         </h2>
-        <p className="lp-section-sub">Conectamos farmácias, distribuidores e laboratórios parceiros para garantir qualidade, segurança e eficiência na distribuição de medicamentos.</p>
+        <p className="lp-section-sub">Conheça o SUS e o Farmácia Popular, iniciativas que ampliam o acesso à saúde e aos medicamentos.</p>
       </header>
       <div className="audience-grid">{audiences.map((audience) => <article className={`audience-card audience-card--${audience.id}`} key={audience.id}>
         <div className="audience-copy"><p className="audience-name">{audience.name}</p><h3>{audience.title}</h3><p className="audience-description">{audience.description}</p></div>
         {audience.id === 'business' ? <NetworkArt /> : <NeighborhoodArt />}
         <ul className="audience-benefits">{audience.benefits.map((benefit) => <li key={benefit}><span className="audience-check" aria-hidden="true">✓</span>{benefit}</li>)}</ul>
-        <div className="audience-bottom">{audience.id === 'business' ? <Link to="/login">Conecte sua farmácia</Link> : <a href="#mapa">Explore as farmácias</a>}</div>
+        <div className="audience-bottom"><a href={audience.url} target="_blank" rel="noopener noreferrer">{audience.link}</a></div>
       </article>)}</div>
     </div>
   </section>;

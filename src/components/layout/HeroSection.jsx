@@ -1,9 +1,38 @@
+import { useEffect, useState } from "react";
 import Pill3D from "./Pill3D";
 import mancha from "../../assets/mancha.png";
 import fundoCruz from "../../assets/fundoCruz.png";
 import logoI from "../../assets/logoI.png";
 
+const signaturePhrases = [
+  "Faltou um medicamento? Encontre quem tem.",
+  "Sua próxima parceria começa com uma busca.",
+  "Conecte sua unidade a novos fornecedores.",
+  "Do medicamento ao contato, em um só lugar.",
+];
+
 function HeroSection({ paused = false }) {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let interval;
+    const update = () => {
+      window.clearInterval(interval);
+      if (!paused && !motion.matches) {
+        interval = window.setInterval(() => {
+          setPhraseIndex(index => (index + 1) % signaturePhrases.length);
+        }, 4500);
+      }
+    };
+    update();
+    motion.addEventListener("change", update);
+    return () => {
+      window.clearInterval(interval);
+      motion.removeEventListener("change", update);
+    };
+  }, [paused]);
+
   return (
     <section className="lp-hero" id="inicio">
       {/* Background decorativo da cruz no fundo esquerdo */}
@@ -26,11 +55,20 @@ function HeroSection({ paused = false }) {
             <a className="btn-hero-primary" href="#catalogo">Conhecer benefícios</a>
             <a className="btn-hero-outline" href="#como-funciona">Como funciona</a>
           </div>
-          <ul className="hero-benefits" aria-label="Recursos da Intermedi">
-            <li>Encontre medicamentos</li>
-            <li>Conecte farmácias</li>
-            <li>Simplifique pedidos</li>
-          </ul>
+          <p className="hero-signature">
+            <strong>De farmácia para farmácia.</strong>
+            <span className="hero-signature-phrases">
+              {signaturePhrases.map((phrase, index) => (
+                <span
+                  key={phrase}
+                  className={`hero-signature-phrase${index === phraseIndex ? " is-active" : ""}`}
+                  aria-hidden={index !== phraseIndex}
+                >
+                  {phrase}
+                </span>
+              ))}
+            </span>
+          </p>
         </div>
 
         {/* RIGHT — visual */}
@@ -42,7 +80,7 @@ function HeroSection({ paused = false }) {
             {/* Pílula principal */}
             <Pill3D paused={paused} />
 
-            {/* FLOATING CARD 1: Medicamento (Fica em cima/esquerda da pílula) */}
+            {/* Mensagens fixas ao redor da pílula. */}
             <div className="lp-float-card card-medicamento">
               <div className="lp-float-icon-wrapper">
                 <i className='bx bx-capsule' />
@@ -50,15 +88,12 @@ function HeroSection({ paused = false }) {
               <span>Medicamento</span>
             </div>
 
-            {/* FLOATING CARD 2: Conexão (Fica embaixo/direita da pílula) */}
             <div className="lp-float-card card-conexao">
               <div className="lp-float-icon-wrapper">
                 <i className="bx bx-share-alt" />
               </div>
               <span>Conexão</span>
 
-              {/* Símbolos de + (cruzes verdes) flutuando no fundo direito */}
-              <img src={fundoCruz} className="lp-bg-cruz-back" />
             </div>
           </div>
         </div>
