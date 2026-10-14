@@ -11,6 +11,8 @@ const links = [
   { path: "chamados", label: "Chamados", icon: "ticket" },
   { path: "servicos", label: "Serviços", icon: "clipboard" },
   { path: "pedidos", label: "Pedidos da rede", icon: "truck" },
+  // no fim da lista: o menu do funcionário usa os itens acima pela posição
+  { path: "operacao", label: "Operação 3D", icon: "cube" },
 ];
 
 function SidebarIcon({ name }) {
@@ -77,6 +79,12 @@ function SidebarIcon({ name }) {
       <>
         <circle cx="12" cy="12" r="3" />
         <path d="M19.9 12a7.9 7.9 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7.7 7.7 0 0 0-2-1.2L15.1 3h-4l-.4 2.7a7.7 7.7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7.7 7.7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7.7 7.7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.07-.4.1-.8.1-1.2Z" />
+      </>
+    ),
+    cube: (
+      <>
+        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+        <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
       </>
     ),
     arrow: <path d="m9 5 7 7-7 7" />,

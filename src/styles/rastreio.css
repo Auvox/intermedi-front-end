@@ -204,3 +204,8 @@ td > .rastreio-ver { display: inline-block; margin: 6px 0 0; }
 .rastreio-min .rastreio-etapa time { display: inline; margin-left: 8px; font-size: 11.5px; }
 .rastreio-min .rastreio-etapa p { font-size: 12.5px; }
 .rastreio-min .rastreio-etapa:not(.atual) div { display: flex; align-items: baseline; flex-wrap: wrap; }
+
+/* Em preparo na farmácia fornecedora (caminhão sendo carregado) */
+.rastreio-preparando .rastreio-rotulo { color: #2d63b8; }
+.rastreio-mini.rastreio-preparando .rastreio-mini-texto strong { color: #2d63b8; }
+.andamento-icone.preparando { background: #e9f0fc; color: #2d63b8; }

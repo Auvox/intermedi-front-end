@@ -1,0 +1,27 @@
+/* Avisos de preparo para os funcionários da farmácia fornecedora */
+.preparos { display: grid; gap: 10px; margin: 18px 0 6px; }
+.preparo {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  border: 1px solid #e1e9e3; border-radius: 14px; background: #fff;
+}
+.preparo-aguardando { border-color: #b9dcc6; background: linear-gradient(100deg, #eaf7ef, #f6fbf8); box-shadow: 0 8px 22px -18px #0d3b24; }
+.preparo-voce { border-color: #c9d8f3; background: #f4f8ff; }
+.preparo-outro { padding: 10px 14px; background: #f8faf9; }
+.preparo-icone {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 40px; height: 40px; border-radius: 12px; background: #168b4b; color: #fff;
+}
+.preparo-voce .preparo-icone { background: #2d63b8; }
+.preparo-outro .preparo-icone { width: 32px; height: 32px; border-radius: 10px; background: #e3ece6; color: #4f6658; }
+.preparo-texto { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.preparo-texto strong { font-size: 14px; color: #1c3a28; font-weight: 600; }
+.preparo-outro .preparo-texto strong { font-size: 12.5px; font-weight: 500; color: #4f6658; }
+.preparo-texto small { font-size: 12px; color: #6c7f73; }
+.preparo .mgr-primary { cursor: pointer; }
+.preparo .mgr-primary:disabled { opacity: .7; cursor: default; }
+.preparo-barra { display: block; height: 6px; margin-top: 4px; border-radius: 999px; background: #dde7f7; overflow: hidden; }
+.preparo-barra i { display: block; height: 100%; border-radius: inherit; background: #2d63b8; transition: width 1s linear; }
+@media (max-width: 640px) {
+  .preparo { flex-wrap: wrap; }
+  .preparo .mgr-primary { width: 100%; }
+}

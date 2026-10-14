@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Employee, { EmployeePatients, EmployeeTeam } from "../pages/Employee";
 import EmployeeServices from "../pages/EmployeeServices";
@@ -22,6 +23,9 @@ import ManagerNetworkOrders from "../pages/ManagerNetworkOrders";
 
 import "../styles/directory.css";
 import "../styles/personaTheme.css";
+
+// Carregada só quando o gerente abre a tela (traz a cena 3D)
+const ManagerOperacao = lazy(() => import("../pages/ManagerOperacao"));
 
 function Rotas() {
   return (
@@ -62,6 +66,14 @@ function Rotas() {
           <Route path="servicos" element={<ManagerServices />} />
           <Route path="chamados" element={<ManagerTickets />} />
           <Route path="pedidos" element={<ManagerNetworkOrders />} />
+          <Route
+            path="operacao"
+            element={
+              <Suspense fallback={<p className="mgr-empty" role="status">Carregando a operação…</p>}>
+                <ManagerOperacao />
+              </Suspense>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>

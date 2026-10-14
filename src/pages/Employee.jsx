@@ -9,14 +9,17 @@ import { unit } from "./managerData";
 import useApiList from "../hooks/useApiList";
 import {
   API_URL,
+  listarFarmacias,
   listarFuncionarios,
   listarPacientes,
   normalizeFuncionario,
   normalizePaciente,
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
-import { ToastRegion } from "../components/Chamados";
+import { SeletorPersona, ToastRegion } from "../components/Chamados";
 import { SinoFuncionario } from "../components/NotificacoesEntregas";
+import PreparosFarmacia from "../components/PreparosFarmacia";
+import usePreparos from "../hooks/usePreparos";
 import { FaixaEmAndamento } from "../components/Rastreio";
 import { useFarmaciaDoFuncionario, useGerenteDaFarmacia, useToast } from "../hooks/useChamados";
 import { useNotificacoesRastreio, usePedidosDoFuncionario } from "../hooks/useRastreio";
@@ -37,13 +40,23 @@ const normalize = (text) =>
 
 export default function Employee() {
   const session = readEmployeeSession();
-  const employeeName = session?.name || "Funcionário Local";
-  const employeeUnit = session?.unitName || unit;
 
   // Rastreamento: cada etapa da entrega dos chamados que o funcionário abriu e a
   // chegada dos remédios que outras pessoas da unidade pediram (os pedidos da
   // unidade vêm pelo gerente dela; não há endpoint por farmácia)
   const funcionario = useFarmaciaDoFuncionario();
+
+  // Sem sessão (login das personas ainda não existe), o funcionário é escolhido
+  // no seletor do topo, como o gerente; o nome e a farmácia acompanham a escolha.
+  const { items: farmacias } = useApiList(listarFarmacias);
+  const nomeDaFarmacia = new Map(farmacias.map((f) => [String(f.idFarmacia ?? f.id), f.nomeFarmacia ?? f.nome]));
+  const escolhido = funcionario.funcionarios.find((f) => f.id === funcionario.idFuncionario);
+  const employeeName = session?.name || escolhido?.name || "Funcionário";
+  const employeeUnit = session?.unitName || nomeDaFarmacia.get(String(funcionario.idFarmacia ?? "")) || unit;
+  const opcoesFuncionario = funcionario.funcionarios
+    .map((f) => ({ ...f, farmacia: nomeDaFarmacia.get(f.farmaciaId) ?? "" }))
+    .sort((a, b) => a.farmacia.localeCompare(b.farmacia, "pt-BR") || a.name.localeCompare(b.name, "pt-BR"))
+    .map((f) => [f.id, f.farmacia ? `${f.name} · ${f.farmacia}` : f.name]);
   const idGerenteUnidade = useGerenteDaFarmacia(funcionario.idFarmacia);
   const [toast, notify] = useToast(8000);
   const fonteRastreio = usePedidosDoFuncionario(funcionario.idFuncionario, idGerenteUnidade);
@@ -51,6 +64,10 @@ export default function Employee() {
     escopo: `funcionario:${funcionario.idFuncionario}:${funcionario.idFarmacia}`,
     pronto: fonteRastreio.carregado,
     onNovos: (texto) => notify(texto),
+  });
+  // Pedidos da rede que a farmácia dele vai enviar: aviso "Prepare…" + Começar
+  const preparos = usePreparos(funcionario.idFuncionario, {
+    onNovo: (p) => notify(`Novo pedido para preparar: ${p.mensagemPreparo}`),
   });
 
 
@@ -88,7 +105,7 @@ export default function Employee() {
             ? listPayload.funcionarios
             : [];
 
-      const targetId = String(session?.id ?? "");
+      const targetId = String(session?.id ?? funcionario.idFuncionario ?? "");
       const raw =
         rawList.find((item) => {
           const id = String(item.idFuncionario ?? item.id ?? "");
@@ -172,8 +189,8 @@ export default function Employee() {
       setDraft(profileData);
     } catch (error) {
       const fallback = {
-        id: session?.id ?? "",
-        name: session?.name ?? "Funcionário",
+        id: session?.id ?? funcionario.idFuncionario ?? "",
+        name: session?.name ?? escolhido?.name ?? "Funcionário",
         email: session?.email ?? "",
         cpf: session?.cpf ?? "",
         matricula: session?.matricula ?? "",
@@ -290,6 +307,14 @@ export default function Employee() {
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{employeeUnit}</strong>
           </span>
+          {!funcionario.temSessao && opcoesFuncionario.length > 0 && (
+            <SeletorPersona
+              label="Funcionário"
+              value={funcionario.idFuncionario ?? ""}
+              onChange={funcionario.escolher}
+              options={opcoesFuncionario}
+            />
+          )}
           <SinoFuncionario rastreio={rastreio} fonte={fonteRastreio} />
           <div className="mgr-account emp-account">
             <button
@@ -312,6 +337,7 @@ export default function Employee() {
         </div>
         <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
           <main className="mgr-main directory-layout">
+            <PreparosFarmacia preparos={preparos} idFuncionario={funcionario.idFuncionario} onAviso={notify} />
             <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados }} />
           </main>
         </PerfilProvider>

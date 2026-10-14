@@ -153,6 +153,23 @@ export const responderPedido = (idRedistribuicao, body) =>
   apiRequest(`/redistribuicao/${idRedistribuicao}/responder`, {
     method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
+// Preparo do envio (funcionários da farmácia fornecedora). Só o primeiro que
+// começar assume; os outros recebem 409 com `preparadoPor` e o pedido atual.
+export const listarPreparosFuncionario = (idFuncionario, options) =>
+  apiRequest(`/funcionario/${idFuncionario}/preparos`, options);
+export async function iniciarPreparo(idRedistribuicao, idFuncionario) {
+  try {
+    return await apiRequest(`/redistribuicao/${idRedistribuicao}/preparar`, json("POST", { idFuncionario }));
+  } catch (error) {
+    // apiRequest só guarda a mensagem; o 409 traz quem assumiu no corpo
+    if (error.status === 409) {
+      const atual = await buscarPedido(idRedistribuicao).catch(() => null);
+      throw Object.assign(error, { pedido: atual?.pedido ?? null });
+    }
+    throw error;
+  }
+}
+
 export function normalizePaciente(item) {
   return {
     id: String(item.idPaciente ?? item.id ?? ""),

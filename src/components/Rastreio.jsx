@@ -9,11 +9,13 @@ import {
   localDaPonta,
   montarRastreio,
   textoChegada,
+  textoPreparo,
 } from "../services/rastreio";
 import "../styles/rastreio.css";
 
 const ROTULO_ESTADO = {
   aguardando: "Envio pendente",
+  preparando: "Em preparo",
   a_caminho: "A caminho",
   entregue: "Entregue",
   recusado: "Pedido recusado",
@@ -23,6 +25,7 @@ const ROTULO_ESTADO = {
 const ICONE_MARCO = {
   solicitado: "clipboard",
   aceito: "check",
+  preparo: "box",
   saiu: "truck",
   transito: "truck",
   chegando: "map",
@@ -34,7 +37,8 @@ const ICONE_MARCO = {
 // Situação atual do pedido, recalculada a cada segundo enquanto o caminhão anda
 function useRastreio(pedido) {
   const enderecos = useEnderecosFarmacias();
-  const andando = pedido.status === "enviada";
+  // o relógio corre enquanto o caminhão é carregado ou anda
+  const andando = pedido.status === "enviada" || pedido.status === "preparando";
   const agora = useRelogio(andando);
   return { rastreio: montarRastreio(pedido, enderecos, agora), agora };
 }
@@ -51,8 +55,10 @@ function tituloDoRastreio(r, perspectiva, agora) {
   if (r.estado === "aguardando") {
     return perspectiva === "fornecedor" ? "Aguardando sua confirmação" : `Aguardando a ${r.origem.nome} confirmar`;
   }
+  if (r.estado === "preparando") return textoPreparo(r, perspectiva);
   return r.atual.descricao;
 }
+
 
 // "chega em cerca de 2 min" para leitores de tela (sem anunciar cada segundo)
 function chegadaFalada(r, agora) {
@@ -221,6 +227,7 @@ export function RastreioMini({ pedido, perspectiva = "solicitante" }) {
           </span>
         )}
         {r.estado === "aguardando" && ` · ${perspectiva === "fornecedor" ? "aguardando você" : `aguardando ${r.origem.nome}`}`}
+        {r.estado === "preparando" && r.preparo && ` · ${r.preparo.carregadas}/${r.preparo.caixas} no caminhão`}
       </span>
     </span>
   );
@@ -236,12 +243,14 @@ function ItemPedido({ pedido, onAbrir }) {
   const chegada = r.estado === "a_caminho" ? textoChegada(r.fim, agora) : null;
   const detalhe = r.estado === "aguardando"
     ? `Aguardando a ${r.origem.nome} confirmar`
+    : r.estado === "preparando"
+      ? `${fornecedor ? `Enviando para ${r.destino.nome} · ` : ""}${textoPreparo(r, pedido.perspectiva)}`
     : chegada
       ? `${fornecedor ? `Enviando para ${r.destino.nome} · ` : ""}${r.atual.titulo} · ${chegada.segundos === 0 ? "chegando…" : chegada.curto ? `chega em ${chegada.texto}` : `chega ${chegada.texto}`}`
       : r.atual.titulo;
   return (
     <button type="button" className="andamento-item" onClick={(e) => onAbrir(pedido, e.currentTarget)}>
-      <span className={`andamento-icone ${r.estado}`}><ManagerIcon name={r.estado === "aguardando" ? "clock" : "truck"} size={16} /></span>
+      <span className={`andamento-icone ${r.estado}`}><ManagerIcon name={r.estado === "aguardando" ? "clock" : r.estado === "preparando" ? "box" : "truck"} size={16} /></span>
       <span className="andamento-texto">
         <strong>{fornecedor ? `Envio: ${r.item}` : r.item}</strong>
         <small>{detalhe}</small>
@@ -256,9 +265,14 @@ function ItemChamado({ chamado, pedidos, onAbrir }) {
   const enviado = pedidos.filter((p) => p.status === "enviada")
     .sort((a, b) => String(a.dataPrevistaChegada).localeCompare(String(b.dataPrevistaChegada)))[0];
   const aguardando = pedidos.find((p) => p.status === "solicitada");
+  const emPreparo = pedidos.find((p) => p.status === "preparando") ?? pedidos.find((p) => p.status === "aprovada");
   const situacao = chamado.status === "pendente"
     ? "Aguardando resposta do gerente"
-    : aguardando && !enviado
+    : emPreparo && !enviado
+      ? emPreparo.status === "preparando"
+        ? `Em preparo na ${emPreparo.nomeFarmaciaOrigem}${emPreparo.nomeFuncionarioPreparo ? ` (${emPreparo.nomeFuncionarioPreparo})` : ""}`
+        : `A ${emPreparo.nomeFarmaciaOrigem} aceitou · aguardando o preparo`
+      : aguardando && !enviado
       ? `Aguardando a ${aguardando.nomeFarmaciaOrigem} confirmar o envio`
       : !enviado
         ? "Procurando farmácia com o remédio"

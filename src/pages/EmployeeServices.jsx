@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
-import { ChamadoModal, ErroComRetry, SeletorPersona } from "../components/Chamados";
+import { ChamadoModal, ErroComRetry } from "../components/Chamados";
 import { TarjaBadge } from "../components/Remedios";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
@@ -88,14 +88,6 @@ export default function EmployeeServices() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
-              {!funcionario.temSessao && (
-                <SeletorPersona
-                  label="Funcionário"
-                  value={idFuncionario ?? ""}
-                  onChange={funcionario.escolher}
-                  options={funcionario.funcionarios.map((f) => [f.id, f.name])}
-                />
-              )}
               <button type="button" className="directory-row-action" onClick={() => { lista.reload(); estoque.reload(); }}>
                 Atualizar
               </button>

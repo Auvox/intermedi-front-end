@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ErroComRetry, SeletorPersona } from "../components/Chamados";
+import { ErroComRetry } from "../components/Chamados";
 import { EstoqueTabela, ResumoEstoque } from "../components/Remedios";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
@@ -83,14 +83,6 @@ export default function EmployeeMedicines() {
               <select aria-label="Filtrar por situação" value={situacaoFiltro} onChange={(e) => setSituacaoFiltro(e.target.value)}>
                 {FILTROS_SITUACAO.map(([valor, label]) => <option key={valor} value={valor}>{label}</option>)}
               </select>
-              {!funcionario.temSessao && (
-                <SeletorPersona
-                  label="Funcionário"
-                  value={funcionario.idFuncionario ?? ""}
-                  onChange={funcionario.escolher}
-                  options={funcionario.funcionarios.map((f) => [f.id, f.name])}
-                />
-              )}
               <button type="button" className="directory-row-action" onClick={reload}>Atualizar</button>
             </div>
             {loading ? (

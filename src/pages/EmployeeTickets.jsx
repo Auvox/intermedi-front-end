@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
-import { ErroComRetry, SeletorPersona } from "../components/Chamados";
+import { ErroComRetry } from "../components/Chamados";
 import CartaoChamado from "../components/CartaoChamado";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
@@ -74,14 +74,6 @@ export default function EmployeeTickets() {
           <section className="mgr-panel" aria-labelledby="emp-chamados-title">
             <div className="mgr-toolbar">
               <h2 id="emp-chamados-title">Solicitações</h2>
-              {!funcionario.temSessao && (
-                <SeletorPersona
-                  label="Funcionário"
-                  value={idFuncionario}
-                  onChange={funcionario.escolher}
-                  options={funcionario.funcionarios.map((f) => [f.id, f.name])}
-                />
-              )}
               <label className="chamado-filter">
                 <span>Status</span>
                 <select value={status} onChange={(e) => setStatus(e.target.value)}>

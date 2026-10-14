@@ -1,13 +1,16 @@
 // Rastreamento das entregas entre farmácias (pedidos de redistribuição).
 //
-// O back-end só guarda quando o remédio saiu (dataEnvio) e quando chega
-// (dataPrevistaChegada). Os marcos da viagem são calculados aqui, como frações
-// desse intervalo, e descritos com o bairro/cidade das duas farmácias. Como
-// dependem só do relógio, todos (funcionário e os dois gerentes) veem o mesmo
-// marco no mesmo instante, sem consultar a API a cada segundo.
+// O back-end guarda quando o pedido foi aceito (dataAprovacao), quando um
+// funcionário começou o preparo (dataInicioPreparo), quando o caminhão sai
+// (dataEnvio = fim do preparo) e quando chega (dataPrevistaChegada). Os marcos
+// da viagem são calculados aqui, como frações do intervalo saída → chegada, e
+// descritos com o bairro/cidade das duas farmácias. Como dependem só do
+// relógio, todos (funcionários e os dois gerentes) veem o mesmo marco no mesmo
+// instante, sem consultar a API a cada segundo.
 import { dataDoChamado } from "./chamados";
 
-// Fração do tempo de viagem em que cada marco acontece
+// Fração do tempo de viagem em que cada marco acontece. Pedidos antigos (sem
+// a etapa de preparo) contam o aceite como o início da viagem.
 export const MARCOS = [
   { id: "aceito", fracao: 0 },
   { id: "saiu", fracao: 0.12 },
@@ -15,14 +18,39 @@ export const MARCOS = [
   { id: "chegando", fracao: 0.8 },
   { id: "entregue", fracao: 1 },
 ];
+const MARCOS_VIAGEM = MARCOS.filter((m) => m.id !== "aceito").map((m) => (m.id === "saiu" ? { ...m, fracao: 0 } : m));
 
 // Marcos que viram notificação. O fornecedor não é avisado do próprio aceite;
 // o resto da unidade (quem não pediu) só fica sabendo quando chega.
 const NOTIFICAVEIS = {
-  solicitante: ["aceito", "saiu", "transito", "chegando", "entregue"],
-  fornecedor: ["saiu", "transito", "chegando", "entregue"],
+  solicitante: ["aceito", "preparo", "saiu", "transito", "chegando", "entregue"],
+  fornecedor: ["preparo", "saiu", "transito", "chegando", "entregue"],
   unidade: ["entregue"],
 };
+
+// Preparo do envio na farmácia fornecedora: o funcionário leva uma caixa por
+// viagem até o caminhão; a caixa entra no caminhão na metade de cada viagem.
+// { caixas, carregadas, inicio, saida, viagemMs, restante (s), fracao, terminou } ou null
+export function preparoDoPedido(p, agora) {
+  const inicio = emMs(p.dataInicioPreparo);
+  const saida = emMs(p.dataEnvio);
+  if (inicio === null || saida === null || saida <= inicio) return null;
+  const caixas = Math.max(1, Number(p.caixas) || Math.round((saida - inicio) / 5000));
+  const viagemMs = (saida - inicio) / caixas;
+  const decorrido = Math.max(0, agora - inicio);
+  return {
+    caixas,
+    carregadas: Math.min(caixas, Math.floor((decorrido + viagemMs / 2) / viagemMs)),
+    inicio,
+    saida,
+    viagemMs,
+    restante: Math.max(0, Math.ceil((saida - agora) / 1000)),
+    fracao: Math.min(1, decorrido / (saida - inicio)),
+    terminou: agora >= saida,
+  };
+}
+
+const caixasDoPedido = (p) => Math.max(1, Number(p.caixas) || Math.ceil(Number(p.quantidade) / 50) || 1);
 
 const JANELA_NOTIFICACOES_MS = 24 * 60 * 60 * 1000;
 
@@ -53,8 +81,16 @@ function textoMarco(id, { origem, destino }, p) {
     case "aceito":
       return {
         titulo: "Pedido confirmado",
-        descricao: `A ${origem.nome} aceitou o pedido${p.nomeGerenteResposta ? ` (${p.nomeGerenteResposta})` : ""} e está separando os remédios.`,
+        descricao: `A ${origem.nome} aceitou o pedido${p.nomeGerenteResposta ? ` (${p.nomeGerenteResposta})` : ""}. A equipe vai separar os remédios.`,
       };
+    case "preparo": {
+      const caixas = caixasDoPedido(p);
+      const quem = p.nomeFuncionarioPreparo ? `${p.nomeFuncionarioPreparo}, da ${origem.nome},` : `A equipe da ${origem.nome}`;
+      return {
+        titulo: "Em preparo",
+        descricao: `${quem} está levando ${caixas} ${caixas === 1 ? "caixa" : "caixas"} até o caminhão.`,
+      };
+    }
     case "saiu":
       return {
         titulo: "Saiu para entrega",
@@ -87,16 +123,19 @@ function textoMarco(id, { origem, destino }, p) {
 }
 
 // Situação da entrega em `agora` (ms):
-// { estado, progresso 0..1, inicio, fim, origem, destino, item, etapas, atual }
-// estado: "aguardando" | "a_caminho" | "entregue" | "recusado" | "cancelado"
+// { estado, progresso 0..1, inicio, fim, origem, destino, item, preparo, etapas, atual }
+// estado: "aguardando" | "preparando" | "a_caminho" | "entregue" | "recusado" | "cancelado"
 // etapas: [{ id, titulo, descricao, quando (ms|null), fracao?, situacao: feito|atual|futuro|erro }]
 export function montarRastreio(p, enderecos, agora) {
   const { origem, destino } = pontas(p, enderecos);
   const item = itemDoPedido(p);
   const solicitado = emMs(p.dataSolicitacao);
-  const inicio = emMs(p.dataEnvio) ?? emMs(p.dataAprovacao);
+  const aprovacao = emMs(p.dataAprovacao);
+  const preparo = preparoDoPedido(p, agora);
+  const inicio = emMs(p.dataEnvio) ?? aprovacao; // saída do caminhão
   const fim = emMs(p.dataRecebimento) ?? emMs(p.dataPrevistaChegada);
-  const base = { origem, destino, item, inicio, fim };
+  const base = { origem, destino, item, inicio, fim, preparo };
+  const marco = (id, extra) => ({ id, ...textoMarco(id, { origem, destino }, p), ...extra });
 
   const pedidoFeito = {
     id: "solicitado",
@@ -120,7 +159,9 @@ export function montarRastreio(p, enderecos, agora) {
     return { ...base, estado: recusado ? "recusado" : "cancelado", progresso: 0, etapas: [pedidoFeito, etapa], atual: etapa };
   }
 
-  if (inicio === null || fim === null) {
+  const futuros = () => MARCOS_VIAGEM.map((m) => marco(m.id, { quando: null, fracao: m.fracao, situacao: "futuro" }));
+
+  if (p.status === "solicitada" || aprovacao === null || fim === null && p.status !== "aprovada") {
     // ainda não aceito: os marcos aparecem como próximos passos
     const etapas = [
       { ...pedidoFeito, situacao: "feito" },
@@ -131,18 +172,43 @@ export function montarRastreio(p, enderecos, agora) {
         quando: null,
         situacao: "atual",
       },
-      ...MARCOS.slice(1).map((m) => ({ id: m.id, ...textoMarco(m.id, { origem, destino }, p), quando: null, fracao: m.fracao, situacao: "futuro" })),
+      marco("preparo", { quando: null, situacao: "futuro" }),
+      ...futuros(),
     ];
     return { ...base, estado: "aguardando", progresso: 0, etapas, atual: etapas[1] };
+  }
+
+  // aceito: aguardando um funcionário começar, ou caminhão sendo carregado
+  if (p.status === "aprovada" || (p.status === "preparando" && preparo && !preparo.terminou)) {
+    const atual = p.status === "aprovada"
+      ? {
+        id: "preparo",
+        titulo: "Aguardando o preparo",
+        descricao: `Um funcionário da ${origem.nome} vai separar os remédios e carregar o caminhão.`,
+        quando: null,
+        situacao: "atual",
+      }
+      // o andamento (caixas já no caminhão) fica em `preparo`, fora do título,
+      // para a notificação não mudar de texto a cada caixa
+      : marco("preparo", { quando: preparo.inicio, situacao: "atual" });
+    const etapas = [pedidoFeito, marco("aceito", { quando: aprovacao, situacao: "feito" }), atual, ...futuros()];
+    return { ...base, estado: "preparando", progresso: 0, etapas, atual };
   }
 
   const duracao = Math.max(1, fim - inicio);
   const entregue = p.status === "recebida" || agora >= fim;
   const progresso = entregue ? 1 : Math.min(1, Math.max(0, (agora - inicio) / duracao));
-  const marcos = MARCOS.map((m) => {
-    const quando = m.id === "aceito" ? emMs(p.dataAprovacao) ?? inicio : m.id === "entregue" ? fim : inicio + m.fracao * duracao;
-    return { id: m.id, ...textoMarco(m.id, { origem, destino }, p), quando, fracao: m.fracao, feito: entregue || quando <= agora };
-  });
+  const inicioPreparo = emMs(p.dataInicioPreparo);
+  const naViagem = (m) => (m.id === "entregue" ? fim : inicio + m.fracao * duracao);
+  const marcos = (inicioPreparo !== null
+    ? [
+      { id: "aceito", quando: aprovacao, fracao: null },
+      { id: "preparo", quando: inicioPreparo, fracao: null },
+      ...MARCOS_VIAGEM.map((m) => ({ id: m.id, quando: naViagem(m), fracao: m.fracao })),
+    ]
+    // pedido antigo, sem preparo: o aceite marca o início da viagem
+    : MARCOS.map((m) => ({ id: m.id, quando: m.id === "aceito" ? aprovacao ?? inicio : naViagem(m), fracao: m.fracao }))
+  ).map((m) => ({ ...marco(m.id), quando: m.quando, fracao: m.fracao, feito: entregue || m.quando <= agora }));
   const indiceAtual = marcos.findLastIndex((m) => m.feito);
   const etapas = [
     pedidoFeito,
@@ -160,13 +226,24 @@ export function montarRastreio(p, enderecos, agora) {
   };
 }
 
+// "Carregando o caminhão · 1/3 caixas · sai em 0:08" ou "Aguardando a equipe começar"
+export function textoPreparo(r, perspectiva = "solicitante") {
+  if (!r.preparo) {
+    return perspectiva === "fornecedor" ? "Aguardando sua equipe começar o preparo" : `A ${r.origem.nome} vai preparar o envio`;
+  }
+  const { carregadas, caixas, restante } = r.preparo;
+  return `Carregando o caminhão · ${carregadas}/${caixas} ${caixas === 1 ? "caixa" : "caixas"} · sai em ${Math.floor(restante / 60)}:${String(restante % 60).padStart(2, "0")}`;
+}
+
 // Instantes (ms) dos próximos marcos ainda não alcançados, para acordar a tela na hora certa
 export function proximosMarcos(pedidos, agora) {
   return pedidos.flatMap((p) => {
     const inicio = emMs(p.dataEnvio) ?? emMs(p.dataAprovacao);
     const fim = emMs(p.dataRecebimento) ?? emMs(p.dataPrevistaChegada);
-    if (!["enviada", "recebida"].includes(p.status) || inicio === null || fim === null) return [];
-    return MARCOS.map((m) => inicio + m.fracao * (fim - inicio)).filter((t) => t > agora);
+    if (!["preparando", "enviada", "recebida"].includes(p.status) || inicio === null || fim === null) return [];
+    // com preparo, a saída do caminhão (fração 0) também é um marco
+    const marcos = emMs(p.dataInicioPreparo) !== null ? MARCOS_VIAGEM : MARCOS;
+    return marcos.map((m) => inicio + m.fracao * (fim - inicio)).filter((t) => t > agora);
   });
 }
 
@@ -175,7 +252,7 @@ export function proximosMarcos(pedidos, agora) {
 export function eventosRastreio(pedidos, enderecos, agora) {
   return pedidos
     .flatMap((p) => {
-      if (!["enviada", "recebida"].includes(p.status)) return [];
+      if (!["aprovada", "preparando", "enviada", "recebida"].includes(p.status)) return [];
       const rastreio = montarRastreio(p, enderecos, agora);
       const permitidos = NOTIFICAVEIS[p.perspectiva] ?? NOTIFICAVEIS.solicitante;
       return rastreio.etapas
@@ -205,7 +282,7 @@ export function textoEventos(eventos) {
 
 // Pedido em andamento (aparece na faixa da tela principal)
 export const emAndamento = (p) =>
-  p.status === "solicitada" || p.status === "aprovada" || p.status === "enviada";
+  ["solicitada", "aprovada", "preparando", "enviada"].includes(p.status);
 
 // Último pedido de cada remédio do chamado que ainda conta (sem os recusados/repassados)
 export function pedidosDoChamadoParaRastrear(chamado) {
