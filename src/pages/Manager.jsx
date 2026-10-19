@@ -34,6 +34,7 @@ import {
 } from "../components/Chamados";
 import { NotificacoesGerente } from "../components/ChamadosGerente";
 import { EstoqueTabela } from "../components/Remedios";
+import { SkeletonCartoes, SkeletonLinhas, SkeletonTabela } from "../components/Skeleton";
 import { FaixaEmAndamento } from "../components/Rastreio";
 import { useNotificacoesRastreio, usePedidosDoGerente } from "../hooks/useRastreio";
 import { emAndamento } from "../services/rastreio";
@@ -130,7 +131,7 @@ function Header({ eyebrow, title, description, action, featured = false }) {
   );
 }
 function Stats({ items }) {
-  return <DirectoryStats items={items.map(([label, value, , icon]) => [label, value, icon])} />;
+  return <DirectoryStats items={items.map(([label, value, , icon, loading]) => [label, value, icon, loading])} />;
 }
 export default function Manager() {
   const location = useLocation();
@@ -261,7 +262,7 @@ export function ManagerDashboard() {
   const estoque = usePolling(buscarEstoque, { enabled: Boolean(gerente.idGerente) });
   const resumo = estoque.data?.resumo;
   const atencao = resumo ? resumo.criticos + resumo.zerados + resumo.vencidos : null;
-  const { items: patients } = useApiList(listarPacientes);
+  const { items: patients, loading: carregandoPacientes } = useApiList(listarPacientes);
   const managerName = (gerente.temSessao ? user?.name : gerente.nome) || user?.name || "Gerente";
   const managerUnit = user?.unitName || unit;
   return (
@@ -288,18 +289,21 @@ export function ManagerDashboard() {
             gerente.idGerente ? pendentes.totalPendentes : null,
             "Aguardando sua resposta",
             "ticket",
+            gerente.loading || pendentes.loading,
           ],
           [
             "Itens no estoque",
             resumo?.totalItens ?? null,
             "Remédios da sua farmácia",
             "pill",
+            gerente.loading || (estoque.loading && !estoque.data),
           ],
           [
             "Pacientes cadastrados",
             patients.length,
             "Pacientes cadastrados na rede",
             "heart",
+            carregandoPacientes,
           ],
         ]}
       />
@@ -341,8 +345,13 @@ export function ManagerDashboard() {
           </div>
           <Link to="/gerente/remedios">Ver todos →</Link>
         </div>
-        {!gerente.idGerente || estoque.loading ? (
-          <p className="mgr-empty" role="status">Carregando estoque…</p>
+        {gerente.loading || (gerente.idGerente && estoque.loading) ? (
+          <SkeletonTabela rotulo="Carregando estoque…" />
+        ) : !gerente.idGerente ? (
+          <ErroComRetry
+            message={gerente.error || "Selecione um gerente na barra superior para ver o estoque."}
+            onRetry={gerente.error ? gerente.retry : undefined}
+          />
         ) : estoque.error ? (
           <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
         ) : estoque.data?.estoque?.length ? (
@@ -365,7 +374,7 @@ export function ManagerDashboard() {
           </Badge>
         </div>
         {gerente.loading || pendentes.loading ? (
-          <p className="mgr-empty" role="status">Carregando chamados…</p>
+          <SkeletonLinhas rotulo="Carregando chamados…" />
         ) : gerente.error ? (
           <ErroComRetry message={gerente.error} onRetry={gerente.retry} />
         ) : pendentes.error ? (
@@ -685,6 +694,7 @@ export function ManagerEmployees() {
             funcionarios.length,
             "Sua equipe de atendimento",
             "people",
+            carregandoFuncionarios,
           ],
           [
             "Atendimentos registrados",
@@ -712,12 +722,15 @@ export function ManagerEmployees() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {carregandoFuncionarios && <p className="mgr-empty">Carregando funcionários…</p>}
-        <TeamTable
-          employees={employees}
-          onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)}
-          onExcluir={(employee) => { setSelected(employee); setPeriod(""); setConfirmDelete(true); }}
-        />
+        {carregandoFuncionarios ? (
+          <SkeletonCartoes rotulo="Carregando funcionários…" />
+        ) : (
+          <TeamTable
+            employees={employees}
+            onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)}
+            onExcluir={(employee) => { setSelected(employee); setPeriod(""); setConfirmDelete(true); }}
+          />
+        )}
         <p className="mgr-table-note">{employees.length} de {funcionarios.length} registros</p>
         {erroFuncionarios && <p className="mgr-empty">{erroFuncionarios}</p>}
         {!carregandoFuncionarios && !erroFuncionarios && !employees.length && (
@@ -943,13 +956,14 @@ export function ManagerPatients() {
       />
       <Stats
         items={[
-          ["Pacientes cadastrados", patients.length, "Total na rede", "heart"],
-          ["Resultados da busca", filtered.length, "Conforme os filtros", "check"],
+          ["Pacientes cadastrados", patients.length, "Total na rede", "heart", loading],
+          ["Resultados da busca", filtered.length, "Conforme os filtros", "check", loading],
           [
             "Com remédio frequente",
             patients.filter((p) => p.frequentMedicine).length,
             "Uso contínuo informado",
             "pill",
+            loading,
           ],
         ]}
       />
@@ -964,7 +978,7 @@ export function ManagerPatients() {
           />
         </div>
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando pacientes…</p>
+          <SkeletonCartoes rotulo="Carregando pacientes…" />
         ) : error ? (
           <p className="mgr-empty" role="alert">{error}</p>
         ) : (
@@ -1046,7 +1060,7 @@ export function ManagerTickets() {
     />
   );
   if (gerente.loading) {
-    return <>{header}<section className="mgr-panel"><p className="mgr-empty" role="status">Carregando chamados…</p></section></>;
+    return <>{header}<section className="mgr-panel"><SkeletonTabela rotulo="Carregando chamados…" foto={false} /></section></>;
   }
   if (gerente.error) {
     return <>{header}<section className="mgr-panel"><ErroComRetry message={gerente.error} onRetry={gerente.retry} /></section></>;
@@ -1087,7 +1101,7 @@ export function ManagerTickets() {
           </button>
         </div>
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando chamados…</p>
+          <SkeletonTabela rotulo="Carregando chamados…" foto={false} />
         ) : error && !carregado ? (
           <ErroComRetry message={error} onRetry={retry} />
         ) : (

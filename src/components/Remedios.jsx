@@ -1,5 +1,7 @@
 import { useState } from "react";
 import ManagerIcon from "./ManagerIcon";
+import NumeroAnimado from "./NumeroAnimado";
+import { SkeletonValor } from "./Skeleton";
 import { ChamadoModal } from "./Chamados";
 import { fotoUrl } from "../services/api";
 import { formatarValidade, nomeComDosagem, situacao, tarja } from "../services/remedios";
@@ -65,7 +67,7 @@ export function BarraEstoque({ quantidade, minimo }) {
 }
 
 // Cards Total · Críticos · Zerados · Vencidos; clicar aplica o filtro de situação
-export function ResumoEstoque({ resumo, filtro, onFiltrar }) {
+export function ResumoEstoque({ resumo, filtro, onFiltrar, carregando = false }) {
   const cards = [
     ["", "Total", resumo?.totalItens, "box"],
     ["critico", "Críticos", resumo?.criticos, "alert"],
@@ -85,7 +87,7 @@ export function ResumoEstoque({ resumo, filtro, onFiltrar }) {
           <span className="directory-stat-icon"><ManagerIcon name={icone} size={20} /></span>
           <span>
             <small>{label}</small>
-            <strong>{total ?? "—"}</strong>
+            <strong>{carregando ? <SkeletonValor /> : <NumeroAnimado valor={total ?? "—"} />}</strong>
           </span>
         </button>
       ))}

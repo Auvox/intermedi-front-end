@@ -1,5 +1,6 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import PersonaIcon from "./PersonaIcon";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import "../styles/managerSidebar.css";
 
@@ -106,6 +107,43 @@ function SidebarIcon({ name }) {
   );
 }
 
+// Um único fundo de item ativo que desliza até o link da rota atual, em vez de
+// o item antigo sumir e o novo aparecer. A posição vem do próprio link ativo
+// (offsetTop/Left dentro do nav), então acompanha a sidebar vertical e a
+// faixa horizontal do celular.
+function useIndicadorAtivo(navRef) {
+  const { pathname } = useLocation();
+  const [posicao, setPosicao] = useState(null);
+  const [pronto, setPronto] = useState(false);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return undefined;
+    const medir = () => {
+      const ativo = nav.querySelector("a.active");
+      setPosicao(
+        ativo
+          ? { x: ativo.offsetLeft, y: ativo.offsetTop, w: ativo.offsetWidth, h: ativo.offsetHeight }
+          : null,
+      );
+    };
+    medir();
+    const observer = new ResizeObserver(medir);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [navRef, pathname]);
+
+  // A transição só liga depois da primeira posição, para o indicador não
+  // deslizar a partir do topo quando a área abre.
+  useLayoutEffect(() => {
+    if (!posicao || pronto) return undefined;
+    const quadro = requestAnimationFrame(() => setPronto(true));
+    return () => cancelAnimationFrame(quadro);
+  }, [posicao, pronto]);
+
+  return { posicao, pronto };
+}
+
 export default function ManagerSidebar({
   unitName,
   pendingTickets = 0,
@@ -135,6 +173,8 @@ export default function ManagerSidebar({
   const contador = (path) => (path === "chamados" ? pendingTickets : path === "pedidos" ? pendingOrders : 0);
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
+  const navRef = useRef(null);
+  const { posicao, pronto } = useIndicadorAtivo(navRef);
   return (
     <aside className="manager-sidebar">
       <div className="manager-sidebar-header">
@@ -148,7 +188,16 @@ export default function ManagerSidebar({
 
       <div className="manager-sidebar-menu">
         <p className="manager-sidebar-caption">PRINCIPAL</p>
-        <nav aria-label={`Menu do ${role}`}>
+        <nav ref={navRef} aria-label={`Menu do ${role}`} className={posicao ? "has-indicator" : undefined}>
+          <span
+            aria-hidden="true"
+            className={`manager-sidebar-indicator${posicao ? " is-visible" : ""}${pronto ? " is-ready" : ""}`}
+            style={
+              posicao
+                ? { width: posicao.w, height: posicao.h, transform: `translate(${posicao.x}px, ${posicao.y}px)` }
+                : undefined
+            }
+          />
           {menuLinks.map(({ path, label, icon, soon }) =>
             soon ? (
               <button

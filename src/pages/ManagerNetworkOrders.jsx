@@ -7,6 +7,7 @@ import { usePerfil } from "../components/perfil/perfilContext";
 import { propsLinha } from "../services/perfil";
 import { INTERVALO_CHAMADOS, usePolling } from "../hooks/useChamados";
 import { listarPedidosGerente, responderPedido } from "../services/api";
+import { SkeletonLinhas } from "../components/Skeleton";
 import {
   INTERVALO_A_CAMINHO,
   STATUS_PEDIDO,
@@ -80,7 +81,7 @@ export default function ManagerNetworkOrders() {
         {header}
         <section className="mgr-panel">
           {gerente.loading ? (
-            <p className="mgr-empty" role="status">Carregando gerente…</p>
+            <SkeletonLinhas rotulo="Carregando gerente…" />
           ) : (
             <ErroComRetry message={gerente.error || "Selecione um gerente na barra superior."} onRetry={gerente.error ? gerente.retry : undefined} />
           )}
@@ -120,7 +121,7 @@ export default function ManagerNetworkOrders() {
         <p className="chamado-pedidos-descricao">{ABAS.find(([v]) => v === aba)[2]}.</p>
 
         {loading || (data && data.tipo !== aba) ? (
-          <p className="mgr-empty" role="status">Carregando pedidos…</p>
+          <SkeletonLinhas rotulo="Carregando pedidos…" />
         ) : error && !data ? (
           <ErroComRetry message={error} onRetry={retry} />
         ) : !pedidos.length ? (

@@ -23,6 +23,7 @@ import ManagerNetworkOrders from "../pages/ManagerNetworkOrders";
 
 import "../styles/directory.css";
 import "../styles/personaTheme.css";
+import "../styles/motion.css";
 
 // Carregada só quando o gerente abre a tela (traz a cena 3D)
 const ManagerOperacao = lazy(() => import("../pages/ManagerOperacao"));

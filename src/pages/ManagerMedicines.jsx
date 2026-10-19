@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { ChamadoModal, ErroComRetry } from "../components/Chamados";
 import { ConfirmarModal, EstoqueTabela, FotoRemedio, ResumoEstoque, TarjaBadge } from "../components/Remedios";
+import { SkeletonTabela } from "../components/Skeleton";
 import { usePolling } from "../hooks/useChamados";
 import { usePerfil } from "../components/perfil/perfilContext";
 import useDebounce from "../hooks/useDebounce";
@@ -67,19 +68,28 @@ export default function ManagerMedicines() {
     </header>
   );
 
+  // Enquanto o gerente carrega, a tela já tem a forma final (resumo + tabela)
+  if (gerente.loading) {
+    return (
+      <>
+        {header}
+        <ResumoEstoque carregando filtro={situacaoFiltro} onFiltrar={setSituacaoFiltro} />
+        <section className="mgr-panel" aria-label="Estoque da farmácia">
+          <SkeletonTabela rotulo="Carregando gerente…" colunas={6} />
+        </section>
+      </>
+    );
+  }
+
   if (!idGerente) {
     return (
       <>
         {header}
         <section className="mgr-panel">
-          {gerente.loading ? (
-            <p className="mgr-empty" role="status">Carregando gerente…</p>
-          ) : (
-            <ErroComRetry
-              message={gerente.error || "Selecione um gerente na barra superior para ver o estoque."}
-              onRetry={gerente.error ? gerente.retry : undefined}
-            />
-          )}
+          <ErroComRetry
+            message={gerente.error || "Selecione um gerente na barra superior para ver o estoque."}
+            onRetry={gerente.error ? gerente.retry : undefined}
+          />
         </section>
       </>
     );
@@ -88,7 +98,7 @@ export default function ManagerMedicines() {
   return (
     <>
       {header}
-      <ResumoEstoque resumo={data?.resumo} filtro={situacaoFiltro} onFiltrar={setSituacaoFiltro} />
+      <ResumoEstoque resumo={data?.resumo} carregando={loading && !data} filtro={situacaoFiltro} onFiltrar={setSituacaoFiltro} />
       <section className="mgr-panel" aria-label="Estoque da farmácia">
         <div className="mgr-toolbar">
           <input
@@ -104,7 +114,7 @@ export default function ManagerMedicines() {
           <button type="button" className="mgr-secondary" onClick={reload}>Atualizar</button>
         </div>
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando estoque…</p>
+          <SkeletonTabela rotulo="Carregando estoque…" colunas={6} />
         ) : error && !data ? (
           <ErroComRetry message={error} onRetry={retry} />
         ) : itens.length ? (

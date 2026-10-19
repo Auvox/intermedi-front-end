@@ -8,6 +8,7 @@ import useApiList from "../hooks/useApiList";
 import { listarServicos, normalizeText } from "../services/api";
 import { formatarDataChamado } from "../services/chamados";
 import TicketServico from "../components/TicketServico";
+import { SkeletonTabela } from "../components/Skeleton";
 
 const mostrar = (valor) => (valor === null || valor === undefined || valor === "" ? "Não informado" : valor);
 
@@ -98,7 +99,7 @@ export default function ManagerServices() {
         </div>
 
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando serviços…</p>
+          <SkeletonTabela rotulo="Carregando serviços…" foto={false} />
         ) : error ? (
           <ErroComRetry message={error} onRetry={reload} />
         ) : (

@@ -27,6 +27,7 @@ import { emAndamento } from "../services/rastreio";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
+import { SkeletonCartoes } from "../components/Skeleton";
 
 // Visual preview only. Replace these fixtures with intermedi-back-end data
 // when integrating authentication and server-side permissions.
@@ -518,7 +519,7 @@ export function EmployeePatients() {
             Nenhum paciente encontrado. Tente outro nome ou código.
           </p>
         )}
-        {loading && <p className="mgr-empty">Carregando pacientes…</p>}
+        {loading && <SkeletonCartoes rotulo="Carregando pacientes…" />}
         {error && (
           <p className="mgr-empty" role="alert">
             {error}
@@ -583,7 +584,7 @@ export function EmployeeTeam() {
             Nenhum funcionário encontrado. Tente outro nome ou cargo.
           </p>
         )}
-        {loading && <p className="mgr-empty">Carregando funcionários…</p>}
+        {loading && <SkeletonCartoes rotulo="Carregando funcionários…" />}
         {error && (
           <p className="mgr-empty" role="alert">
             {error}

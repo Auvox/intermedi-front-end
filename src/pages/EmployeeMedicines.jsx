@@ -9,6 +9,7 @@ import useDebounce from "../hooks/useDebounce";
 import { listarEstoqueFarmacia, listarRemedios } from "../services/api";
 import { ordenarEstoque, precisaReposicao, reposicaoDoEstoque } from "../services/remedios";
 import "../styles/employeeMedicines.css";
+import { SkeletonTabela } from "../components/Skeleton";
 
 const FILTROS_SITUACAO = [
   ["", "Todas as situações"],
@@ -61,7 +62,7 @@ export default function EmployeeMedicines() {
       {!idFarmacia ? (
         <section className="mgr-panel">
           {funcionario.loading ? (
-            <p className="mgr-empty" role="status">Carregando funcionário…</p>
+            <SkeletonTabela rotulo="Carregando funcionário…" />
           ) : (
             <p className="mgr-empty" role="alert">
               {funcionario.error || "Não foi possível identificar a farmácia deste funcionário."}
@@ -86,7 +87,7 @@ export default function EmployeeMedicines() {
               <button type="button" className="directory-row-action" onClick={reload}>Atualizar</button>
             </div>
             {loading ? (
-              <p className="mgr-empty" role="status">Carregando estoque…</p>
+              <SkeletonTabela rotulo="Carregando estoque…" />
             ) : error && !data ? (
               <ErroComRetry message={error} onRetry={retry} />
             ) : itens.length ? (
