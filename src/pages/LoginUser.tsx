@@ -7,6 +7,7 @@ import { authRequest } from "../services/auth";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
 import { API_URL } from "../services/api";
+import { entrarComoAdmin } from "../services/desempenho";
 
 type Role = "gerente" | "funcionario" | "admin";
 type Mode = "login" | "cadastro";
@@ -290,6 +291,40 @@ export default function LoginUser({
       return;
     }
 
+    if (role === "admin") {
+      const cpf = String(formData.get("cpf") || "").trim();
+      const matricula = String(formData.get("matricula") || "").trim();
+      const senha = String(formData.get("senha") || "");
+
+      if (!cpf) {
+        setMessage("Informe o CPF do admin.");
+        return;
+      }
+      if (!matricula) {
+        setMessage("Informe a matrícula do admin.");
+        return;
+      }
+      if (!senha) {
+        setMessage("Informe a senha do admin.");
+        return;
+      }
+
+      try {
+        // o mesmo token serve para a aba Desempenho, que não pede login de novo
+        await entrarComoAdmin({ cpf, matricula, senha });
+        navigate("/admin", { replace: true });
+      } catch (error: any) {
+        setMessage(
+          error?.status === 401
+            ? "CPF, matrícula ou senha incorretos."
+            : error instanceof Error
+              ? error.message
+              : "Não foi possível entrar. Tente novamente.",
+        );
+      }
+      return;
+    }
+
     if (role !== "gerente") {
       setMessage("Este fluxo de login é exclusivo para o perfil de gerente.");
       return;
@@ -448,7 +483,18 @@ export default function LoginUser({
                     </small>
                   </label>
                 )}
-                {role === "funcionario" ? (
+                {role === "gerente" ? (
+                  <label>
+                    E-mail
+                    <input
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="voce@farmacia.com.br"
+                      maxLength={254}
+                    />
+                  </label>
+                ) : (
                   <>
                     <label>
                       CPF
@@ -471,48 +517,37 @@ export default function LoginUser({
                       />
                     </label>
                   </>
-                ) : (
-                  <>
-                    <label>
-                      E-mail
+                )}
+                {role !== "funcionario" && (
+                  <label>
+                    Senha
+                    <span className="auth-password">
                       <input
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="voce@farmacia.com.br"
-                        maxLength={254}
+                        name="senha"
+                        type={visible ? "text" : "password"}
+                        autoComplete={
+                          mode === "login"
+                            ? "current-password"
+                            : "new-password"
+                        }
+                        placeholder={
+                          mode === "login"
+                            ? "Digite sua senha"
+                            : "Crie sua senha"
+                        }
                       />
-                    </label>
-                    <label>
-                      Senha
-                      <span className="auth-password">
-                        <input
-                          name="senha"
-                          type={visible ? "text" : "password"}
-                          autoComplete={
-                            mode === "login"
-                              ? "current-password"
-                              : "new-password"
-                          }
-                          placeholder={
-                            mode === "login"
-                              ? "Digite sua senha"
-                              : "Crie sua senha"
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setVisible(!visible)}
-                          aria-label={
-                            visible ? "Ocultar senha" : "Mostrar senha"
-                          }
-                          aria-pressed={visible}
-                        >
-                          <Icon name={visible ? "hidden" : "eye"} />
-                        </button>
-                      </span>
-                    </label>
-                  </>
+                      <button
+                        type="button"
+                        onClick={() => setVisible(!visible)}
+                        aria-label={
+                          visible ? "Ocultar senha" : "Mostrar senha"
+                        }
+                        aria-pressed={visible}
+                      >
+                        <Icon name={visible ? "hidden" : "eye"} />
+                      </button>
+                    </span>
+                  </label>
                 )}
                 {mode === "cadastro" && (
                   <label>
