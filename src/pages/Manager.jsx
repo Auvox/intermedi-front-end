@@ -422,33 +422,24 @@ export function ManagerEmployees() {
   const [carregandoFuncionarios, setCarregandoFuncionarios] = useState(true);
   const [erroFuncionarios, setErroFuncionarios] = useState("");
 
+  // só para mostrar o nome da unidade no cadastro: o funcionário novo é
+  // sempre da farmácia do gerente que o cadastra (o back confere pelo gerente)
   const [farmacias, setFarmacias] = useState([]);
-  const [carregandoFarmacias, setCarregandoFarmacias] = useState(true);
-  const [erroFarmacias, setErroFarmacias] = useState("");
   async function buscarFarmacias() {
-    setCarregandoFarmacias(true);
-    setErroFarmacias("");
     try {
       const lista = await listarFarmacias();
-
-      const mapped = lista.map((farmacia) => ({
-        id: farmacia.idFarmacia ?? farmacia.id,
-        idGerente: farmacia.idGerente ?? farmacia.gerenteId,
-        name: farmacia.nomeFarmacia ?? farmacia.name ?? farmacia.nome,
-      }));
-
-      setFarmacias(mapped);
-      return lista;
-    } catch (error) {
-      setErroFarmacias(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível conectar ao servidor de farmácias.",
+      setFarmacias(
+        lista.map((farmacia) => ({
+          id: String(farmacia.idFarmacia ?? farmacia.id),
+          name: farmacia.nomeFarmacia ?? farmacia.name ?? farmacia.nome,
+        })),
       );
-    } finally {
-      setCarregandoFarmacias(false);
+    } catch {
+      setFarmacias([]);
     }
   }
+  const nomeDaUnidade =
+    farmacias.find((farmacia) => farmacia.id === String(gerente.idFarmacia))?.name;
 
   async function buscarFuncionarios(farmaciaId = "") {
     setCarregandoFuncionarios(true);
@@ -479,7 +470,7 @@ export function ManagerEmployees() {
     if (gerente.loading) return;
     async function carregarUnidadeDoGerenteLogado() {
       try {
-        await buscarFarmacias(); // opções do formulário de cadastro
+        await buscarFarmacias(); // nome da unidade no formulário de cadastro
         await buscarFuncionarios(gerente.idFarmacia ?? "");
       } catch (error) {
         setErroFuncionarios(
@@ -516,7 +507,6 @@ export function ManagerEmployees() {
   const [telFuncionario, setTelFuncionario] = useState("");
   const [cargoFuncionario, setCargoFuncionario] = useState("atendente");
   const [turnoFuncionario, setTurnoFuncionario] = useState("manha");
-  const [idFarmaciaFuncionario, setIdFarmaciaFuncionario] = useState("");
   const [cadastroMensagem, setCadastroMensagem] = useState("");
   const [cadastroNotificacao, setCadastroNotificacao] = useState(null);
   const [cadastrando, setCadastrando] = useState(false);
@@ -534,8 +524,9 @@ export function ManagerEmployees() {
       telFuncionario: telFuncionario.trim(),
       cargoFuncionario,
       turnoFuncionario,
-      fkIdFarmacia: idFarmaciaFuncionario,
-      idFarmacia: idFarmaciaFuncionario,
+      // o back usa a farmácia deste gerente
+      idGerenteCadastro: gerente.idGerente,
+      fkIdFarmacia: gerente.idFarmacia,
     };
 
     try {
@@ -553,7 +544,7 @@ export function ManagerEmployees() {
       }
 
       // busca a lista atualizada para o novo funcionário aparecer na hora
-      const listaAtualizada = await buscarFuncionarios();
+      const listaAtualizada = await buscarFuncionarios(gerente.idFarmacia ?? "");
       const criado = result.funcionario || result;
       const registro = listaAtualizada?.find((item) =>
         criado.idFuncionario != null
@@ -577,7 +568,6 @@ export function ManagerEmployees() {
       setTelFuncionario("");
       setCargoFuncionario("atendente");
       setTurnoFuncionario("manha");
-      setIdFarmaciaFuncionario("");
     } catch (error) {
       setCadastroMensagem(
         error instanceof Error
@@ -738,6 +728,10 @@ export function ManagerEmployees() {
         // adicionar funcionarios
         <Modal title="Adicionar funcionário" onClose={() => setAdding(false)}>
           <form className="mgr-form" onSubmit={cadastrarFuncionario}>
+            <p className="mgr-form-unidade">
+              O funcionário vai entrar na sua farmácia:{" "}
+              <strong>{nomeDaUnidade || "a unidade do gerente selecionado"}</strong>
+            </p>
             <label>
               Nome completo
               <input
@@ -794,28 +788,6 @@ export function ManagerEmployees() {
               </select>
             </label>
             <label>
-              Farmácia
-              <select
-                name="idFarmaciaFuncionario"
-                required
-                value={idFarmaciaFuncionario}
-                onChange={({ target }) =>
-                  setIdFarmaciaFuncionario(target.value)
-                }
-                disabled={carregandoFarmacias || !!erroFarmacias}
-              >
-                <option value="">Selecione a farmácia</option>
-                {farmacias.map((farmacia) => (
-                  <option key={farmacia.id} value={farmacia.id}>
-                    {farmacia.name}
-                  </option>
-                ))}
-              </select>
-              {erroFarmacias && (
-                <small className="mgr-form-error">{erroFarmacias}</small>
-              )}
-            </label>
-            <label>
               Turno
               <select
                 name="turnoFuncionario"
@@ -831,9 +803,7 @@ export function ManagerEmployees() {
             {cadastroMensagem && <p role="status">{cadastroMensagem}</p>}
             <button
               className="mgr-primary"
-              disabled={
-                cadastrando || carregandoFarmacias || !idFarmaciaFuncionario
-              }
+              disabled={cadastrando || !gerente.idGerente}
             >
               {cadastrando ? "Cadastrando…" : "Cadastrar funcionário"}
             </button>

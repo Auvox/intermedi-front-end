@@ -783,6 +783,18 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
 }
+.mgr-form-unidade {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+.mgr-form-unidade strong {
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
+}
 .mgr-form [role="alert"] {
   font-size: var(--text-small);
   color: var(--color-danger);
