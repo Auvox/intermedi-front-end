@@ -642,6 +642,68 @@
 }
 
 /* Aviso contextual (um por tela, só quando há algo a fazer) */
+/* ── Ferramentas da visão geral ─────────────────────────────── */
+.mgr-ferramentas { margin: 0 0 var(--space-6); }
+.mgr-ferramentas h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.mgr-ferramentas-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+.mgr-ferramenta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 76px;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  box-shadow: 0 0 0 1px transparent;
+  transition: box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+.mgr-ferramenta:hover { box-shadow: 0 0 0 1px var(--color-primary-border); transform: translateY(-1px); }
+.mgr-ferramenta:active { transform: translateY(0) scale(0.99); }
+.mgr-ferramenta:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.mgr-ferramenta-icone {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.mgr-ferramenta-texto { display: grid; gap: 2px; min-width: 0; }
+.mgr-ferramenta-texto strong { font-size: var(--text-body); font-weight: var(--weight-semibold); }
+.mgr-ferramenta-texto small { font-size: var(--text-small); line-height: 1.35; color: var(--color-text-secondary); }
+.mgr-ferramenta-contador {
+  margin-left: auto;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 980px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  line-height: 24px;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mgr-ferramenta, .mgr-ferramenta:hover, .mgr-ferramenta:active { transition: none; transform: none; }
+}
+
 .mgr-insight {
   display: flex;
   align-items: center;

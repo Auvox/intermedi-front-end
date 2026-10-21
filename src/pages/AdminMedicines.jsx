@@ -5,6 +5,7 @@ import { ConfirmarModal, FotoRemedio, TarjaBadge } from "../components/Remedios"
 import RemedioForm from "../components/RemedioForm";
 import { usePolling, useToast } from "../hooks/useChamados";
 import useDebounce from "../hooks/useDebounce";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import {
   apagarRemedio,
   enviarFotoRemedio,
@@ -26,6 +27,8 @@ export default function AdminMedicines() {
   const buscaDebounced = useDebounce(busca.trim(), 300);
   const [categorias, setCategorias] = useState([]);
   const [modal, setModal] = useState(null); // { tipo: "form"|"detalhe"|"foto"|"apagar", remedio }
+  // atalho "Cadastrar medicamento" da visão geral
+  useAcaoDaUrl("cadastrar", useCallback(() => setModal({ tipo: "form" }), []));
   const [toast, notify] = useToast();
   const { abrirPerfil } = usePerfil();
 

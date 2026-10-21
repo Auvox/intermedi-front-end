@@ -339,7 +339,15 @@ export default function Employee() {
         <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
           <main id="conteudo" tabIndex={-1} className="mgr-main directory-layout">
             <PreparosFarmacia preparos={preparos} idFuncionario={funcionario.idFuncionario} onAviso={notify} />
-            <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados, idFarmacia: funcionario.idFarmacia }} />
+            <Outlet
+              context={{
+                chamadosDoFuncionario: fonteRastreio.chamados,
+                idFarmacia: funcionario.idFarmacia,
+                // visão geral
+                nomeFuncionario: employeeName,
+                unidade: employeeUnit,
+              }}
+            />
           </main>
         </PerfilProvider>
         <footer className="mgr-footer">

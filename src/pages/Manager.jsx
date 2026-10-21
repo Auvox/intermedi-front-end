@@ -12,6 +12,8 @@ import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
 import { usePerfil } from "../components/perfil/perfilContext";
 import { mascararCpf, propsLinha } from "../services/perfil";
+import Ferramentas from "../components/Ferramentas";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
@@ -127,9 +129,9 @@ function Header({ title, description, action }) {
     </header>
   );
 }
-// items: [rótulo, valor, contexto, ícone, carregando]
+// items: [rótulo, valor, contexto, ícone, carregando, link]
 function Stats({ items }) {
-  return <DirectoryStats items={items.map(([label, value, hint, icon, loading]) => [label, value, icon, hint, loading])} />;
+  return <DirectoryStats items={items.map(([label, value, hint, icon, loading, to]) => [label, value, icon, hint, loading, to])} />;
 }
 export default function Manager() {
   const location = useLocation();
@@ -276,6 +278,16 @@ export function ManagerDashboard() {
         pedidos={emCurso}
         onAbrirPedido={(p, el) => abrirPerfil("pedido", p.idRedistribuicao, el)}
       />
+      <Ferramentas
+        itens={[
+          { to: "/gerente/chamados", icone: "ticket", titulo: "Responder chamados", descricao: "Pedidos de reposição da equipe", contador: pendentes.totalPendentes },
+          { to: "/gerente/pedidos", icone: "truck", titulo: "Pedidos da rede", descricao: "Outras farmácias pedindo a você", contador: pedidosPendentes },
+          { to: "/gerente/remedios?acao=adicionar", icone: "pill", titulo: "Adicionar ao estoque", descricao: "Um remédio do catálogo" },
+          { to: "/gerente/funcionarios?acao=novo-funcionario", icone: "userPlus", titulo: "Novo funcionário", descricao: "Cadastrar na sua unidade" },
+          { to: "/gerente/servicos", icone: "clipboard", titulo: "Serviços", descricao: "Atendimentos da unidade" },
+          { to: "/gerente/operacao", icone: "cube", titulo: "Operação 3D", descricao: "A unidade em tempo real" },
+        ]}
+      />
       <Stats
         items={[
           [
@@ -284,18 +296,23 @@ export function ManagerDashboard() {
             "aguardando sua resposta",
             "ticket",
             gerente.loading || pendentes.loading,
+            "/gerente/chamados",
           ],
           [
             "Pedidos da rede",
             pedidosPendentes,
             "de outras farmácias para você",
             "truck",
+            false,
+            "/gerente/pedidos",
           ],
           [
             "Itens com atenção",
             atencao,
             "críticos, zerados ou vencidos",
             "alert",
+            false,
+            "/gerente/remedios",
           ],
           [
             "Itens no estoque",
@@ -303,6 +320,7 @@ export function ManagerDashboard() {
             "remédios cadastrados na unidade",
             "pill",
             gerente.loading || (estoque.loading && !estoque.data),
+            "/gerente/remedios",
           ],
         ]}
       />
@@ -352,7 +370,11 @@ export function ManagerDashboard() {
           <ErroComRetry message={pendentes.error} onRetry={pendentes.retry} />
         ) : (
           pendentes.pendentes.slice(0, 5).map((c) => (
-            <div className="mgr-ticket-line" key={c.idChamado}>
+            <div
+              key={c.idChamado}
+              {...propsLinha((el) => abrirPerfil("chamado", c.idChamado, el), `Abrir chamado: ${c.titulo}`)}
+              className="mgr-ticket-line perfil-linha"
+            >
               <PersonaAvatar className="mgr-avatar" role="funcionario" />
               <div>
                 <strong>{c.titulo}</strong>
@@ -389,7 +411,10 @@ export function ManagerDashboard() {
         ) : estoque.error ? (
           <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
         ) : estoque.data?.estoque?.length ? (
-          <EstoqueTabela itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)} />
+          <EstoqueTabela
+            itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)}
+            onAbrir={(item, el) => abrirPerfil("remedio", item.idRemedio, el)}
+          />
         ) : (
           <p className="mgr-empty">O estoque desta farmácia está vazio.</p>
         )}
@@ -410,6 +435,8 @@ export function ManagerEmployees() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
+  // atalho "Novo funcionário" da visão geral
+  useAcaoDaUrl("novo-funcionario", useCallback(() => setAdding(true), []));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");

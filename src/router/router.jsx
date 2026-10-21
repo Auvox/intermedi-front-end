@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Employee, { EmployeePatients, EmployeeTeam } from "../pages/Employee";
+import EmployeeOverview from "../pages/EmployeeOverview";
 import EmployeeServices from "../pages/EmployeeServices";
 import EmployeeMedicines from "../pages/EmployeeMedicines";
 import EmployeeTickets from "../pages/EmployeeTickets";
@@ -50,7 +51,7 @@ function Rotas() {
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
         <Route path="/funcionario" element={<AccessibleArea><Employee /></AccessibleArea>}>
-          <Route index element={<Navigate to="pacientes" replace />} />
+          <Route index element={<EmployeeOverview />} />
           <Route path="pacientes" element={<EmployeePatients />} />
           <Route path="servicos" element={<EmployeeServices />} />
           <Route path="remedios" element={<EmployeeMedicines />} />
@@ -58,7 +59,7 @@ function Rotas() {
           <Route path="funcionarios" element={<EmployeeTeam />} />
           <Route
             path="*"
-            element={<Navigate to="/funcionario/pacientes" replace />}
+            element={<Navigate to="/funcionario" replace />}
           />
         </Route>
         <Route path="/gerente" element={<AccessibleArea><Manager /></AccessibleArea>}>

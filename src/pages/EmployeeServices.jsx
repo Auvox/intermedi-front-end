@@ -6,6 +6,7 @@ import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
 import { propsLinha } from "../services/perfil";
 import useApiList from "../hooks/useApiList";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { useFarmaciaDoFuncionario, usePolling } from "../hooks/useChamados";
 import {
   cadastrarServico,
@@ -47,6 +48,8 @@ export default function EmployeeServices() {
       : normalizeText(`${s.nomePaciente} ${s.nomeFuncionario} ${s.observacao ?? ""}`).includes(termo),
   );
   const pronto = Boolean(idFuncionario && idFarmacia && estoque.data && pacientes.length);
+  // atalho "Novo serviço" da visão geral
+  useAcaoDaUrl("novo-servico", useCallback(() => setAberto(true), []), pronto);
 
   return (
     <>

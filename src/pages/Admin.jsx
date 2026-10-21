@@ -1,6 +1,7 @@
 import PersonaAvatar from "../components/PersonaAvatar";
 import { CartaoPessoa, GradePessoas } from "../components/Directory";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
@@ -377,6 +378,12 @@ export function AdminDirectory({ section }) {
   const pharmacies = section === "farmacias";
   const patients = section === "pacientes";
   const crud = managers || pharmacies || patients;
+  // atalhos "Cadastrar gerente/farmácia" da visão geral
+  useAcaoDaUrl(
+    "cadastrar",
+    useCallback(() => setModal({ type: managers ? "register" : "registerFarmacia" }), [managers]),
+    managers || pharmacies,
+  );
   const pageSize = 8;
 
   useEffect(() => {

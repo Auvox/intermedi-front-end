@@ -6,7 +6,8 @@ import { ErroComRetry } from "../components/Chamados";
 import { usePerfil } from "../components/perfil/perfilContext";
 import useApiList from "../hooks/useApiList";
 import { listarFarmacias, listarPacientes, listarRemedios, resumoFarmacia } from "../services/api";
-import { PERIODOS, numero } from "../services/perfil";
+import { PERIODOS, numero, propsLinha } from "../services/perfil";
+import Ferramentas from "../components/Ferramentas";
 import "../styles/adminDashboard.css";
 
 /*
@@ -192,17 +193,26 @@ export default function AdminDashboard() {
         </section>
       ) : (
         <>
+          <Ferramentas
+            itens={[
+              { to: "/admin/gerentes?acao=cadastrar", icone: "userPlus", titulo: "Cadastrar gerente", descricao: "Para uma unidade da rede" },
+              { to: "/admin/farmacias?acao=cadastrar", icone: "pharmacy", titulo: "Cadastrar farmácia", descricao: "Uma nova unidade na rede" },
+              { to: "/admin/medicamentos?acao=cadastrar", icone: "pill", titulo: "Cadastrar medicamento", descricao: "No catálogo da rede" },
+              { to: "/admin/chamados", icone: "ticket", titulo: "Solicitações", descricao: "Chamados de todas as unidades", contador: carregando ? 0 : total.abertos },
+              { to: "/admin/pacientes", icone: "heart", titulo: "Pacientes", descricao: "Buscar e consultar cadastros" },
+            ]}
+          />
           <DirectoryStats
             items={[
               ["Itens com atenção", carregando ? null : total.atencao, "alert",
                 carregando ? undefined : total.unidadesComAtencao
                   ? `em ${total.unidadesComAtencao} ${total.unidadesComAtencao === 1 ? "unidade" : "unidades"}`
-                  : "nenhum crítico, zerado ou vencido"],
-              ["Chamados abertos", carregando ? null : total.abertos, "ticket", "pendentes ou em andamento"],
+                  : "nenhum crítico, zerado ou vencido", false, "/admin/farmacias"],
+              ["Chamados abertos", carregando ? null : total.abertos, "ticket", "pendentes ou em andamento", false, "/admin/chamados"],
               ["Atendimentos", carregando ? null : numero(total.atendimentos), "heart",
-                carregando ? undefined : `${numero(total.pacientesAtendidos)} pacientes ${noPeriodo}`],
+                carregando ? undefined : `${numero(total.pacientesAtendidos)} pacientes ${noPeriodo}`, false, "/admin/pacientes"],
               ["Pedidos entre farmácias", carregando ? null : total.pedidos, "truck",
-                carregando ? undefined : `${total.pedidosEntregues} entregues ${noPeriodo}`],
+                carregando ? undefined : `${total.pedidosEntregues} entregues ${noPeriodo}`, false, "/admin/chamados"],
             ]}
           />
 
@@ -248,7 +258,10 @@ export default function AdminDashboard() {
                     <LinhasCarregando colunas={7} />
                   ) : (
                     unidades.map(({ farmacia: f, resumo: r, erro }) => (
-                      <tr key={f.idFarmacia}>
+                      <tr
+                        key={f.idFarmacia}
+                        {...propsLinha((el) => abrirPerfil("farmacia", f.idFarmacia, el), `Abrir unidade ${f.nomeFarmacia}`)}
+                      >
                         <td>
                           <button
                             type="button"

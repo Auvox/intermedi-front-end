@@ -5,6 +5,7 @@ import CartaoChamado from "../components/CartaoChamado";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
 import useApiList from "../hooks/useApiList";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { INTERVALO_CHAMADOS, useFuncionarioAtual, usePolling } from "../hooks/useChamados";
 import { listarChamadosFuncionario, listarRemedios } from "../services/api";
 import { INTERVALO_A_CAMINHO, STATUS_CHAMADO, temACaminho } from "../services/chamados";
@@ -18,6 +19,8 @@ export default function EmployeeTickets() {
   const [status, setStatus] = useState("");
   const [solicitando, setSolicitando] = useState(false);
   const { items: medicines } = useApiList(listarRemedios);
+  // atalho "Pedir reposição" da visão geral
+  useAcaoDaUrl("solicitar", useCallback(() => setSolicitando(true), []), Boolean(idFuncionario && medicines.length));
 
   const fetcher = useCallback(
     (options) => listarChamadosFuncionario(idFuncionario, status, options).then((data) => data.chamados ?? []),

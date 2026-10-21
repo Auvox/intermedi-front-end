@@ -6,6 +6,7 @@ import { SkeletonTabela } from "../components/Skeleton";
 import { usePolling } from "../hooks/useChamados";
 import { usePerfil } from "../components/perfil/perfilContext";
 import useDebounce from "../hooks/useDebounce";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import {
   adicionarEstoque,
   atualizarEstoque,
@@ -33,6 +34,8 @@ export default function ManagerMedicines() {
   const [situacaoFiltro, setSituacaoFiltro] = useState("");
   const buscaDebounced = useDebounce(busca.trim(), 300);
   const [modal, setModal] = useState(null); // { tipo: "adicionar"|"entrada"|"ajustar"|"remover", item }
+  // atalho "Adicionar ao estoque" da visão geral
+  useAcaoDaUrl("adicionar", useCallback(() => setModal({ tipo: "adicionar" }), []), Boolean(idGerente));
 
   const fetcher = useCallback(
     (options) => listarEstoqueGerente(idGerente, { busca: buscaDebounced, situacao: situacaoFiltro }, options),
