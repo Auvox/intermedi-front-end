@@ -13,6 +13,7 @@ import PerfilProvider from "../components/perfil/PerfilProvider";
 import { usePerfil } from "../components/perfil/perfilContext";
 import { mascararCpf, propsLinha } from "../services/perfil";
 import Ferramentas from "../components/Ferramentas";
+import { definirContextoRastreio } from "../services/rastreioCliques";
 import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
@@ -168,6 +169,10 @@ export default function Manager() {
   const sessionPending = !user && !sessionError;
   // Sem login (ainda não implementado para as personas), o gerente é escolhido na topbar
   const gerente = useIdGerente(user?.email, { aguardar: sessionPending });
+  // mapa de calor (aba Desempenho do admin): quem está usando
+  useEffect(() => {
+    definirContextoRastreio({ usuarioId: gerente.idGerente, farmaciaId: gerente.idFarmacia });
+  }, [gerente.idGerente, gerente.idFarmacia]);
   // 8 s: a notificação de entrega lista os remédios e é mais longa
   const [toast, notify] = useToast(8000);
   const pendentes = useChamadosPendentes(gerente.idGerente, {
@@ -657,7 +662,7 @@ export function ManagerEmployees() {
         title="Funcionários"
         description="Conheça os profissionais que fazem o cuidado acontecer."
         action={
-          <button
+          <button data-track="novo-funcionario"
             className="mgr-primary"
             onClick={() => {
               setCadastroMensagem("");

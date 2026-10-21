@@ -58,7 +58,7 @@ export default function PreparosFarmacia({ preparos, idFuncionario, onAviso }) {
                   cerca de {p.segundosPreparo} s para carregar o caminhão
                 </small>
               </div>
-              <button
+              <button data-track="comecar-preparo"
                 type="button"
                 className="mgr-primary"
                 disabled={enviando !== null}

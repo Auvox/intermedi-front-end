@@ -13,6 +13,7 @@ import LoginUser from "../pages/LoginUser";
 import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
 import AccessibleArea from "../components/layout/AccessibleArea";
+import RastreadorCliques from "../components/RastreadorCliques";
 import Manager, {
   ManagerDashboard,
   ManagerEmployees,
@@ -29,10 +30,19 @@ import "../styles/motion.css";
 
 // Carregada só quando o gerente abre a tela (traz a cena 3D)
 const ManagerOperacao = lazy(() => import("../pages/ManagerOperacao"));
+// Aba Desempenho do admin: carregada só quando aberta (traz os gráficos)
+const Desempenho = lazy(() => import("../pages/desempenho/Desempenho"));
+const DesempenhoVisaoGeral = lazy(() => import("../pages/desempenho/DesempenhoVisaoGeral"));
+const DesempenhoMapaCalor = lazy(() => import("../pages/desempenho/DesempenhoMapaCalor"));
+const DesempenhoRotas = lazy(() => import("../pages/desempenho/DesempenhoRotas"));
+const DesempenhoSaude = lazy(() => import("../pages/desempenho/DesempenhoSaude"));
+
+const carregando = (texto) => <p className="mgr-empty" role="status">{texto}</p>;
 
 function Rotas() {
   return (
     <BrowserRouter>
+      <RastreadorCliques>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginUser />} />
@@ -41,6 +51,12 @@ function Rotas() {
           <Route index element={<AdminDashboard />} />
           <Route path="medicamentos" element={<AdminMedicines />} />
           <Route path="chamados" element={<AdminRequests />} />
+          <Route path="desempenho" element={<Suspense fallback={carregando("Carregando o desempenho…")}><Desempenho /></Suspense>}>
+            <Route index element={<Suspense fallback={carregando("Carregando…")}><DesempenhoVisaoGeral /></Suspense>} />
+            <Route path="mapa-de-calor" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoMapaCalor /></Suspense>} />
+            <Route path="rotas" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoRotas /></Suspense>} />
+            <Route path="saude" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoSaude /></Suspense>} />
+          </Route>
           {["gerentes", "farmacias", "pacientes"].map((section) => (
             <Route
               key={section}
@@ -80,6 +96,7 @@ function Rotas() {
           />
         </Route>
       </Routes>
+      </RastreadorCliques>
     </BrowserRouter>
   );
 }

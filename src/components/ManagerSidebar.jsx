@@ -89,6 +89,12 @@ function SidebarIcon({ name }) {
       </>
     ),
     arrow: <path d="m9 5 7 7-7 7" />,
+    // aba Desempenho do admin
+    chart: (
+      <>
+        <path d="M4 20V10m6 10V4m6 16v-7m4 7H3" />
+      </>
+    ),
   };
   return (
     <svg
@@ -160,6 +166,7 @@ export default function ManagerSidebar({
     { path: "gerentes", label: "Gerentes", icon: "manager" },
     { path: "pacientes", label: "Pacientes", icon: "heart" },
     { path: "chamados", label: "Solicitações", icon: "ticket" },
+    { path: "desempenho", label: "Desempenho", icon: "chart" },
   ];
   const menuLinks = admin
     ? adminLinks
@@ -200,6 +207,7 @@ export default function ManagerSidebar({
               key={path}
               end={!path}
               to={`${basePath}${path ? `/${path}` : ""}`}
+              data-track={`menu:${path || "visao-geral"}`}
             >
               <span className="manager-sidebar-icon">
                 <SidebarIcon name={icon} />

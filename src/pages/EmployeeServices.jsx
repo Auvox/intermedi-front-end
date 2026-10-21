@@ -58,7 +58,7 @@ export default function EmployeeServices() {
           <h1>Serviços</h1>
           <p>Registre a entrega de remédios ao paciente. A quantidade sai do estoque da farmácia.</p>
         </div>
-        <button type="button" className="mgr-primary" disabled={!pronto} onClick={() => setAberto(true)}>
+        <button data-track="novo-servico" type="button" className="mgr-primary" disabled={!pronto} onClick={() => setAberto(true)}>
           + Novo serviço
         </button>
       </header>

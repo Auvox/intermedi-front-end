@@ -43,7 +43,7 @@ export default function EmployeeTickets() {
           <h1>Minhas solicitações</h1>
           <p>Acompanhe os pedidos de reposição enviados ao gerente e veja a resposta.</p>
         </div>
-        <button
+        <button data-track="pedir-reposicao"
           type="button"
           className="mgr-primary"
           disabled={!idFuncionario || !medicines.length}

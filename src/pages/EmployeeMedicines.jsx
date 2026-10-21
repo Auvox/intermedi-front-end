@@ -48,7 +48,7 @@ export default function EmployeeMedicines() {
             Estoque baixo? Solicite reposição ao gerente.
           </p>
         </div>
-        <button
+        <button data-track="pedir-reposicao-estoque"
           type="button"
           className="mgr-primary"
           disabled={!funcionario.idFuncionario || !catalogo.length}

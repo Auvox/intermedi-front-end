@@ -4,6 +4,7 @@ import PersonaAvatar from "./PersonaAvatar";
 import NumeroAnimado from "./NumeroAnimado";
 import { SkeletonValor } from "./Skeleton";
 import { propsLinha, turno } from "../services/perfil";
+import { paraIdentificador } from "../services/rastreioCliques";
 
 // items: [rótulo, valor, ícone, contexto?, carregando?, link?] — o contexto explica
 // de onde vem o número; com link, o card inteiro leva à tela daquele número
@@ -18,7 +19,7 @@ export function DirectoryStats({ items }) {
       </div>
     </>;
     return to
-      ? <Link className="directory-stat is-link" key={label} to={to} aria-busy={loading || undefined}>{conteudo}</Link>
+      ? <Link className="directory-stat is-link" key={label} to={to} aria-busy={loading || undefined} data-track={`card:${paraIdentificador(label)}`}>{conteudo}</Link>
       : <article className="directory-stat" key={label} aria-busy={loading || undefined}>{conteudo}</article>;
   })}</div>;
 }

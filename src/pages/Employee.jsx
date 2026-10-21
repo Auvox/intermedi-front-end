@@ -16,6 +16,7 @@ import {
   normalizePaciente,
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
+import { definirContextoRastreio } from "../services/rastreioCliques";
 import { SeletorPersona, ToastRegion } from "../components/Chamados";
 import { SinoFuncionario } from "../components/NotificacoesEntregas";
 import PreparosFarmacia from "../components/PreparosFarmacia";
@@ -46,6 +47,10 @@ export default function Employee() {
   // chegada dos remédios que outras pessoas da unidade pediram (os pedidos da
   // unidade vêm pelo gerente dela; não há endpoint por farmácia)
   const funcionario = useFarmaciaDoFuncionario();
+  // mapa de calor (aba Desempenho do admin): quem está usando
+  useEffect(() => {
+    definirContextoRastreio({ usuarioId: funcionario.idFuncionario, farmaciaId: funcionario.idFarmacia });
+  }, [funcionario.idFuncionario, funcionario.idFarmacia]);
 
   // Sem sessão (login das personas ainda não existe), o funcionário é escolhido
   // no seletor do topo, como o gerente; o nome e a farmácia acompanham a escolha.

@@ -59,7 +59,7 @@ export default function ManagerMedicines() {
           Adicione remédios do catálogo, registre entradas e ajuste o inventário.
         </p>
       </div>
-      <button
+      <button data-track="adicionar-estoque"
         type="button"
         className="mgr-primary"
         disabled={!idGerente}

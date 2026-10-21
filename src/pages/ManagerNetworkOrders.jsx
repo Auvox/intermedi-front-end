@@ -248,7 +248,7 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
       {p.status === "solicitada" && !modo && (
         <div className="mgr-modal-actions">
           {!semEstoque && (
-            <button type="button" className="mgr-primary" onClick={() => setModo("aceitar")}>Aceitar pedido</button>
+            <button type="button" className="mgr-primary" onClick={() => setModo("aceitar")} data-track="aceitar-pedido-rede">Aceitar pedido</button>
           )}
           <button
             type="button"

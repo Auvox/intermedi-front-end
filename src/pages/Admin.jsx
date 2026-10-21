@@ -10,6 +10,10 @@ import { propsLinha } from "../services/perfil";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import PersonaIcon from "../components/PersonaIcon";
 import FarmaciaSelect from "../components/FarmaciaSelect";
+import SinoAlertas from "../components/desempenho/SinoAlertas";
+import { ToastRegion } from "../components/Chamados";
+import { useAlertas } from "../hooks/useAlertas";
+import { useToast } from "../hooks/useChamados";
 import {
   API_URL,
   listarFarmacias,
@@ -224,6 +228,7 @@ const breadcrumbLabels = {
   farmacias: "Farmácias",
   pacientes: "Pacientes",
   chamados: "Solicitações",
+  desempenho: "Desempenho",
 };
 
 function Icon({ name, size = 17 }) {
@@ -285,6 +290,9 @@ export default function Admin() {
   const { pathname } = useLocation();
   const currentSection = pathname.replace(/^\/admin\/?/, "").split("/")[0];
   const currentLabel = breadcrumbLabels[currentSection] || "Visão geral";
+  // alertas da saúde do sistema: sino, aviso na hora (toast) e a aba Desempenho
+  const [toast, notify] = useToast(10000);
+  const alertas = useAlertas({ onCritico: (alerta) => notify(`Alerta crítico: ${alerta.titulo}`) });
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -304,6 +312,7 @@ export default function Admin() {
             <strong>{currentLabel}</strong>
           </span>
           <div className="mgr-account adm-account">
+            <SinoAlertas alertas={alertas} />
             <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
               <strong>Admin Local</strong>
@@ -317,13 +326,14 @@ export default function Admin() {
         </div>
         <PerfilProvider plataforma="admin">
           <main id="conteudo" tabIndex={-1} className="mgr-main">
-            <Outlet context={{ data, setData }} />
+            <Outlet context={{ data, setData, alertas }} />
           </main>
         </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      <ToastRegion message={toast} />
     </div>
   );
 }
@@ -992,7 +1002,7 @@ export function AdminDirectory({ section }) {
                 <Icon name="download" size={15} /> Exportar
               </button>
               {managers && (
-                <button
+                <button data-track="cadastrar-gerente"
                   className="mgr-primary"
                   onClick={() => {
                     setFarmaciaGerente(null);
@@ -1004,7 +1014,7 @@ export function AdminDirectory({ section }) {
                 </button>
               )}
               {pharmacies && (
-                <button
+                <button data-track="cadastrar-farmacia"
                   className="mgr-primary"
                   onClick={() => setModal({ type: "registerFarmacia" })}
                 >

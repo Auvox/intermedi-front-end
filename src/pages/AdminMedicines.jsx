@@ -70,7 +70,7 @@ export default function AdminMedicines() {
           <h1>Medicamentos</h1>
           <p>Cadastre os remédios do sistema. Os gerentes só adicionam ao estoque o que estiver aqui.</p>
         </div>
-        <button type="button" className="mgr-primary" onClick={() => setModal({ tipo: "form" })}>
+        <button data-track="novo-remedio" type="button" className="mgr-primary" onClick={() => setModal({ tipo: "form" })}>
           + Cadastrar medicamento
         </button>
       </header>
