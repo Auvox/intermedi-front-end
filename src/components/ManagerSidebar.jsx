@@ -113,18 +113,15 @@ export default function ManagerSidebar({
   employee = false,
   admin = false,
 }) {
-  // Itens marcados com `soon` ainda nao possuem rota/tela: aparecem no menu
-  // seguindo a referencia, mas sem navegacao ate o back entregar.
+  // Só telas que existem. Rotas, Relatórios e Configurações voltam ao menu
+  // quando tiverem tela própria.
   const adminLinks = [
-    { path: "", label: "Dashboard", icon: "dashboard" },
+    { path: "", label: "Visão geral", icon: "dashboard" },
     { path: "medicamentos", label: "Medicamentos", icon: "pill" },
-    { path: "farmacias", label: "Unidades", icon: "pharmacy" },
+    { path: "farmacias", label: "Farmácias", icon: "pharmacy" },
     { path: "gerentes", label: "Gerentes", icon: "manager" },
     { path: "pacientes", label: "Pacientes", icon: "heart" },
     { path: "chamados", label: "Solicitações", icon: "ticket" },
-    { path: "rotas", label: "Rotas e Distribuição", icon: "truck", soon: true },
-    { path: "relatorios", label: "Relatórios", icon: "report", soon: true },
-    { path: "configuracoes", label: "Configurações", icon: "settings", soon: true },
   ];
   const menuLinks = admin
     ? adminLinks
@@ -137,6 +134,7 @@ export default function ManagerSidebar({
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
   return (
     <aside className="manager-sidebar">
+      <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
       <div className="manager-sidebar-header">
         <Link to="/" className="manager-sidebar-brand">
           <img src={logo} alt="Intermedi — início" />
@@ -147,24 +145,8 @@ export default function ManagerSidebar({
       </div>
 
       <div className="manager-sidebar-menu">
-        <p className="manager-sidebar-caption">PRINCIPAL</p>
         <nav aria-label={`Menu do ${role}`}>
-          {menuLinks.map(({ path, label, icon, soon }) =>
-            soon ? (
-              <button
-                key={path}
-                type="button"
-                className="manager-sidebar-soon"
-                aria-disabled="true"
-                title="Em breve"
-              >
-                <span className="manager-sidebar-icon">
-                  <SidebarIcon name={icon} />
-                </span>
-                <span className="manager-sidebar-label">{label}</span>
-                <span className="manager-sidebar-soon-tag">Em breve</span>
-              </button>
-            ) : (
+          {menuLinks.map(({ path, label, icon }) => (
             <NavLink
               key={path}
               end={!path}
@@ -174,7 +156,7 @@ export default function ManagerSidebar({
                 <SidebarIcon name={icon} />
               </span>
               <span className="manager-sidebar-label">{label}</span>
-              {contador(path) > 0 ? (
+              {contador(path) > 0 && (
                 <span
                   className="manager-sidebar-count"
                   aria-label={
@@ -185,29 +167,21 @@ export default function ManagerSidebar({
                 >
                   {contador(path)}
                 </span>
-              ) : (
-                <span className="manager-sidebar-chevron">
-                  <SidebarIcon name="arrow" />
-                </span>
               )}
             </NavLink>
-            ),
-          )}
+          ))}
         </nav>
       </div>
 
       <div className="manager-sidebar-bottom">
         <div className="manager-sidebar-unit">
-          <div className="manager-sidebar-unit-heading">
-            <span className="manager-sidebar-unit-icon">
-              <SidebarIcon name="pharmacy" />
-            </span>
-            <span>{admin ? "SUA PLATAFORMA" : "SUA UNIDADE"}</span>
-          </div>
-          <strong>{unitName}</strong>
-          <span className="manager-sidebar-unit-detail">
-            Gestão e cuidado em um só lugar.
+          <span className="manager-sidebar-unit-icon">
+            <SidebarIcon name="pharmacy" />
           </span>
+          <div>
+            <span className="manager-sidebar-unit-heading">{admin ? "Plataforma" : "Unidade"}</span>
+            <strong title={unitName}>{unitName}</strong>
+          </div>
         </div>
       </div>
     </aside>

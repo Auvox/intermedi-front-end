@@ -115,13 +115,10 @@ function Modal({ title, children, onClose }) {
     </dialog>
   );
 }
-function Header({ eyebrow, title, description, action, featured = false }) {
+function Header({ title, description, action }) {
   return (
-    <header
-      className={`mgr-page-head${featured ? " mgr-page-head-featured" : ""}`}
-    >
+    <header className="mgr-page-head">
       <div>
-        <p className="mgr-eyebrow">{eyebrow || "GESTÃO DA UNIDADE"}</p>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -129,8 +126,9 @@ function Header({ eyebrow, title, description, action, featured = false }) {
     </header>
   );
 }
+// items: [rótulo, valor, contexto, ícone]
 function Stats({ items }) {
-  return <DirectoryStats items={items.map(([label, value, , icon]) => [label, value, icon])} />;
+  return <DirectoryStats items={items.map(([label, value, hint, icon]) => [label, value, icon, hint])} />;
 }
 export default function Manager() {
   const location = useLocation();
@@ -220,7 +218,7 @@ export default function Manager() {
           />
         </div>
         <PerfilProvider plataforma="gerente" gerenteAtual={{ id: gerente.idGerente, idFarmacia: gerente.idFarmacia }}>
-        <main className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
+        <main id="conteudo" tabIndex={-1} className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
           <Outlet
             context={{
               data,
@@ -261,21 +259,17 @@ export function ManagerDashboard() {
   const estoque = usePolling(buscarEstoque, { enabled: Boolean(gerente.idGerente) });
   const resumo = estoque.data?.resumo;
   const atencao = resumo ? resumo.criticos + resumo.zerados + resumo.vencidos : null;
-  const { items: patients } = useApiList(listarPacientes);
   const managerName = (gerente.temSessao ? user?.name : gerente.nome) || user?.name || "Gerente";
   const managerUnit = user?.unitName || unit;
+  const [hoje] = useState(() =>
+    new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }),
+  );
+  const pedidosPendentes = gerente.idGerente ? pedidosRede.totalPendentes : null;
   return (
     <>
       <Header
-        featured
-        eyebrow="SEU CUIDADO COMEÇA AQUI"
-        title={`Olá, ${managerName} · ${managerUnit}`}
-        description="Acompanhe sua unidade e mantenha o cuidado em movimento."
-        action={
-          <Link className="mgr-primary" to="/gerente/chamados">
-            Abrir chamados <span>↗</span>
-          </Link>
-        }
+        title="Visão geral"
+        description={`${managerUnit} · ${managerName} · ${hoje}`}
       />
       <FaixaEmAndamento
         pedidos={emCurso}
@@ -286,83 +280,66 @@ export function ManagerDashboard() {
           [
             "Chamados pendentes",
             gerente.idGerente ? pendentes.totalPendentes : null,
-            "Aguardando sua resposta",
+            "aguardando sua resposta",
             "ticket",
+          ],
+          [
+            "Pedidos da rede",
+            pedidosPendentes,
+            "de outras farmácias para você",
+            "truck",
+          ],
+          [
+            "Itens com atenção",
+            atencao,
+            "críticos, zerados ou vencidos",
+            "alert",
           ],
           [
             "Itens no estoque",
             resumo?.totalItens ?? null,
-            "Remédios da sua farmácia",
+            "remédios cadastrados na unidade",
             "pill",
-          ],
-          [
-            "Pacientes cadastrados",
-            patients.length,
-            "Pacientes cadastrados na rede",
-            "heart",
           ],
         ]}
       />
-      <div className="mgr-insight chamado-insight-rede">
-        <span className="mgr-insight-icon">
-          <ManagerIcon name="truck" />
-        </span>
-        <div>
-          <strong>Pedidos da rede aguardando você</strong>
-          <p>
-            {gerente.idGerente
-              ? pedidosRede.totalPendentes
-                ? `${pedidosRede.totalPendentes} ${pedidosRede.totalPendentes === 1 ? "farmácia está pedindo" : "pedidos de farmácias"} um remédio do seu estoque.`
-                : "Nenhum pedido de outras farmácias no momento."
-              : "Carregando…"}
-          </p>
-        </div>
-        <Link to="/gerente/pedidos">Ver pedidos →</Link>
-      </div>
-      <div className="mgr-insight">
-        <span className="mgr-insight-icon">
-          <ManagerIcon name="pill" />
-        </span>
-        <div>
-          <strong>Estoque em dia, cuidado que continua.</strong>
-          <p>
-            {atencao === null
-              ? "Consulte o estoque e acompanhe as solicitações da equipe."
-              : `${atencao} ${atencao === 1 ? "item precisa" : "itens precisam"} de atenção (críticos, zerados ou vencidos). Consulte o estoque e acompanhe as solicitações da equipe.`}
-          </p>
-        </div>
-        <Link to="/gerente/remedios">Ver estoque →</Link>
-      </div>
-      <section className="mgr-panel">
-        <div className="mgr-panel-head">
+      {pedidosPendentes > 0 && (
+        <div className="mgr-insight chamado-insight-rede">
+          <span className="mgr-insight-icon">
+            <ManagerIcon name="truck" />
+          </span>
           <div>
-            <h2>Estoque da farmácia</h2>
-            <p>Os itens que mais precisam de atenção aparecem primeiro.</p>
+            <strong>
+              {pedidosPendentes === 1
+                ? "1 farmácia está pedindo um remédio do seu estoque"
+                : `${pedidosPendentes} pedidos de outras farmácias aguardam sua resposta`}
+            </strong>
+            <p>Aceite ou recuse para a farmácia saber se pode contar com você.</p>
           </div>
-          <Link to="/gerente/remedios">Ver todos →</Link>
+          <Link to="/gerente/pedidos">Responder pedidos</Link>
         </div>
-        {!gerente.idGerente || estoque.loading ? (
-          <p className="mgr-empty" role="status">Carregando estoque…</p>
-        ) : estoque.error ? (
-          <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
-        ) : estoque.data?.estoque?.length ? (
-          <EstoqueTabela itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)} />
-        ) : (
-          <p className="mgr-empty">O estoque desta farmácia está vazio.</p>
-        )}
-        <p className="mgr-table-note">
-          Crítico: quantidade no mínimo ou abaixo · Zerado: sem unidades · Lote vencido não pode ser entregue.
-        </p>
-      </section>
+      )}
+      {atencao > 0 && (
+        <div className="mgr-insight">
+          <span className="mgr-insight-icon">
+            <ManagerIcon name="alert" />
+          </span>
+          <div>
+            <strong>
+              {atencao} {atencao === 1 ? "item do estoque precisa" : "itens do estoque precisam"} de atenção
+            </strong>
+            <p>Itens críticos, zerados ou vencidos aparecem primeiro na tabela abaixo.</p>
+          </div>
+          <Link to="/gerente/remedios">Ver estoque</Link>
+        </div>
+      )}
       <section className="mgr-panel">
         <div className="mgr-panel-head">
           <div>
             <h2>Chamados que precisam de você</h2>
             <p>Solicitações de reposição abertas pela sua equipe.</p>
           </div>
-          <Badge tone="yellow">
-            {pendentes.totalPendentes} {pendentes.totalPendentes === 1 ? "pendente" : "pendentes"}
-          </Badge>
+          <Link to="/gerente/chamados">Ver todos →</Link>
         </div>
         {gerente.loading || pendentes.loading ? (
           <p className="mgr-empty" role="status">Carregando chamados…</p>
@@ -388,8 +365,29 @@ export function ManagerDashboard() {
           ))
         )}
         {!pendentes.loading && !gerente.loading && !gerente.error && !pendentes.error && !pendentes.pendentes.length && (
-          <p className="mgr-empty">Tudo em dia! Nenhuma solicitação pendente.</p>
+          <p className="mgr-empty">Nenhum chamado pendente. Pedidos novos da equipe aparecem aqui.</p>
         )}
+      </section>
+      <section className="mgr-panel">
+        <div className="mgr-panel-head">
+          <div>
+            <h2>Estoque da farmácia</h2>
+            <p>Os itens que mais precisam de atenção aparecem primeiro.</p>
+          </div>
+          <Link to="/gerente/remedios">Ver todos →</Link>
+        </div>
+        {!gerente.idGerente || estoque.loading ? (
+          <p className="mgr-empty" role="status">Carregando estoque…</p>
+        ) : estoque.error ? (
+          <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
+        ) : estoque.data?.estoque?.length ? (
+          <EstoqueTabela itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)} />
+        ) : (
+          <p className="mgr-empty">O estoque desta farmácia está vazio.</p>
+        )}
+        <p className="mgr-table-note">
+          Crítico: quantidade no mínimo ou abaixo · Zerado: sem unidades · Lote vencido não pode ser entregue.
+        </p>
       </section>
     </>
   );
@@ -1041,7 +1039,7 @@ export function ManagerTickets() {
   const abrir = (idChamado, elemento) => abrirPerfil("chamado", idChamado, elemento);
   const header = (
     <Header
-      title="Cada chamado importa."
+      title="Chamados"
       description="Aceite ou recuse os pedidos de reposição da sua equipe."
     />
   );

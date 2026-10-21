@@ -76,7 +76,7 @@
 
 /* ── Title ── */
 .hero-title {
-  font-family: "Sora", sans-serif;
+  font-family: var(--font-sans);
   font-size: clamp(42px, 5.2vw, 68px);
   font-weight: 800;
   line-height: 1.07;
@@ -125,7 +125,7 @@
   flex-direction: column;
 }
 .hero-trust-value {
-  font-family: "Sora", sans-serif;
+  font-family: var(--font-sans);
   font-size: 20px;
   font-weight: 800;
   color: var(--black);

@@ -2,11 +2,16 @@ import ManagerIcon from "./ManagerIcon";
 import PersonaAvatar from "./PersonaAvatar";
 import { propsLinha, turno } from "../services/perfil";
 
+// items: [rótulo, valor, ícone, contexto?] — o contexto explica de onde vem o número
 export function DirectoryStats({ items }) {
-  return <div className="directory-stats">{items.map(([label, value, icon = "people"]) =>
+  return <div className="directory-stats">{items.map(([label, value, icon = "people", hint]) =>
     <article className="directory-stat" key={label}>
-      <span className="directory-stat-icon"><ManagerIcon name={icon} size={21} /></span>
-      <div><p>{label}</p><strong>{value ?? "—"}</strong></div>
+      <span className="directory-stat-icon"><ManagerIcon name={icon} size={18} /></span>
+      <div>
+        <p>{label}</p>
+        <strong>{value ?? "—"}</strong>
+        {hint && <small>{hint}</small>}
+      </div>
     </article>)}</div>;
 }
 

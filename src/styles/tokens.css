@@ -1,0 +1,151 @@
+/* ============================================================
+   INTERMEDI — Design tokens
+   Fonte única de cores, tipografia, espaçamento, raios, sombras
+   e movimento do site e das plataformas.
+   Linguagem: tipografia grande e justa, muito espaço, superfícies
+   brancas sobre cinza-claro, botões em pílula, cor só nos detalhes.
+   Cada plataforma troca só a cor de destaque (--color-primary*):
+   gerente verde, funcionário azul, admin preto (personaTheme.css).
+   ============================================================ */
+
+:root {
+  /* Destaque (padrão: verde da marca / gerente) */
+  --color-primary: #16804a;
+  --color-primary-hover: #106a3c;
+  --color-primary-active: #0d5a33;
+  --color-primary-soft: #e9f5ee;
+  --color-primary-border: #c5e4d1;
+  --color-primary-ink: #0f5c34;
+  --color-primary-ring: rgb(22 128 74 / 0.28);
+  --color-brand: #22b45e; /* o verde da cruz do logo; só em detalhes de marca */
+
+  /* Superfícies */
+  --color-background: #f5f5f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #fbfbfd;
+  --color-surface-sunken: #f0f0f3;
+  --color-fill: rgb(0 0 0 / 0.05); /* fundo de botão secundário e hover */
+  --color-fill-strong: rgb(0 0 0 / 0.08);
+  --color-overlay: rgb(0 0 0 / 0.32);
+  --color-inverse: #1d1d1f; /* seções escuras */
+
+  /* Bordas */
+  --color-border: #d2d2d7;
+  --color-border-subtle: #e8e8ed;
+  --color-border-strong: #86868b;
+
+  /* Texto (contraste AA sobre branco e sobre o cinza do fundo) */
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #424245;
+  --color-text-muted: #6e6e73;
+  --color-text-disabled: #a1a1a6;
+  --color-text-inverse: #ffffff;
+
+  /* Estados */
+  --color-success: #15803d;
+  --color-success-soft: #e9f6ee;
+  --color-success-border: #c9e7d4;
+  --color-warning: #9a5b06;
+  --color-warning-soft: #fdf4e3;
+  --color-warning-border: #f1deb2;
+  --color-danger: #c4291c;
+  --color-danger-hover: #a3221a;
+  --color-danger-soft: #fdeeec;
+  --color-danger-border: #f4cfca;
+  --color-info: #0066cc;
+  --color-info-soft: #eaf3fd;
+  --color-info-border: #cfe0f3;
+  --color-neutral-soft: #f0f0f3;
+  --color-neutral-border: #e1e1e6;
+
+  /* Papel de cada pessoa (avatar e ponto do menu) */
+  --role-gerente: #16804a;
+  --role-funcionario: #0071e3;
+  --role-paciente: #b4570f;
+  --role-admin: #1d1d1f;
+
+  /* Tipografia: a fonte do sistema da Apple (SF Pro) em Mac/iPhone;
+     Inter, quase idêntica, nos demais aparelhos */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  --text-caption: 12px; /* menor tamanho permitido */
+  --text-small: 13px;
+  --text-body: 14px;
+  --text-body-lg: 17px;
+  --text-h3: 19px;
+  --text-h2: 24px;
+  --text-h1: 34px;
+  --text-display: 56px;
+
+  --tracking-tight: -0.022em; /* títulos */
+  --tracking-display: -0.03em; /* títulos muito grandes */
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Espaçamento — escala de 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Raios */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-full: 980px;
+
+  /* Sombras — quase nada; superfícies se separam pelo tom */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 30px -10px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 30px 60px -20px rgb(0 0 0 / 0.3);
+
+  /* Controles */
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --focus-ring: 0 0 0 4px var(--color-primary-ring);
+
+  /* Movimento */
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  /* Camadas */
+  --z-sticky: 20;
+  --z-dropdown: 40;
+  --z-overlay: 80;
+  --z-modal: 100;
+  --z-toast: 120;
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --topbar-height: 56px;
+  --content-max: 1280px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

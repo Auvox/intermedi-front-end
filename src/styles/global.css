@@ -43,7 +43,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-sans);
   color: var(--black);
   background: var(--white);
   overflow-x: hidden;
@@ -58,7 +58,7 @@ body {
   gap: 8px;
   padding: 11px 26px;
   border-radius: var(--r-sm);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -120,7 +120,7 @@ body {
 .section-tag::before { content: "●"; font-size: 6px; animation: pulse 2.5s infinite; }
 
 .section-title {
-  font-family: "Sora", sans-serif;
+  font-family: var(--font-sans);
   font-size: clamp(30px, 3.8vw, 48px);
   font-weight: 800;
   line-height: 1.12;

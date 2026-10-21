@@ -34,9 +34,8 @@ export default function EmployeeTickets() {
 
   return (
     <>
-      <header className="mgr-page-head mgr-page-head-featured">
+      <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p>
           <h1>Minhas solicitações</h1>
           <p>Acompanhe os pedidos de reposição enviados ao gerente e veja a resposta.</p>
         </div>

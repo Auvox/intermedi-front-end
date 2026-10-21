@@ -9,7 +9,7 @@
 .rastreio {
   display: grid; gap: 18px; padding: 22px 24px; border: 1px solid #e2e8e4; border-radius: 16px;
   background: #fff; color: var(--r-texto); box-shadow: 0 1px 2px #10281a0d, 0 4px 16px #10281a08;
-  font: 14px/1.5 'DM Sans', system-ui, sans-serif; text-align: left;
+  font: 14px/1.5 var(--font-sans); text-align: left;
 }
 .rastreio + .rastreio { margin-top: 16px; }
 .rastreio-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
@@ -20,7 +20,7 @@
 .rastreio-aguardando .rastreio-rotulo { color: #a3660b; }
 .rastreio-entregue .rastreio-rotulo { color: #17783f; }
 .rastreio-recusado .rastreio-rotulo, .rastreio-cancelado .rastreio-rotulo { color: #b43d3d; }
-.rastreio-titulo { margin: 0 !important; font: 700 24px/1.2 'DM Sans', system-ui, sans-serif !important; letter-spacing: -.5px !important; color: var(--r-texto) !important; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.rastreio-titulo { margin: 0 !important; font: 700 24px/1.2 var(--font-sans) !important; letter-spacing: -.5px !important; color: var(--r-texto) !important; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .rastreio-item { margin: 2px 0 0; font-size: 13px; color: var(--r-mudo); }
 .rastreio-item strong { color: #33463b; font-weight: 600; }
 .rastreio-topo .remedio-foto { flex-shrink: 0; }
@@ -36,8 +36,8 @@
 .rastreio-ponta { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .rastreio-ponta > span:not(.rastreio-pino) { display: grid; min-width: 0; }
 .rastreio-ponta.destino { text-align: right; justify-content: flex-end; }
-.rastreio-ponta small { font-size: 11.5px; color: var(--r-mudo); overflow-wrap: anywhere; }
-.rastreio-ponta small:first-child { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #8a998f; }
+.rastreio-ponta small { font-size: 12px; color: var(--r-mudo); overflow-wrap: anywhere; }
+.rastreio-ponta small:first-child { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #8a998f; }
 .rastreio-ponta strong { font-size: 13.5px; font-weight: 700; color: var(--r-texto); overflow-wrap: anywhere; }
 .rastreio-pino { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--r-cor); background: #fff; color: var(--r-cor); box-shadow: 0 2px 6px #10281a14; }
 .rastreio-pino.destino { background: var(--r-cor); color: #fff; }
@@ -100,7 +100,7 @@
 .rastreio-acoes { display: flex; }
 .rastreio-botao {
   flex: 1; height: 44px; border: 0; border-radius: 10px; background: var(--r-suave); color: var(--r-cor);
-  font: 600 14px 'DM Sans', system-ui, sans-serif; cursor: pointer; transition: filter .12s ease;
+  font: 600 14px var(--font-sans); cursor: pointer; transition: filter .12s ease;
 }
 .rastreio-botao:hover { filter: brightness(.97); }
 .rastreio-botao:focus-visible { outline: 3px solid var(--r-cor); outline-offset: 2px; }
@@ -117,23 +117,18 @@
 .andamento {
   position: relative; overflow: hidden; display: grid; gap: 4px; margin: 0 0 22px; padding: 10px 12px 8px;
   border: 1px solid var(--r-borda); border-radius: 14px;
-  background: linear-gradient(90deg, var(--persona-tint, #f6faf7), #fff 70%);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--color-surface);
+  font-family: var(--font-sans);
 }
-.andamento::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(105deg, transparent 35%, #ffffffb3 50%, transparent 65%);
-  transform: translateX(-100%); animation: andamento-brilho 6s ease-in-out 1s infinite;
-}
-.andamento-selo { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 2px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--r-cor); }
-.andamento-selo b { min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--r-cor); color: #fff; font-size: 10.5px; text-align: center; letter-spacing: 0; }
+.andamento-selo { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 2px 4px; font-size: 12px; font-weight: 600; color: var(--color-text-secondary); }
+.andamento-selo b { min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--r-cor); color: #fff; font-size: 12px; text-align: center; letter-spacing: 0; }
 .andamento-pulso { width: 7px; height: 7px; border-radius: 50%; background: var(--r-cor); animation: rastreio-pulso 1.8s ease-out infinite; }
 .andamento ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .andamento-item {
   position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; width: 100%; padding: 7px 8px;
   border: 0; border-radius: 10px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
-.andamento-item:hover { background: #ffffffd9; }
+.andamento-item:hover { background: var(--color-surface-muted); }
 .andamento-item:focus-visible { outline: 3px solid var(--r-cor); outline-offset: -1px; }
 .andamento-icone { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; background: var(--r-suave); color: var(--r-cor); }
 .andamento-icone.aguardando { background: #fff4df; color: #a3660b; }
@@ -149,8 +144,8 @@
 .rastreio-notificacoes li a { display: flex !important; gap: 10px; align-items: flex-start; }
 .rastreio-notificacao-icone { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 26px; height: 26px; margin-top: 1px; border-radius: 8px; background: #eef3f0; color: #4d6a59; }
 .rastreio-notificacao-icone.entregue { background: #e7f6ec; color: #17783f; }
-.rastreio-notificacao-icone.saiu, .rastreio-notificacao-icone.transito, .rastreio-notificacao-icone.chegando { background: #f1ebfb; color: #6a3fb0; }
-.chamado-bell-panel .rastreio-notificacao-desc { color: #5d6f64 !important; font-size: 11.5px !important; }
+.rastreio-notificacao-icone.saiu, .rastreio-notificacao-icone.transito, .rastreio-notificacao-icone.chegando { background: #f1ebfb; color: var(--color-info); }
+.chamado-bell-panel .rastreio-notificacao-desc { color: #5d6f64 !important; font-size: 12px !important; }
 
 /* ---------- Animações ---------- */
 @keyframes rastreio-pulso { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
@@ -159,7 +154,6 @@
 @keyframes rastreio-gira { to { transform: rotate(360deg); } }
 @keyframes rastreio-balanco { from { transform: translateY(0); } to { transform: translateY(-.8px); } }
 @keyframes rastreio-vento { 0% { opacity: 0; transform: translateX(4px); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateX(-6px); } }
-@keyframes andamento-brilho { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
 @media (prefers-reduced-motion: reduce) {
   .rastreio-percorrido, .rastreio-caminhao { transition: none; }
@@ -180,7 +174,7 @@
 }
 
 /* Botão "Ver detalhes" e versão enxuta dentro das tabelas de chamado */
-.rastreio-ver { margin-left: 10px; padding: 2px 9px; border: 1px solid var(--persona-border, #cfe4d7); border-radius: 999px; background: #fff; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--persona, #168b4b); cursor: pointer; white-space: nowrap; }
+.rastreio-ver { margin-left: 10px; padding: 2px 9px; border: 1px solid var(--persona-border, #cfe4d7); border-radius: 999px; background: #fff; font: inherit; font-size: 12px; font-weight: 700; color: var(--persona, #168b4b); cursor: pointer; white-space: nowrap; }
 .rastreio-ver:hover { background: var(--persona-soft, #edf7f0); }
 .rastreio-ver[aria-expanded="true"] { background: var(--persona-soft, #edf7f0); }
 td > .rastreio-ver { display: inline-block; margin: 6px 0 0; }
@@ -201,7 +195,7 @@ td > .rastreio-ver { display: inline-block; margin: 6px 0 0; }
 .rastreio-min .rastreio-etapa strong { font-size: 13px; }
 .rastreio-min .rastreio-etapa.atual strong { font-size: 14px; }
 .rastreio-min .rastreio-etapa.atual .rastreio-etapa-marca { width: 16px; height: 16px; border-width: 5px; box-shadow: none; }
-.rastreio-min .rastreio-etapa time { display: inline; margin-left: 8px; font-size: 11.5px; }
+.rastreio-min .rastreio-etapa time { display: inline; margin-left: 8px; font-size: 12px; }
 .rastreio-min .rastreio-etapa p { font-size: 12.5px; }
 .rastreio-min .rastreio-etapa:not(.atual) div { display: flex; align-items: baseline; flex-wrap: wrap; }
 

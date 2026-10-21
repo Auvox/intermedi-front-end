@@ -35,8 +35,8 @@ function HowSection() {
           <svg className="journey-route" viewBox="0 0 1000 360" preserveAspectRatio="none" fill="none" aria-hidden="true">
             <path className="journey-road" d="M30 220H125C250 220 250 120 375 120S500 220 625 220 750 120 875 120H970" />
             <path className="journey-road-line" d="M30 220H125C250 220 250 120 375 120S500 220 625 220 750 120 875 120H970" />
-            <circle cx="30" cy="220" r="4" fill="#76b68c" />
-            <path d="m963 115 6 5-6 5" stroke="#398555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="30" cy="220" r="4" fill="#a1a1a6" />
+            <path d="m963 115 6 5-6 5" stroke="#16804a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <ol className="journey-steps" aria-label="Etapas do pedido">
             {howSteps.map((step, index) => (

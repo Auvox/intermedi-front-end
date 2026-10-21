@@ -7,6 +7,7 @@ import EmployeeTickets from "../pages/EmployeeTickets";
 import Admin, { AdminDirectory } from "../pages/Admin";
 import AdminDashboard from "../pages/AdminDashboard";
 import AdminMedicines from "../pages/AdminMedicines";
+import AdminRequests from "../pages/AdminRequests";
 import LoginUser from "../pages/LoginUser";
 import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
@@ -37,7 +38,8 @@ function Rotas() {
         <Route path="/admin" element={<AccessibleArea><Admin /></AccessibleArea>}>
           <Route index element={<AdminDashboard />} />
           <Route path="medicamentos" element={<AdminMedicines />} />
-          {["gerentes", "farmacias", "pacientes", "chamados"].map((section) => (
+          <Route path="chamados" element={<AdminRequests />} />
+          {["gerentes", "farmacias", "pacientes"].map((section) => (
             <Route
               key={section}
               path={section}

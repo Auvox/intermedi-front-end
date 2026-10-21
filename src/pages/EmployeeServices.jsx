@@ -49,9 +49,8 @@ export default function EmployeeServices() {
 
   return (
     <>
-      <header className="mgr-page-head mgr-page-head-featured">
+      <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p>
           <h1>Serviços</h1>
           <p>Registre a entrega de remédios ao paciente. A quantidade sai do estoque da farmácia.</p>
         </div>

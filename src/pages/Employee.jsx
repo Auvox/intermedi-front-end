@@ -1,5 +1,5 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { CartaoPessoa, DirectoryStats, GradePessoas, TeamTable } from "../components/Directory";
+import { CartaoPessoa, GradePessoas, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
@@ -336,9 +336,9 @@ export default function Employee() {
           </div>
         </div>
         <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
-          <main className="mgr-main directory-layout">
+          <main id="conteudo" tabIndex={-1} className="mgr-main directory-layout">
             <PreparosFarmacia preparos={preparos} idFuncionario={funcionario.idFuncionario} onAviso={notify} />
-            <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados }} />
+            <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados, idFarmacia: funcionario.idFarmacia }} />
           </main>
         </PerfilProvider>
         <footer className="mgr-footer">
@@ -440,13 +440,13 @@ export default function Employee() {
   );
 }
 
-function PageHeader({ title, description, count, label, icon, results }) {
-  return <>
-    <header className="mgr-page-head mgr-page-head-featured"><div>
-      <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p><h1>{title}</h1><p>{description}</p>
-    </div></header>
-    <DirectoryStats items={[[label, count, icon], ["Resultados da busca", results, "check"]]} />
-  </>;
+// O total aparece no título da lista e o resultado da busca no rodapé dela
+function PageHeader({ title, description }) {
+  return (
+    <header className="mgr-page-head">
+      <div><h1>{title}</h1><p>{description}</p></div>
+    </header>
+  );
 }
 
 // Chamados do funcionário ainda em processo (aguardando gerente, fornecedor ou a caminho)
@@ -472,11 +472,7 @@ export function EmployeePatients() {
     <>
       <PageHeader
         title="Pacientes"
-        description="Encontre os pacientes da sua unidade em um só lugar."
-        count={patients.length}
-        results={filtered.length}
-        label="Total de pacientes"
-        icon="heart"
+        description="Consulte contato e histórico dos pacientes cadastrados."
       />
       <FaixaEmAndamento
         chamados={emProcesso(chamadosDoFuncionario)}
@@ -506,7 +502,7 @@ export function EmployeePatients() {
                 linhas={[
                   ["mail", patient.email],
                   ["phone", patient.phone],
-                  ["pharmacy", readEmployeeSession()?.unitName || unit],
+                  ["map", [patient.city, patient.state].filter(Boolean).join(" / ")],
                 ]}
                 onAbrir={(el) => abrirPerfil("paciente", patient.id, el)}
               />
@@ -538,7 +534,9 @@ export function EmployeeTeam() {
   const [shift, setShift] = useState("");
   const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
   const session = readEmployeeSession();
-  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? "");
+  // farmácia da sessão ou, sem sessão, a do funcionário escolhido no topo
+  const { idFarmacia } = useOutletContext() ?? {};
+  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? idFarmacia ?? "");
   const sameUnit = targetFarmaciaId
     ? allEmployees.filter((item) => item.farmaciaId === targetFarmaciaId)
     : [];
@@ -554,11 +552,7 @@ export function EmployeeTeam() {
     <>
       <PageHeader
         title="Funcionários"
-        description="Conheça os profissionais que compartilham o cuidado com você."
-        count={employees.length}
-        results={filtered.length}
-        label="Profissionais na unidade"
-        icon="people"
+        description="Equipe da sua unidade, com cargo, turno e contato."
       />
       <section className="mgr-panel" aria-labelledby="emp-team-title">
         <div className="mgr-toolbar">
