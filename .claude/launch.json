@@ -10,6 +10,12 @@
     {
       "name": "front-end (já rodando)",
       "url": "http://localhost:5173"
+    },
+    {
+      "name": "back-end",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../intermedi-back-end", "run", "dev:teste-3d"],
+      "port": 3000
     }
   ]
 }

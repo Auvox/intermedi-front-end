@@ -33,7 +33,7 @@ export function etapasDoProcesso(c) {
   const remedios = c.remedios ?? [];
   const primeiroPedido = pedidos.map((p) => p.dataSolicitacao).filter(Boolean).sort()[0];
   const ultimaChegada = pedidos.map((p) => p.dataRecebimento).filter(Boolean).sort().at(-1);
-  const previsao = pedidos.filter((p) => p.status === "enviada").map((p) => p.dataPrevistaChegada).sort().at(-1);
+  const previsao = pedidos.filter((p) => ["preparando", "enviada"].includes(p.status)).map((p) => p.dataPrevistaChegada).sort().at(-1);
   const etapas = [{ id: "aberto", titulo: "Aberto", quando: hora(c.dataAbertura), situacao: "feito" }];
   if (encerrado(c.status)) {
     etapas.push({
@@ -46,7 +46,7 @@ export function etapasDoProcesso(c) {
   }
   const respondido = Boolean(c.resposta);
   const todosChegaram = remedios.length > 0 && remedios.every((r) => r.situacao === "recebido");
-  const algoAndando = remedios.some((r) => ["a_caminho", "aguardando_fornecedor"].includes(r.situacao));
+  const algoAndando = remedios.some((r) => ["a_caminho", "em_preparo", "aguardando_fornecedor"].includes(r.situacao));
   const algumChegou = remedios.some((r) => r.situacao === "recebido");
   // parte chegou e o resto ficou sem farmácia: o chamado espera uma nova tentativa
   const travado = !algoAndando && remedios.some((r) => r.situacao === "sem_fornecedor") && c.status !== "resolvido";

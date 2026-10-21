@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ErroComRetry, SeletorPersona } from "../components/Chamados";
+import { ErroComRetry } from "../components/Chamados";
 import { EstoqueTabela, ResumoEstoque } from "../components/Remedios";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
@@ -9,6 +9,7 @@ import useDebounce from "../hooks/useDebounce";
 import { listarEstoqueFarmacia, listarRemedios } from "../services/api";
 import { ordenarEstoque, precisaReposicao, reposicaoDoEstoque } from "../services/remedios";
 import "../styles/employeeMedicines.css";
+import { SkeletonTabela } from "../components/Skeleton";
 
 const FILTROS_SITUACAO = [
   ["", "Todas as situações"],
@@ -61,7 +62,7 @@ export default function EmployeeMedicines() {
       {!idFarmacia ? (
         <section className="mgr-panel">
           {funcionario.loading ? (
-            <p className="mgr-empty" role="status">Carregando funcionário…</p>
+            <SkeletonTabela rotulo="Carregando funcionário…" />
           ) : (
             <p className="mgr-empty" role="alert">
               {funcionario.error || "Não foi possível identificar a farmácia deste funcionário."}
@@ -83,18 +84,10 @@ export default function EmployeeMedicines() {
               <select aria-label="Filtrar por situação" value={situacaoFiltro} onChange={(e) => setSituacaoFiltro(e.target.value)}>
                 {FILTROS_SITUACAO.map(([valor, label]) => <option key={valor} value={valor}>{label}</option>)}
               </select>
-              {!funcionario.temSessao && (
-                <SeletorPersona
-                  label="Funcionário"
-                  value={funcionario.idFuncionario ?? ""}
-                  onChange={funcionario.escolher}
-                  options={funcionario.funcionarios.map((f) => [f.id, f.name])}
-                />
-              )}
               <button type="button" className="directory-row-action" onClick={reload}>Atualizar</button>
             </div>
             {loading ? (
-              <p className="mgr-empty" role="status">Carregando estoque…</p>
+              <SkeletonTabela rotulo="Carregando estoque…" />
             ) : error && !data ? (
               <ErroComRetry message={error} onRetry={retry} />
             ) : itens.length ? (

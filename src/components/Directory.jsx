@@ -1,12 +1,15 @@
 import ManagerIcon from "./ManagerIcon";
 import PersonaAvatar from "./PersonaAvatar";
+import NumeroAnimado from "./NumeroAnimado";
+import { SkeletonValor } from "./Skeleton";
 import { propsLinha, turno } from "../services/perfil";
 
+// items: [rótulo, valor, ícone, carregando]
 export function DirectoryStats({ items }) {
-  return <div className="directory-stats">{items.map(([label, value, icon = "people"]) =>
-    <article className="directory-stat" key={label}>
+  return <div className="directory-stats">{items.map(([label, value, icon = "people", loading = false]) =>
+    <article className="directory-stat" key={label} aria-busy={loading || undefined}>
       <span className="directory-stat-icon"><ManagerIcon name={icon} size={21} /></span>
-      <div><p>{label}</p><strong>{value ?? "—"}</strong></div>
+      <div><p>{label}</p><strong>{loading ? <SkeletonValor /> : <NumeroAnimado valor={value ?? "—"} />}</strong></div>
     </article>)}</div>;
 }
 

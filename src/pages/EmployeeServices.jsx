@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
-import { ChamadoModal, ErroComRetry, SeletorPersona } from "../components/Chamados";
+import { ChamadoModal, ErroComRetry } from "../components/Chamados";
 import { TarjaBadge } from "../components/Remedios";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
@@ -17,6 +17,7 @@ import {
 } from "../services/api";
 import { formatarDataHora, nomeComDosagem, reposicaoDoEstoque } from "../services/remedios";
 import TicketServico from "../components/TicketServico";
+import { SkeletonTabela } from "../components/Skeleton";
 
 const novoItem = () => ({ key: crypto.randomUUID(), idRemedio: "", quantidade: "1" });
 const mostrar = (valor) => (valor === null || valor === undefined || valor === "" ? "Não informado" : valor);
@@ -63,7 +64,7 @@ export default function EmployeeServices() {
       {!idFarmacia ? (
         <section className="mgr-panel">
           {funcionario.loading ? (
-            <p className="mgr-empty" role="status">Carregando funcionário…</p>
+            <SkeletonTabela rotulo="Carregando funcionário…" foto={false} />
           ) : (
             <p className="mgr-empty" role="alert">
               {funcionario.error || "Não foi possível identificar a farmácia deste funcionário."}
@@ -88,20 +89,12 @@ export default function EmployeeServices() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
-              {!funcionario.temSessao && (
-                <SeletorPersona
-                  label="Funcionário"
-                  value={idFuncionario ?? ""}
-                  onChange={funcionario.escolher}
-                  options={funcionario.funcionarios.map((f) => [f.id, f.name])}
-                />
-              )}
               <button type="button" className="directory-row-action" onClick={() => { lista.reload(); estoque.reload(); }}>
                 Atualizar
               </button>
             </div>
             {lista.loading ? (
-              <p className="mgr-empty" role="status">Carregando serviços…</p>
+              <SkeletonTabela rotulo="Carregando serviços…" foto={false} />
             ) : lista.error && !lista.data ? (
               <ErroComRetry message={lista.error} onRetry={lista.retry} />
             ) : (

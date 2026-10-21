@@ -168,7 +168,7 @@ function Relatorio({ c, raiz, enderecos, abrirPerfil, podeResponder, idGerente, 
   const pedidosPorId = new Map((c.pedidos ?? []).map((p) => [p.idRedistribuicao, p]));
   const etapas = etapasDoProcesso(c);
   const pedidos = c.pedidos ?? [];
-  const previsao = pedidos.filter((p) => p.status === "enviada").map((p) => p.dataPrevistaChegada).sort().at(-1);
+  const previsao = pedidos.filter((p) => ["preparando", "enviada"].includes(p.status)).map((p) => p.dataPrevistaChegada).sort().at(-1);
   const ultimaChegada = pedidos.map((p) => p.dataRecebimento).filter(Boolean).sort().at(-1);
   const temSemFornecedor = (c.remedios ?? []).some((r) => r.situacao === "sem_fornecedor");
   const tom = statusChamado(c.status).tone;
@@ -284,7 +284,7 @@ function Relatorio({ c, raiz, enderecos, abrirPerfil, podeResponder, idGerente, 
                   const completo = p && pedidosPorId.get(p.idRedistribuicao);
                   const fornecedora = p?.idFarmaciaFornecedora && enderecos[String(p.idFarmaciaFornecedora)];
                   return (
-                    <LinhaRastreavel key={r.idRemedio} colSpan={4} pedido={["a_caminho", "recebido"].includes(r.situacao) ? completo : null} celulas={(botao) => (<>
+                    <LinhaRastreavel key={r.idRemedio} colSpan={4} pedido={["em_preparo", "a_caminho", "recebido"].includes(r.situacao) ? completo : null} celulas={(botao) => (<>
                       <td>
                         {link("remedio", r.idRemedio, <strong>{[r.nomeRemedio, r.dosagemRemedio].filter(Boolean).join(" ")}</strong>)}
                         {r.tarjaRemedio && <small><TarjaBadge valor={r.tarjaRemedio} /></small>}
@@ -297,7 +297,7 @@ function Relatorio({ c, raiz, enderecos, abrirPerfil, podeResponder, idGerente, 
                       </td>
                       <td>
                         {r.situacao ? <SituacaoItemBadge situacao={r.situacao} /> : "—"}
-                        {r.situacao === "a_caminho" && completo && <div className="rel-mini"><RastreioMini pedido={completo} />{botao}</div>}
+                        {["em_preparo", "a_caminho"].includes(r.situacao) && completo && <div className="rel-mini"><RastreioMini pedido={completo} />{botao}</div>}
                         {r.situacao === "recebido" && p?.dataRecebimento && <small>Chegou em {formatarDataChamado(p.dataRecebimento)}</small>}
                     {r.situacao === "recebido" && completo && botao}
                       </td>

@@ -48,13 +48,13 @@ export default function CartaoChamado({ chamado: c, onAbrir }) {
               const p = r.pedidoAtual;
               const completo = p && pedidosPorId.get(p.idRedistribuicao);
               return (
-                <LinhaRastreavel key={r.idRemedio} colSpan={4} pedido={["a_caminho", "recebido"].includes(r.situacao) ? completo : null} celulas={(botao) => (<>
+                <LinhaRastreavel key={r.idRemedio} colSpan={4} pedido={["em_preparo", "a_caminho", "recebido"].includes(r.situacao) ? completo : null} celulas={(botao) => (<>
                   <td><strong>{[r.nomeRemedio, r.dosagemRemedio].filter(Boolean).join(" ")}</strong></td>
                   <td className="rel-num">{r.quantidadeSolicitada} un.</td>
                   <td>{p?.nomeFarmaciaFornecedora && r.situacao !== "sem_fornecedor" ? p.nomeFarmaciaFornecedora : "—"}</td>
                   <td>
                     {r.situacao ? <SituacaoItemBadge situacao={r.situacao} /> : <span className="cartao-mudo">Aguardando o gerente</span>}
-                    {r.situacao === "a_caminho" && completo && <div className="rel-mini"><RastreioMini pedido={completo} />{botao}</div>}
+                    {["em_preparo", "a_caminho"].includes(r.situacao) && completo && <div className="rel-mini"><RastreioMini pedido={completo} />{botao}</div>}
                     {r.situacao === "recebido" && p?.dataRecebimento && <small>Chegou em {formatarDataChamado(p.dataRecebimento, { ano: false })}</small>}
                     {r.situacao === "recebido" && completo && botao}
                   </td>

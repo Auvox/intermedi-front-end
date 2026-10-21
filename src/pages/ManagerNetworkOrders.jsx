@@ -7,6 +7,7 @@ import { usePerfil } from "../components/perfil/perfilContext";
 import { propsLinha } from "../services/perfil";
 import { INTERVALO_CHAMADOS, usePolling } from "../hooks/useChamados";
 import { listarPedidosGerente, responderPedido } from "../services/api";
+import { SkeletonLinhas } from "../components/Skeleton";
 import {
   INTERVALO_A_CAMINHO,
   STATUS_PEDIDO,
@@ -35,9 +36,9 @@ export default function ManagerNetworkOrders() {
   );
   const { data, loading, error, reload, retry, setData } = usePolling(fetcher, {
     enabled: Boolean(idGerente),
-    // mais rápido enquanto há remédio a caminho (a contagem é local)
+    // mais rápido enquanto há remédio em preparo ou a caminho (a contagem é local)
     interval: (dados) =>
-      (dados?.pedidos ?? []).some((p) => p.status === "enviada") ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS,
+      (dados?.pedidos ?? []).some((p) => ["aprovada", "preparando", "enviada"].includes(p.status)) ? INTERVALO_A_CAMINHO : INTERVALO_CHAMADOS,
   });
   // A lista anterior pode ser de outra aba enquanto a nova carrega
   const pedidos = data?.tipo === aba ? data.pedidos ?? [] : [];
@@ -80,7 +81,7 @@ export default function ManagerNetworkOrders() {
         {header}
         <section className="mgr-panel">
           {gerente.loading ? (
-            <p className="mgr-empty" role="status">Carregando gerente…</p>
+            <SkeletonLinhas rotulo="Carregando gerente…" />
           ) : (
             <ErroComRetry message={gerente.error || "Selecione um gerente na barra superior."} onRetry={gerente.error ? gerente.retry : undefined} />
           )}
@@ -120,7 +121,7 @@ export default function ManagerNetworkOrders() {
         <p className="chamado-pedidos-descricao">{ABAS.find(([v]) => v === aba)[2]}.</p>
 
         {loading || (data && data.tipo !== aba) ? (
-          <p className="mgr-empty" role="status">Carregando pedidos…</p>
+          <SkeletonLinhas rotulo="Carregando pedidos…" />
         ) : error && !data ? (
           <ErroComRetry message={error} onRetry={retry} />
         ) : !pedidos.length ? (
@@ -180,7 +181,7 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
       onRespondido(
         pedido,
         aceitar
-          ? `${p.quantidade}× ${p.nomeRemedio} a caminho da ${p.nomeFarmaciaDestino}. Saiu do seu estoque.`
+          ? `${p.quantidade}× ${p.nomeRemedio} saiu do seu estoque. Sua equipe recebeu o aviso para preparar o envio à ${p.nomeFarmaciaDestino}.`
           : encaminhadoPara
             ? `Pedido repassado para ${encaminhadoPara.nomeFarmacia}.`
             : "Nenhuma outra farmácia tem esse remédio; a farmácia solicitante será avisada.",
@@ -222,9 +223,14 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
           {abaixo && <span className="chamado-pedido-abaixo"> · vai ficar abaixo do mínimo</span>}
         </p>
       )}
-      {p.status === "enviada" && (
+      {p.status === "aprovada" && (
         <p className="chamado-pedido-impacto">
-          Enviado por {p.nomeGerenteResposta || "você"}
+          Aceito por {p.nomeGerenteResposta || "você"} · aguardando alguém da equipe começar o preparo
+        </p>
+      )}
+      {(p.status === "preparando" || p.status === "enviada") && (
+        <p className="chamado-pedido-impacto">
+          {p.nomeFuncionarioPreparo ? `Preparado por ${p.nomeFuncionarioPreparo}` : `Enviado por ${p.nomeGerenteResposta || "você"}`}
           <RastreioMini pedido={p} perspectiva="fornecedor" />
         </p>
       )}
@@ -243,7 +249,7 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
       {p.status === "solicitada" && !modo && (
         <div className="mgr-modal-actions">
           {!semEstoque && (
-            <button type="button" className="mgr-primary" onClick={() => setModo("aceitar")}>Aceitar e enviar</button>
+            <button type="button" className="mgr-primary" onClick={() => setModo("aceitar")}>Aceitar pedido</button>
           )}
           <button
             type="button"
@@ -273,7 +279,7 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
           )}
           <p>
             {modo === "aceitar"
-              ? `Enviar ${p.quantidade}× ${p.nomeRemedio} para ${p.nomeFarmaciaDestino}? Sai do seu estoque agora.`
+              ? `Aceitar o pedido de ${p.quantidade}× ${p.nomeRemedio} da ${p.nomeFarmaciaDestino}? Sai do seu estoque agora e sua equipe recebe o aviso para preparar o envio.`
               : `Recusar o pedido de ${p.nomeFarmaciaDestino}? Ele será repassado para outra farmácia, se houver.`}
           </p>
           <div className="mgr-modal-actions">
@@ -285,7 +291,7 @@ function PedidoRecebido({ pedido: p, idGerente, destacado, onRespondido, onConfl
               onClick={enviar}
               autoFocus
             >
-              {enviando ? "Enviando..." : modo === "aceitar" ? "Confirmar envio" : "Confirmar recusa"}
+              {enviando ? "Enviando..." : modo === "aceitar" ? "Confirmar aceite" : "Confirmar recusa"}
             </button>
           </div>
         </div>
@@ -320,7 +326,7 @@ function PedidosEnviados({ pedidos }) {
                 {p.status === "recusada" && p.motivoRecusa && <small>Motivo: {p.motivoRecusa}</small>}
               </td>
               <td>
-                {p.status === "enviada" ? (
+                {["aprovada", "preparando", "enviada"].includes(p.status) ? (
                   <RastreioMini pedido={p} />
                 ) : p.status === "recebida" ? (
                   formatarDataChamado(p.dataRecebimento)
