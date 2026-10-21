@@ -13,7 +13,7 @@ export const STATUS_CHAMADO = {
 
 export const PRIORIDADE_CHAMADO = {
   baixa: { label: "Baixa", tone: "neutral" },
-  media: { label: "Média", tone: "yellow" },
+  media: { label: "Média", tone: "neutral" },
   alta: { label: "Alta", tone: "red" },
   urgente: { label: "Urgente", tone: "urgent" },
 };
@@ -29,6 +29,7 @@ export const TURNO_FUNCIONARIO = {
 export const SITUACAO_ITEM = {
   aguardando_gerente: { label: "Aguardando gerente", tone: "yellow", icone: "clock" },
   aguardando_fornecedor: { label: "Aguardando farmácia fornecedora", tone: "blue", icone: "pharmacy" },
+  em_preparo: { label: "Em preparo na farmácia fornecedora", tone: "blue", icone: "box" },
   a_caminho: { label: "A caminho", tone: "purple", icone: "truck" },
   recebido: { label: "Recebido", tone: "green", icone: "check" },
   sem_fornecedor: { label: "Sem fornecedor", tone: "red", icone: "alert" },
@@ -37,7 +38,8 @@ export const SITUACAO_ITEM = {
 // Status de um pedido entre farmácias (redistribuição)
 export const STATUS_PEDIDO = {
   solicitada: { label: "Aguardando resposta", tone: "yellow" },
-  aprovada: { label: "Aprovado", tone: "blue" },
+  aprovada: { label: "Aguardando preparo", tone: "blue" },
+  preparando: { label: "Em preparo", tone: "blue" },
   enviada: { label: "A caminho", tone: "purple" },
   recebida: { label: "Entregue", tone: "green" },
   recusada: { label: "Recusado", tone: "red" },
@@ -51,11 +53,11 @@ export const situacaoItem = (situacao) =>
 export const statusPedido = (status) =>
   STATUS_PEDIDO[status] ?? { label: status || "—", tone: "neutral" };
 
-// Enquanto houver remédio a caminho a tela consulta a API a cada 5 s (para
-// trocar para "Recebido" sozinha); fora isso, a cada 30 s.
+// Enquanto houver remédio em preparo ou a caminho a tela consulta a API a cada
+// 5 s (para trocar de etapa sozinha); fora isso, a cada 30 s.
 export const INTERVALO_A_CAMINHO = 5000;
 export const temACaminho = (chamados = []) =>
-  chamados.some((c) => (c.remedios ?? []).some((r) => r.situacao === "a_caminho"));
+  chamados.some((c) => (c.remedios ?? []).some((r) => ["em_preparo", "a_caminho"].includes(r.situacao)));
 
 // Remédios recebidos / total, para a barra de progresso
 export function progressoChamado(chamado) {

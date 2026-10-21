@@ -1,6 +1,7 @@
 import PersonaAvatar from "../components/PersonaAvatar";
 import { CartaoPessoa, GradePessoas } from "../components/Directory";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { Link, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
@@ -9,6 +10,10 @@ import { propsLinha } from "../services/perfil";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import PersonaIcon from "../components/PersonaIcon";
 import FarmaciaSelect from "../components/FarmaciaSelect";
+import SinoAlertas from "../components/desempenho/SinoAlertas";
+import { ToastRegion } from "../components/Chamados";
+import { useAlertas } from "../hooks/useAlertas";
+import { useToast } from "../hooks/useChamados";
 import {
   API_URL,
   listarFarmacias,
@@ -77,30 +82,29 @@ const demoData = {
 const sections = {
   gerentes: {
     label: "Gerentes",
-    title: "A gestão começa com pessoas.",
-    description:
-      "Consulte os gerentes e organize os responsáveis pelas unidades.",
+    title: "Gerentes",
+    description: "Responsáveis por cada farmácia da rede.",
     action: "Excluir gerente",
     result: "excluído",
   },
   farmacias: {
     label: "Farmácias",
-    title: "Uma rede de farmácias.",
-    description: "Consulte as farmácias e acompanhe as unidades da plataforma.",
+    title: "Farmácias",
+    description: "Farmácias cadastradas na rede, com contato e endereço.",
     action: "Excluir farmácia",
     result: "excluída",
   },
   pacientes: {
     label: "Pacientes",
-    title: "Pessoas no centro do cuidado.",
-    description: "Consulte os pacientes e acompanhe o acesso à plataforma.",
+    title: "Pacientes",
+    description: "Pacientes cadastrados na plataforma.",
     action: "Bloquear paciente",
     result: "bloqueado",
   },
   chamados: {
-    label: "Chamados",
-    title: "Acompanhe as conversas da rede.",
-    description: "Consulte as solicitações das unidades e modere os chamados.",
+    label: "Solicitações",
+    title: "Solicitações",
+    description: "Pedidos de reposição abertos pelas equipes das farmácias.",
     action: "Banir chamado",
     result: "banido",
   },
@@ -110,30 +114,6 @@ const normalize = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
-
-// Paleta usada só para colorir os avatares de iniciais nas listagens novas
-// (Gerentes/Unidades/Pacientes). Puramente visual, não vem do back.
-const avatarBgPalette = [
-  "#e7f7ee",
-  "#e7f1fc",
-  "#fdf3da",
-  "#fdeceb",
-  "#f1ecfb",
-  "#e6f7f4",
-];
-const avatarTextPalette = [
-  "#1c8747",
-  "#2b72b8",
-  "#a4700b",
-  "#c4443f",
-  "#6a4fc4",
-  "#0f8f7a",
-];
-function avatarTone(seed = "") {
-  const sum = [...seed].reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const index = seed ? sum % avatarBgPalette.length : 0;
-  return { background: avatarBgPalette[index], color: avatarTextPalette[index] };
-}
 
 
 const normalizeFarmacias = (payload = []) =>
@@ -245,9 +225,10 @@ const normalizeFuncionarios = (payload = []) =>
 const breadcrumbLabels = {
   medicamentos: "Medicamentos",
   gerentes: "Gerentes",
-  farmacias: "Unidades",
+  farmacias: "Farmácias",
   pacientes: "Pacientes",
   chamados: "Solicitações",
+  desempenho: "Desempenho",
 };
 
 function Icon({ name, size = 17 }) {
@@ -308,7 +289,10 @@ export default function Admin() {
   const [data, setData] = useState(demoData);
   const { pathname } = useLocation();
   const currentSection = pathname.replace(/^\/admin\/?/, "").split("/")[0];
-  const currentLabel = breadcrumbLabels[currentSection] || "Dashboard";
+  const currentLabel = breadcrumbLabels[currentSection] || "Visão geral";
+  // alertas da saúde do sistema: sino, aviso na hora (toast) e a aba Desempenho
+  const [toast, notify] = useToast(10000);
+  const alertas = useAlertas({ onCritico: (alerta) => notify(`Alerta crítico: ${alerta.titulo}`) });
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -328,6 +312,7 @@ export default function Admin() {
             <strong>{currentLabel}</strong>
           </span>
           <div className="mgr-account adm-account">
+            <SinoAlertas alertas={alertas} />
             <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
               <strong>Admin Local</strong>
@@ -340,14 +325,15 @@ export default function Admin() {
           </div>
         </div>
         <PerfilProvider plataforma="admin">
-          <main className="mgr-main">
-            <Outlet context={{ data, setData }} />
+          <main id="conteudo" tabIndex={-1} className="mgr-main">
+            <Outlet context={{ data, setData, alertas }} />
           </main>
         </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      <ToastRegion message={toast} />
     </div>
   );
 }
@@ -402,6 +388,12 @@ export function AdminDirectory({ section }) {
   const pharmacies = section === "farmacias";
   const patients = section === "pacientes";
   const crud = managers || pharmacies || patients;
+  // atalhos "Cadastrar gerente/farmácia" da visão geral
+  useAcaoDaUrl(
+    "cadastrar",
+    useCallback(() => setModal({ type: managers ? "register" : "registerFarmacia" }), [managers]),
+    managers || pharmacies,
+  );
   const pageSize = 8;
 
   useEffect(() => {
@@ -996,9 +988,8 @@ export function AdminDirectory({ section }) {
     <>
       {crud ? (
         <>
-          <header className="mgr-page-head mgr-page-head-featured adm-hero2">
+          <header className="mgr-page-head adm-hero2">
             <div>
-              <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
               <h1>{config.label}</h1>
               <p>{config.description}</p>
             </div>
@@ -1011,7 +1002,7 @@ export function AdminDirectory({ section }) {
                 <Icon name="download" size={15} /> Exportar
               </button>
               {managers && (
-                <button
+                <button data-track="cadastrar-gerente"
                   className="mgr-primary"
                   onClick={() => {
                     setFarmaciaGerente(null);
@@ -1019,15 +1010,15 @@ export function AdminDirectory({ section }) {
                     setModal({ type: "register" });
                   }}
                 >
-                  + Cadastrar Gerente
+                  Cadastrar gerente
                 </button>
               )}
               {pharmacies && (
-                <button
+                <button data-track="cadastrar-farmacia"
                   className="mgr-primary"
                   onClick={() => setModal({ type: "registerFarmacia" })}
                 >
-                  + Cadastrar Farmácia
+                  Cadastrar farmácia
                 </button>
               )}
             </div>
@@ -1101,30 +1092,6 @@ export function AdminDirectory({ section }) {
                   ),
                 )}
               </select>
-              <button
-                type="button"
-                className="adm-icon-btn"
-                disabled
-                title="Filtros avançados — em breve"
-              >
-                <Icon name="sliders" size={16} />
-              </button>
-              <button
-                type="button"
-                className="adm-icon-btn"
-                disabled
-                title="Atualizar — em breve"
-              >
-                <Icon name="refresh" size={16} />
-              </button>
-              <button
-                type="button"
-                className="adm-icon-btn"
-                disabled
-                title="Mais opções — em breve"
-              >
-                <Icon name="dots" size={16} />
-              </button>
             </div>
             {managers || patients ? (
               <GradePessoas rotulo={config.label}>
@@ -1137,7 +1104,8 @@ export function AdminDirectory({ section }) {
                         nome={record.name}
                         foto={record.photo}
                         papel={managers ? ["Gerente", record.crf].filter(Boolean).join(" · ") : "Paciente"}
-                        selo={<span className={`mgr-badge ${blocked ? "red" : "green"}`}>{record.status}</span>}
+                        // só mostra a situação quando foge do normal (todos ativos = nenhum selo)
+                        selo={blocked ? <span className="mgr-badge red">{record.status}</span> : null}
                         linhas={[
                           ["pharmacy", managers ? record.unit : null],
                           ["map", patients && record.unit !== "Unidade não informada" ? record.unit : null],
@@ -1198,15 +1166,13 @@ export function AdminDirectory({ section }) {
                   <thead>
                     <tr>
                       <th scope="col">Nome</th>
-                      <th scope="col">Unidade</th>
+                      <th scope="col">{pharmacies ? "Cidade" : "Unidade"}</th>
                       <th scope="col">Situação</th>
-                      <th scope="col">Último acesso</th>
-                      <th scope="col">Ações</th>
+                      <th scope="col"><span className="sr-only">Ações</span></th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginated.map((record) => {
-                      const tone = avatarTone(record.name);
                       const blocked = ["Bloqueado", "Banido"].includes(
                         record.status,
                       );
@@ -1223,10 +1189,6 @@ export function AdminDirectory({ section }) {
                                 </span>
                               ) : pharmacies ? <span
                                 className="adm-avatar-circle pharmacy-avatar"
-                                style={{
-                                  background: tone.background,
-                                  color: tone.color,
-                                }}
                                 aria-hidden="true"
                               >
                                 <Icon name="pharmacy" size={20} />
@@ -1248,7 +1210,6 @@ export function AdminDirectory({ section }) {
                               {record.status}
                             </span>
                           </td>
-                          <td className="adm-muted-cell">—</td>
                           <td>
                             <div className="adm-row-menu-wrap">
                               <button
@@ -1369,9 +1330,8 @@ export function AdminDirectory({ section }) {
         </>
       ) : (
         <>
-          <header className="mgr-page-head mgr-page-head-featured">
+          <header className="mgr-page-head">
             <div>
-              <p className="mgr-eyebrow">ADMINISTRAÇÃO DA PLATAFORMA</p>
               <h1>{config.title}</h1>
               <p>{config.description}</p>
             </div>

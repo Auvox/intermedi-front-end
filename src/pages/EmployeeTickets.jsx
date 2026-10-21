@@ -1,13 +1,15 @@
 import { useCallback, useState } from "react";
 import { DirectoryStats } from "../components/Directory";
-import { ErroComRetry, SeletorPersona } from "../components/Chamados";
+import { ErroComRetry } from "../components/Chamados";
 import CartaoChamado from "../components/CartaoChamado";
 import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
 import useApiList from "../hooks/useApiList";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { INTERVALO_CHAMADOS, useFuncionarioAtual, usePolling } from "../hooks/useChamados";
 import { listarChamadosFuncionario, listarRemedios } from "../services/api";
 import { INTERVALO_A_CAMINHO, STATUS_CHAMADO, temACaminho } from "../services/chamados";
+import { SkeletonTabela } from "../components/Skeleton";
 
 // "Minhas solicitações": chamados de reposição abertos pelo funcionário.
 export default function EmployeeTickets() {
@@ -17,6 +19,8 @@ export default function EmployeeTickets() {
   const [status, setStatus] = useState("");
   const [solicitando, setSolicitando] = useState(false);
   const { items: medicines } = useApiList(listarRemedios);
+  // atalho "Pedir reposição" da visão geral
+  useAcaoDaUrl("solicitar", useCallback(() => setSolicitando(true), []), Boolean(idFuncionario && medicines.length));
 
   const fetcher = useCallback(
     (options) => listarChamadosFuncionario(idFuncionario, status, options).then((data) => data.chamados ?? []),
@@ -34,13 +38,12 @@ export default function EmployeeTickets() {
 
   return (
     <>
-      <header className="mgr-page-head mgr-page-head-featured">
+      <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p>
           <h1>Minhas solicitações</h1>
           <p>Acompanhe os pedidos de reposição enviados ao gerente e veja a resposta.</p>
         </div>
-        <button
+        <button data-track="pedir-reposicao"
           type="button"
           className="mgr-primary"
           disabled={!idFuncionario || !medicines.length}
@@ -53,7 +56,7 @@ export default function EmployeeTickets() {
       {!idFuncionario ? (
         <section className="mgr-panel">
           {funcionario.loading ? (
-            <p className="mgr-empty" role="status">Carregando funcionários…</p>
+            <SkeletonTabela rotulo="Carregando funcionários…" foto={false} />
           ) : (
             <p className="mgr-empty" role="alert">
               {funcionario.error || "Nenhum funcionário cadastrado na API."}
@@ -74,14 +77,6 @@ export default function EmployeeTickets() {
           <section className="mgr-panel" aria-labelledby="emp-chamados-title">
             <div className="mgr-toolbar">
               <h2 id="emp-chamados-title">Solicitações</h2>
-              {!funcionario.temSessao && (
-                <SeletorPersona
-                  label="Funcionário"
-                  value={idFuncionario}
-                  onChange={funcionario.escolher}
-                  options={funcionario.funcionarios.map((f) => [f.id, f.name])}
-                />
-              )}
               <label className="chamado-filter">
                 <span>Status</span>
                 <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -94,7 +89,7 @@ export default function EmployeeTickets() {
               <button type="button" className="directory-row-action" onClick={reload}>Atualizar</button>
             </div>
             {loading ? (
-              <p className="mgr-empty" role="status">Carregando solicitações…</p>
+              <SkeletonTabela rotulo="Carregando solicitações…" foto={false} />
             ) : error && !data ? (
               <ErroComRetry message={error} onRetry={retry} />
             ) : (

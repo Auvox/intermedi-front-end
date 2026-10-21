@@ -1,13 +1,27 @@
+import { Link } from "react-router-dom";
 import ManagerIcon from "./ManagerIcon";
 import PersonaAvatar from "./PersonaAvatar";
+import NumeroAnimado from "./NumeroAnimado";
+import { SkeletonValor } from "./Skeleton";
 import { propsLinha, turno } from "../services/perfil";
+import { paraIdentificador } from "../services/rastreioCliques";
 
+// items: [rótulo, valor, ícone, contexto?, carregando?, link?] — o contexto explica
+// de onde vem o número; com link, o card inteiro leva à tela daquele número
 export function DirectoryStats({ items }) {
-  return <div className="directory-stats">{items.map(([label, value, icon = "people"]) =>
-    <article className="directory-stat" key={label}>
-      <span className="directory-stat-icon"><ManagerIcon name={icon} size={21} /></span>
-      <div><p>{label}</p><strong>{value ?? "—"}</strong></div>
-    </article>)}</div>;
+  return <div className="directory-stats">{items.map(([label, value, icon = "people", hint, loading = false, to]) => {
+    const conteudo = <>
+      <span className="directory-stat-icon"><ManagerIcon name={icon} size={18} /></span>
+      <div>
+        <p>{label}</p>
+        <strong>{loading ? <SkeletonValor /> : <NumeroAnimado valor={value ?? "—"} />}</strong>
+        {hint && <small>{hint}</small>}
+      </div>
+    </>;
+    return to
+      ? <Link className="directory-stat is-link" key={label} to={to} aria-busy={loading || undefined} data-track={`card:${paraIdentificador(label)}`}>{conteudo}</Link>
+      : <article className="directory-stat" key={label} aria-busy={loading || undefined}>{conteudo}</article>;
+  })}</div>;
 }
 
 export function PersonCell({ name = "Não informado", detail, role = "paciente", photo }) {

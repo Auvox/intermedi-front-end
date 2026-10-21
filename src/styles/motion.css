@@ -1,0 +1,221 @@
+/* =====================================================================
+   Motion design das áreas internas (admin, funcionário, gerente).
+   Linguagem: blur → nítido, opacidade, pequenas translações, stagger curto.
+   A animação deve ser quase invisível: só se sente que está bem feito.
+   ===================================================================== */
+:root {
+  --motion-ease-out: cubic-bezier(.22, 1, .36, 1);
+  --motion-ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --motion-fast: 160ms;
+  --motion-base: 240ms;
+  --motion-enter: 380ms;
+  --motion-stagger: 45ms;
+  --motion-blur: 4px;
+}
+
+@keyframes motion-enter {
+  from { opacity: 0; transform: translateY(8px); filter: blur(var(--motion-blur)); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes motion-enter-card {
+  from { opacity: 0; transform: translateY(10px) scale(.99); filter: blur(var(--motion-blur)); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes motion-sharpen {
+  from { opacity: .5; filter: blur(var(--motion-blur)); }
+  to { opacity: 1; filter: blur(0); }
+}
+@keyframes motion-fade { from { opacity: 0; } }
+@keyframes motion-skeleton-shimmer { to { background-position: -200% 0; } }
+
+/* ---------- Entrada da página (stagger) ----------
+   Roda quando os filhos de .mgr-main montam: ao abrir a área e a cada troca
+   de rota. fill-mode "backwards" só segura o estado inicial durante o delay;
+   depois a animação solta o transform e o hover dos cards volta a funcionar. */
+.mgr-main > :not(.directory-stats, .remedio-resumo, .adm-dash),
+.mgr-main > .adm-dash > :not(.directory-stats),
+.mgr-main :is(.directory-stats, .remedio-resumo) > * {
+  animation: motion-enter var(--motion-enter) var(--motion-ease-out) backwards;
+}
+.mgr-main :is(.directory-stats, .remedio-resumo) > *,
+.mgr-main .grade-pessoas > li {
+  animation-name: motion-enter-card;
+}
+.mgr-main > :nth-child(2), .mgr-main > .adm-dash > :nth-child(2) { animation-delay: calc(var(--motion-stagger) * 1); }
+.mgr-main > :nth-child(3), .mgr-main > .adm-dash > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
+.mgr-main > :nth-child(4), .mgr-main > .adm-dash > :nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3); }
+.mgr-main > :nth-child(5), .mgr-main > .adm-dash > :nth-child(5) { animation-delay: calc(var(--motion-stagger) * 4); }
+.mgr-main > :nth-child(6), .mgr-main > .adm-dash > :nth-child(6) { animation-delay: calc(var(--motion-stagger) * 5); }
+/* Depois do sexto bloco tudo entra junto: a sequência não fica longa. */
+.mgr-main > :nth-child(n + 7), .mgr-main > .adm-dash > :nth-child(n + 7) { animation-delay: calc(var(--motion-stagger) * 6); }
+
+/* Cards de métrica: começam logo depois do cabeçalho */
+.mgr-main :is(.directory-stats, .remedio-resumo) > :nth-child(1) { animation-delay: calc(var(--motion-stagger) * 1); }
+.mgr-main :is(.directory-stats, .remedio-resumo) > :nth-child(2) { animation-delay: calc(var(--motion-stagger) * 2); }
+.mgr-main :is(.directory-stats, .remedio-resumo) > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 3); }
+.mgr-main :is(.directory-stats, .remedio-resumo) > :nth-child(n + 4) { animation-delay: calc(var(--motion-stagger) * 4); }
+
+/* Grades de cartões: stagger só nos primeiros; listas grandes entram juntas */
+.mgr-main .grade-pessoas > li { animation-duration: 320ms; }
+.mgr-main .grade-pessoas > li:nth-child(2) { animation-delay: 30ms; }
+.mgr-main .grade-pessoas > li:nth-child(3) { animation-delay: 60ms; }
+.mgr-main .grade-pessoas > li:nth-child(4) { animation-delay: 90ms; }
+.mgr-main .grade-pessoas > li:nth-child(5) { animation-delay: 120ms; }
+.mgr-main .grade-pessoas > li:nth-child(6) { animation-delay: 150ms; }
+.mgr-main .grade-pessoas > li:nth-child(n + 7) { animation-delay: 180ms; }
+
+/* ---------- Skeleton → conteúdo ----------
+   O conteúdo que substitui um skeleton chega levemente desfocado e fica nítido. */
+.mgr-panel > :is(.mgr-table-wrap, .mgr-ticket-line, .grade-pessoas, .mgr-empty),
+.motion-reveal {
+  animation: motion-sharpen 320ms var(--motion-ease-out) backwards;
+}
+.mgr-panel > .mgr-ticket-line:nth-of-type(2) { animation-delay: 40ms; }
+.mgr-panel > .mgr-ticket-line:nth-of-type(3) { animation-delay: 80ms; }
+.mgr-panel > .mgr-ticket-line:nth-of-type(n + 4) { animation-delay: 120ms; }
+
+/* ---------- Skeleton ---------- */
+.skel {
+  /* Aparece com um pequeno atraso: em respostas rápidas nem chega a piscar */
+  animation: motion-fade 220ms ease-out 90ms backwards;
+}
+.skel-bar {
+  display: block;
+  height: 12px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--color-surface-sunken) 25%, var(--color-surface-muted) 50%, var(--color-surface-sunken) 75%);
+  background-size: 200% 100%;
+  animation: motion-skeleton-shimmer 1.4s linear infinite;
+}
+.skel-bar.is-circle { flex-shrink: 0; border-radius: 50%; }
+.skel-bar.is-soft { opacity: .65; }
+.skel-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+/* Tabela: mesma estrutura de .mgr-table-wrap para não deslocar o layout */
+.skel-tabela { width: 100%; border-collapse: collapse; }
+.skel-tabela th { text-align: left; }
+.skel-tabela td { vertical-align: middle; }
+.skel-tabela tbody tr:hover { background: transparent !important; }
+.skel-celula { display: flex; align-items: center; gap: 12px; }
+.skel-celula > div { display: grid; flex: 1; gap: 7px; min-width: 0; }
+/* Linhas de chamado: mesmas medidas de .mgr-ticket-line */
+.skel-linha { display: flex; align-items: center; gap: 14px; padding: 20px 25px; border-top: 1px solid var(--color-border-subtle); }
+.skel-linha > div { display: grid; flex: 1; gap: 8px; max-width: 360px; }
+.skel-linha > .skel-bar:last-child { margin-left: auto; }
+/* Cartões de pessoa: faixa + avatar + linhas, no tamanho de .cartao-pessoa */
+.skel-cartao { display: flex; flex-direction: column; width: 100%; min-height: 236px; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: 16px; background: var(--color-surface); }
+.skel-cartao-faixa { height: 64px; background: var(--color-surface-sunken); }
+.skel-cartao-corpo { display: grid; gap: 9px; padding: 0 18px 18px; margin-top: -34px; }
+.skel-cartao-corpo .is-circle { border: 4px solid var(--color-surface); margin-bottom: 4px; }
+/* Valor de métrica ainda carregando: ocupa a altura do número */
+.skel-valor { display: inline-block; vertical-align: middle; width: 56px; height: 1em; border-radius: 8px; }
+
+/* ---------- Cards: hover com deslocamento mínimo ---------- */
+.mgr-shell :is(.directory-stat, .remedio-resumo-card, .mgr-insight) {
+  transition:
+    transform var(--motion-base) var(--motion-ease-out),
+    box-shadow var(--motion-base) var(--motion-ease-out),
+    border-color var(--motion-base) var(--motion-ease-out),
+    background-color var(--motion-base) var(--motion-ease-out);
+}
+.mgr-shell :is(.directory-stat, .mgr-insight):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.mgr-shell .remedio-resumo-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.mgr-shell .remedio-resumo-card[aria-pressed="true"]:hover { box-shadow: 0 0 0 2px var(--color-primary-ring), var(--shadow-sm); }
+.mgr-shell .remedio-resumo-card:active { transform: translateY(0) scale(.985); transition-duration: 90ms; }
+.mgr-shell .cartao-pessoa { transition-duration: var(--motion-base); transition-timing-function: var(--motion-ease-out); }
+.mgr-shell .mgr-panel-head a { transition: background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease; }
+
+/* ---------- Botões: hover suave, compressão no clique ---------- */
+.mgr-shell :is(.mgr-primary, .mgr-secondary, .mgr-delete-button, .cartao-pessoa-acao, .mgr-text-button),
+.mgr-modal :is(.mgr-primary, .mgr-secondary, .mgr-delete-button) {
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    box-shadow var(--motion-base) var(--motion-ease-out),
+    transform var(--motion-base) var(--motion-ease-out),
+    opacity var(--motion-fast) ease;
+}
+.mgr-shell :is(.mgr-primary, .mgr-secondary, .mgr-delete-button, .cartao-pessoa-acao):active:not(:disabled),
+.mgr-modal :is(.mgr-primary, .mgr-secondary, .mgr-delete-button):active:not(:disabled) {
+  transform: scale(.98);
+  transition-duration: 90ms;
+}
+.mgr-shell :is(.mgr-primary, .mgr-secondary, .mgr-delete-button):disabled,
+.mgr-modal :is(.mgr-primary, .mgr-secondary, .mgr-delete-button):disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+/* Seta "↗" dos botões de destaque do cabeçalho acompanha o hover */
+.mgr-shell .mgr-page-head a.mgr-primary > span:last-child { display: inline-block; transition: transform var(--motion-base) var(--motion-ease-out); }
+.mgr-shell .mgr-page-head a.mgr-primary:hover > span:last-child { transform: translate(2px, -2px); }
+
+/* ---------- Modais: entrada com blur curto ---------- */
+.mgr-modal[open] { animation: motion-enter-card 280ms var(--motion-ease-out); }
+.mgr-modal[open]::backdrop { animation: motion-fade 220ms ease-out; }
+
+/* ---------- Sidebar: indicador único que desliza entre os itens ---------- */
+.manager-sidebar nav { position: relative; }
+.manager-sidebar nav > a { z-index: 1; }
+.manager-sidebar-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  /* mesmo visual do link ativo do design system (managerSidebar.css) */
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  pointer-events: none;
+  opacity: 0;
+}
+.manager-sidebar-indicator.is-visible { opacity: 1; }
+.manager-sidebar-indicator.is-ready {
+  transition:
+    transform 260ms var(--motion-ease-out),
+    width 260ms var(--motion-ease-out),
+    height 260ms var(--motion-ease-out),
+    opacity var(--motion-fast) ease;
+}
+/* Com o indicador ativo, o item deixa de pintar o próprio fundo */
+.mgr-shell .manager-sidebar nav.has-indicator a.active {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.mgr-shell .manager-sidebar nav.has-indicator a.active::before { content: none; }
+.manager-sidebar nav a .manager-sidebar-icon { transition: background-color var(--motion-base) var(--motion-ease-out), color var(--motion-base) var(--motion-ease-out), box-shadow var(--motion-base) var(--motion-ease-out); }
+.manager-sidebar nav a .manager-sidebar-chevron { transition: opacity var(--motion-fast) ease, transform var(--motion-base) var(--motion-ease-out); transform: translateX(-3px); }
+.manager-sidebar nav a:is(:hover, .active) .manager-sidebar-chevron { transform: none; }
+
+/* Itens da sidebar entram uma única vez, quando a área abre */
+.manager-sidebar nav > :is(a, button) { animation: motion-enter 320ms var(--motion-ease-out) backwards; }
+.manager-sidebar nav > :nth-child(3) { animation-delay: 25ms; }
+.manager-sidebar nav > :nth-child(4) { animation-delay: 50ms; }
+.manager-sidebar nav > :nth-child(5) { animation-delay: 75ms; }
+.manager-sidebar nav > :nth-child(6) { animation-delay: 100ms; }
+.manager-sidebar nav > :nth-child(7) { animation-delay: 125ms; }
+.manager-sidebar nav > :nth-child(n + 8) { animation-delay: 150ms; }
+
+/* ---------- Movimento reduzido ----------
+   Sistema operacional ou opção "Reduzir movimento" do menu de acessibilidade.
+   O menu pausa animações (animation-play-state); aqui elas são removidas,
+   para nada ficar parado no quadro inicial (invisível ou desfocado). */
+@media (prefers-reduced-motion: reduce) {
+  .mgr-main > *, .mgr-main > .adm-dash > *, .mgr-main :is(.directory-stats, .remedio-resumo) > *,
+  .mgr-main .grade-pessoas > li, .mgr-panel > *, .motion-reveal, .skel, .skel-bar,
+  .manager-sidebar nav > *, .mgr-modal[open], .mgr-modal[open]::backdrop { animation: none !important; }
+  .mgr-shell :is(.directory-stat, .remedio-resumo-card, .mgr-insight, .mgr-primary, .mgr-secondary):is(:hover, :active) { transform: none !important; }
+  .manager-sidebar-indicator.is-ready { transition: none; }
+}
+.a11y-motion :is(.mgr-main > *, .mgr-main > .adm-dash > *, .mgr-main .directory-stats > *, .mgr-main .remedio-resumo > *,
+  .mgr-main .grade-pessoas > li, .mgr-panel > *, .motion-reveal, .skel, .skel-bar,
+  .manager-sidebar nav > *, .mgr-modal[open]) { animation: none !important; }
+.a11y-motion .mgr-modal[open]::backdrop { animation: none !important; }
+.a11y-motion .mgr-shell :is(.directory-stat, .remedio-resumo-card, .mgr-insight, .mgr-primary, .mgr-secondary, .cartao-pessoa):is(:hover, :active) { transform: none !important; }

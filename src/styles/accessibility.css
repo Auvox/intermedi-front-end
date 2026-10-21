@@ -1,7 +1,12 @@
-.accessibility { font-family: 'Poppins', sans-serif; color: #163b2b; color-scheme: light; }
+.accessibility { font-family: var(--font-sans); color: #163b2b; color-scheme: light; }
 .accessibility button { font-family: inherit; cursor: pointer; }
 .accessibility button:focus-visible { outline: 3px solid #1658d5; outline-offset: 4px; }
 .accessibility-trigger { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 1200; display: grid; place-items: center; width: 56px; height: 56px; border: 2px solid white; border-radius: 50%; background: #087f45; color: white; box-shadow: 0 4px 20px #064d3333; }
+/* Nas áreas logadas o botão fica no canto, menor, sem cobrir tabelas e ações */
+.persona-accessibility .accessibility-trigger { top: auto; bottom: 20px; right: 20px; transform: none; width: 44px; height: 44px; border-width: 2px; background: var(--color-primary); box-shadow: var(--shadow-md); }
+.persona-accessibility .accessibility-trigger:hover { background: var(--color-primary-hover); }
+.persona-accessibility .accessibility-trigger svg { width: 24px; height: 24px; }
+.persona-accessibility .accessibility { font-family: var(--font-sans); }
 .accessibility-trigger:hover { background: #065f34; }
 .accessibility-trigger svg { width: 32px; height: 32px; }
 .accessibility-panel { position: fixed; inset: 0 24px 0 auto; margin: auto 0; width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 26px 22px 20px; border: 1px solid #e4ece7; border-radius: 26px; background: #fff; color: #243e31; box-shadow: 0 24px 80px #18392b26; overflow: auto; scrollbar-width: thin; scrollbar-color: #d0ddd4 transparent; }
@@ -19,13 +24,13 @@
 .accessibility-option-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #eaf1ec; color: #48745a; margin-bottom: 10px; }
 .accessibility-option-icon svg { width: 21px; height: 21px; }
 .accessibility-options button[aria-pressed="true"] .accessibility-option-icon { background: #dcefe0; color: #24623b; }
-.accessibility-options small { display: block; margin-top: 3px; font-size: 10px; color: #68796e; font-weight: 400; }
+.accessibility-options small { display: block; margin-top: 3px; font-size: 12px; color: #68796e; font-weight: 400; }
 .accessibility-options button[aria-pressed="true"] small { color: #24623b; }
 .accessibility-check { position: absolute; top: 17px; right: 13px; width: 28px; height: 16px; padding: 3px; border-radius: 12px; background: #d5dfd8; transition: background .18s; }
 .accessibility-check span { display: block; width: 10px; height: 10px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #18392b20; transition: transform .18s; }
 .accessibility-options button[aria-pressed="true"] .accessibility-check { background: #388353; }
 .accessibility-options button[aria-pressed="true"] .accessibility-check span { transform: translateX(12px); }
-.accessibility-note { margin: 18px 0 12px; font-size: 10px; line-height: 1.6; color: #68796e; text-align: center; }
+.accessibility-note { margin: 18px 0 12px; font-size: 12px; line-height: 1.6; color: #68796e; text-align: center; }
 .accessibility-reset { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 0; min-height: 44px; padding: 10px; border: 1px solid #e0e9e2; border-radius: 12px; background: white; color: #486653; font-size: 12px; font-weight: 500; transition: background .18s; }
 .accessibility-reset:hover { background: #f2f7f3; }
 .accessibility-reset svg { width: 15px; height: 15px; }
@@ -47,7 +52,7 @@ html:has(.a11y-motion) { scroll-behavior: auto !important; }
 .a11y-images .a11y-image-letter { display: inline; }
 /* Improve text contrast without painting over transparent artwork or canvases. */
 .a11y-contrast { --text: #111827; --text-muted: #34473b; --green: #08743c; --green-dark: #065b30; }
-.a11y-contrast :is(.lp-hero-sub, .hero-benefits li, .lp-section-sub, .journey-copy p, .map-network-description, .map-feed-item, .map-feed-subtitle) { color: #263b2e !important; }
+.a11y-contrast :is(.lp-hero-sub, .hero-signature span, .lp-section-sub, .journey-description, .map-network-description, .map-feed-item, .map-feed-subtitle) { color: #263b2e !important; }
 .a11y-contrast :is(.benefit-card, .audience-card) { --card-ink: #10291b; --card-accent: #244f30; --card-body: #263b2e; --audience-ink: #10291b; --audience-muted: #263b2e; }
 .a11y-contrast :is(.benefit-card--security, .audience-card--business) { --card-ink: #fff; --card-accent: #e1f5e7; --card-body: #fff; --audience-ink: #fff; --audience-muted: #fff; }
 .a11y-contrast :is(.lp-footer-invitation p, .lp-footer-brand p, .lp-footer-col a, .lp-footer-bottom, .lp-footer-bottom a) { color: #fff; }

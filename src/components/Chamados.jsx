@@ -154,7 +154,8 @@ export function AcompanhamentoRemedios({ chamado, linhaDoTempo = false, onAbrirR
       {(chamado.remedios ?? []).map((r) => {
         const p = r.pedidoAtual;
         const s = r.situacao;
-        const aceito = ["a_caminho", "recebido"].includes(s);
+        // aprovada (fornecedor aceitou, aguardando o preparo) chega como aguardando_fornecedor
+        const aceito = ["em_preparo", "a_caminho", "recebido"].includes(s) || p?.status === "aprovada";
         return (
           <li key={r.idRemedio} className="chamado-item">
             <div className="chamado-item-topo">
@@ -173,7 +174,7 @@ export function AcompanhamentoRemedios({ chamado, linhaDoTempo = false, onAbrirR
             {p?.nomeFarmaciaFornecedora && s !== "sem_fornecedor" && (
               <small>Fornecido por <strong>{p.nomeFarmaciaFornecedora}</strong></small>
             )}
-            {s === "a_caminho" && (pedidoCompleto(p?.idRedistribuicao)
+            {(s === "a_caminho" || s === "em_preparo") && (pedidoCompleto(p?.idRedistribuicao)
               ? <RastreioMini pedido={pedidoCompleto(p.idRedistribuicao)} />
               : <ContagemEntrega dataPrevistaChegada={p?.dataPrevistaChegada} />)}
             {s === "recebido" && p?.dataRecebimento && (
@@ -189,6 +190,7 @@ export function AcompanhamentoRemedios({ chamado, linhaDoTempo = false, onAbrirR
                     <Passo estado={aceito ? "feito" : "atual"}>
                       {aceito ? `Aceito por ${p?.nomeFarmaciaFornecedora}` : `Aguardando ${p?.nomeFarmaciaFornecedora ?? "farmácia"}`}
                     </Passo>
+                    <Passo estado={["a_caminho", "recebido"].includes(s) ? "feito" : s === "em_preparo" ? "atual" : "futuro"}>Em preparo</Passo>
                     <Passo estado={s === "recebido" ? "feito" : s === "a_caminho" ? "atual" : "futuro"}>A caminho</Passo>
                     <Passo estado={s === "recebido" ? "feito" : "futuro"}>Recebido</Passo>
                   </>

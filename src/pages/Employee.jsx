@@ -1,5 +1,5 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { CartaoPessoa, DirectoryStats, GradePessoas, TeamTable } from "../components/Directory";
+import { CartaoPessoa, GradePessoas, TeamTable } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
@@ -9,14 +9,18 @@ import { unit } from "./managerData";
 import useApiList from "../hooks/useApiList";
 import {
   API_URL,
+  listarFarmacias,
   listarFuncionarios,
   listarPacientes,
   normalizeFuncionario,
   normalizePaciente,
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
-import { ToastRegion } from "../components/Chamados";
+import { definirContextoRastreio } from "../services/rastreioCliques";
+import { SeletorPersona, ToastRegion } from "../components/Chamados";
 import { SinoFuncionario } from "../components/NotificacoesEntregas";
+import PreparosFarmacia from "../components/PreparosFarmacia";
+import usePreparos from "../hooks/usePreparos";
 import { FaixaEmAndamento } from "../components/Rastreio";
 import { useFarmaciaDoFuncionario, useGerenteDaFarmacia, useToast } from "../hooks/useChamados";
 import { useNotificacoesRastreio, usePedidosDoFuncionario } from "../hooks/useRastreio";
@@ -24,6 +28,7 @@ import { emAndamento } from "../services/rastreio";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
+import { SkeletonCartoes } from "../components/Skeleton";
 
 // Visual preview only. Replace these fixtures with intermedi-back-end data
 // when integrating authentication and server-side permissions.
@@ -37,13 +42,27 @@ const normalize = (text) =>
 
 export default function Employee() {
   const session = readEmployeeSession();
-  const employeeName = session?.name || "Funcionário Local";
-  const employeeUnit = session?.unitName || unit;
 
   // Rastreamento: cada etapa da entrega dos chamados que o funcionário abriu e a
   // chegada dos remédios que outras pessoas da unidade pediram (os pedidos da
   // unidade vêm pelo gerente dela; não há endpoint por farmácia)
   const funcionario = useFarmaciaDoFuncionario();
+  // mapa de calor (aba Desempenho do admin): quem está usando
+  useEffect(() => {
+    definirContextoRastreio({ usuarioId: funcionario.idFuncionario, farmaciaId: funcionario.idFarmacia });
+  }, [funcionario.idFuncionario, funcionario.idFarmacia]);
+
+  // Sem sessão (login das personas ainda não existe), o funcionário é escolhido
+  // no seletor do topo, como o gerente; o nome e a farmácia acompanham a escolha.
+  const { items: farmacias } = useApiList(listarFarmacias);
+  const nomeDaFarmacia = new Map(farmacias.map((f) => [String(f.idFarmacia ?? f.id), f.nomeFarmacia ?? f.nome]));
+  const escolhido = funcionario.funcionarios.find((f) => f.id === funcionario.idFuncionario);
+  const employeeName = session?.name || escolhido?.name || "Funcionário";
+  const employeeUnit = session?.unitName || nomeDaFarmacia.get(String(funcionario.idFarmacia ?? "")) || unit;
+  const opcoesFuncionario = funcionario.funcionarios
+    .map((f) => ({ ...f, farmacia: nomeDaFarmacia.get(f.farmaciaId) ?? "" }))
+    .sort((a, b) => a.farmacia.localeCompare(b.farmacia, "pt-BR") || a.name.localeCompare(b.name, "pt-BR"))
+    .map((f) => [f.id, f.farmacia ? `${f.name} · ${f.farmacia}` : f.name]);
   const idGerenteUnidade = useGerenteDaFarmacia(funcionario.idFarmacia);
   const [toast, notify] = useToast(8000);
   const fonteRastreio = usePedidosDoFuncionario(funcionario.idFuncionario, idGerenteUnidade);
@@ -51,6 +70,10 @@ export default function Employee() {
     escopo: `funcionario:${funcionario.idFuncionario}:${funcionario.idFarmacia}`,
     pronto: fonteRastreio.carregado,
     onNovos: (texto) => notify(texto),
+  });
+  // Pedidos da rede que a farmácia dele vai enviar: aviso "Prepare…" + Começar
+  const preparos = usePreparos(funcionario.idFuncionario, {
+    onNovo: (p) => notify(`Novo pedido para preparar: ${p.mensagemPreparo}`),
   });
 
 
@@ -88,7 +111,7 @@ export default function Employee() {
             ? listPayload.funcionarios
             : [];
 
-      const targetId = String(session?.id ?? "");
+      const targetId = String(session?.id ?? funcionario.idFuncionario ?? "");
       const raw =
         rawList.find((item) => {
           const id = String(item.idFuncionario ?? item.id ?? "");
@@ -172,8 +195,8 @@ export default function Employee() {
       setDraft(profileData);
     } catch (error) {
       const fallback = {
-        id: session?.id ?? "",
-        name: session?.name ?? "Funcionário",
+        id: session?.id ?? funcionario.idFuncionario ?? "",
+        name: session?.name ?? escolhido?.name ?? "Funcionário",
         email: session?.email ?? "",
         cpf: session?.cpf ?? "",
         matricula: session?.matricula ?? "",
@@ -290,6 +313,14 @@ export default function Employee() {
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{employeeUnit}</strong>
           </span>
+          {!funcionario.temSessao && opcoesFuncionario.length > 0 && (
+            <SeletorPersona
+              label="Funcionário"
+              value={funcionario.idFuncionario ?? ""}
+              onChange={funcionario.escolher}
+              options={opcoesFuncionario}
+            />
+          )}
           <SinoFuncionario rastreio={rastreio} fonte={fonteRastreio} />
           <div className="mgr-account emp-account">
             <button
@@ -311,8 +342,17 @@ export default function Employee() {
           </div>
         </div>
         <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
-          <main className="mgr-main directory-layout">
-            <Outlet context={{ chamadosDoFuncionario: fonteRastreio.chamados }} />
+          <main id="conteudo" tabIndex={-1} className="mgr-main directory-layout">
+            <PreparosFarmacia preparos={preparos} idFuncionario={funcionario.idFuncionario} onAviso={notify} />
+            <Outlet
+              context={{
+                chamadosDoFuncionario: fonteRastreio.chamados,
+                idFarmacia: funcionario.idFarmacia,
+                // visão geral
+                nomeFuncionario: employeeName,
+                unidade: employeeUnit,
+              }}
+            />
           </main>
         </PerfilProvider>
         <footer className="mgr-footer">
@@ -414,13 +454,13 @@ export default function Employee() {
   );
 }
 
-function PageHeader({ title, description, count, label, icon, results }) {
-  return <>
-    <header className="mgr-page-head mgr-page-head-featured"><div>
-      <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p><h1>{title}</h1><p>{description}</p>
-    </div></header>
-    <DirectoryStats items={[[label, count, icon], ["Resultados da busca", results, "check"]]} />
-  </>;
+// O total aparece no título da lista e o resultado da busca no rodapé dela
+function PageHeader({ title, description }) {
+  return (
+    <header className="mgr-page-head">
+      <div><h1>{title}</h1><p>{description}</p></div>
+    </header>
+  );
 }
 
 // Chamados do funcionário ainda em processo (aguardando gerente, fornecedor ou a caminho)
@@ -446,11 +486,7 @@ export function EmployeePatients() {
     <>
       <PageHeader
         title="Pacientes"
-        description="Encontre os pacientes da sua unidade em um só lugar."
-        count={patients.length}
-        results={filtered.length}
-        label="Total de pacientes"
-        icon="heart"
+        description="Consulte contato e histórico dos pacientes cadastrados."
       />
       <FaixaEmAndamento
         chamados={emProcesso(chamadosDoFuncionario)}
@@ -480,7 +516,7 @@ export function EmployeePatients() {
                 linhas={[
                   ["mail", patient.email],
                   ["phone", patient.phone],
-                  ["pharmacy", readEmployeeSession()?.unitName || unit],
+                  ["map", [patient.city, patient.state].filter(Boolean).join(" / ")],
                 ]}
                 onAbrir={(el) => abrirPerfil("paciente", patient.id, el)}
               />
@@ -492,7 +528,7 @@ export function EmployeePatients() {
             Nenhum paciente encontrado. Tente outro nome ou código.
           </p>
         )}
-        {loading && <p className="mgr-empty">Carregando pacientes…</p>}
+        {loading && <SkeletonCartoes rotulo="Carregando pacientes…" />}
         {error && (
           <p className="mgr-empty" role="alert">
             {error}
@@ -512,7 +548,9 @@ export function EmployeeTeam() {
   const [shift, setShift] = useState("");
   const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
   const session = readEmployeeSession();
-  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? "");
+  // farmácia da sessão ou, sem sessão, a do funcionário escolhido no topo
+  const { idFarmacia } = useOutletContext() ?? {};
+  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? idFarmacia ?? "");
   const sameUnit = targetFarmaciaId
     ? allEmployees.filter((item) => item.farmaciaId === targetFarmaciaId)
     : [];
@@ -528,11 +566,7 @@ export function EmployeeTeam() {
     <>
       <PageHeader
         title="Funcionários"
-        description="Conheça os profissionais que compartilham o cuidado com você."
-        count={employees.length}
-        results={filtered.length}
-        label="Profissionais na unidade"
-        icon="people"
+        description="Equipe da sua unidade, com cargo, turno e contato."
       />
       <section className="mgr-panel" aria-labelledby="emp-team-title">
         <div className="mgr-toolbar">
@@ -557,7 +591,7 @@ export function EmployeeTeam() {
             Nenhum funcionário encontrado. Tente outro nome ou cargo.
           </p>
         )}
-        {loading && <p className="mgr-empty">Carregando funcionários…</p>}
+        {loading && <SkeletonCartoes rotulo="Carregando funcionários…" />}
         {error && (
           <p className="mgr-empty" role="alert">
             {error}

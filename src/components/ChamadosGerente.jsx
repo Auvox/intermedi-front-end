@@ -207,8 +207,8 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
           </p>
         )}
         <div className="mgr-modal-actions">
-          <button type="button" className="mgr-primary" onClick={() => escolher("aceitar")}>Aceitar e pedir à rede</button>
-          <button type="button" className="mgr-delete-button chamado-recusar" onClick={() => escolher("recusar")}>Recusar</button>
+          <button type="button" className="mgr-primary" onClick={() => escolher("aceitar")} data-track="aceitar-chamado">Aceitar e pedir à rede</button>
+          <button type="button" className="mgr-delete-button chamado-recusar" onClick={() => escolher("recusar")} data-track="recusar-chamado">Recusar</button>
         </div>
       </div>
     );

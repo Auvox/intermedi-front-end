@@ -8,6 +8,7 @@ import useApiList from "../hooks/useApiList";
 import { listarServicos, normalizeText } from "../services/api";
 import { formatarDataChamado } from "../services/chamados";
 import TicketServico from "../components/TicketServico";
+import { SkeletonTabela } from "../components/Skeleton";
 
 const mostrar = (valor) => (valor === null || valor === undefined || valor === "" ? "Não informado" : valor);
 
@@ -50,7 +51,6 @@ export default function ManagerServices() {
     <>
       <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">GESTÃO DA UNIDADE</p>
           <h1>Serviços</h1>
           <p>Consulte os atendimentos registrados pelos funcionários.</p>
         </div>
@@ -98,7 +98,7 @@ export default function ManagerServices() {
         </div>
 
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando serviços…</p>
+          <SkeletonTabela rotulo="Carregando serviços…" foto={false} />
         ) : error ? (
           <ErroComRetry message={error} onRetry={reload} />
         ) : (

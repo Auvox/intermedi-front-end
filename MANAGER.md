@@ -11,6 +11,39 @@ Se a porta 5173 estiver ocupada, o Vite escolhe a próxima livre e a autenticaç
 - `/gerente/pacientes`: histórico de retiradas, medicamento, quantidade, data e funcionário; busca e filtro de período.
 - `/gerente/remedios`: estoque da rede, filtros por unidade/disponibilidade e cadastro na unidade atual.
 - `/gerente/chamados`: criação, detalhes, atendimento, resolução e reabertura de chamados da unidade; consulta de notificações de outras farmácias.
+- `/gerente/operacao`: Operação 3D (digital twin da unidade), descrita abaixo.
+
+## Operação 3D
+
+Visão espacial da farmácia do gerente: estoque em gôndolas, equipe, balcões, chamados na gerência e entregas da rede na doca. É só uma camada de visualização: lê os mesmos endpoints das outras telas e as ações levam às telas que já existem (o botão Validar abre o relatório do chamado na seção "Decisão do gerente").
+
+- Página: `src/pages/ManagerOperacao.jsx` (carregada sob demanda pelo router). Indicadores, painel lateral, fluxo e planta 2D ficam em `src/components/operacao/`.
+- Cena 3D: `src/components/operacao3d/` (three, @react-three/fiber, @react-three/drei). Também é carregada sob demanda: telas menores que 768 px, navegadores sem WebGL e quem escolhe "2D" nunca baixam o three.js.
+- Dados: `src/hooks/useOperacao.js` reaproveita o que o layout do gerente já consulta (chamados pendentes e pedidos da rede) e busca estoque (`GET /gerente/:id/estoque`, 30 s), resumo da unidade (`GET /gerente/:id/resumo`, 60 s), chamados (`GET /gerente/:id/chamados`) e o catálogo (`GET /remedios`, para as categorias).
+- Regras de exibição: `src/services/operacao.js` (funções puras, sem React).
+
+O que não existe no banco e é calculado ou simulado na tela:
+
+| Na tela | Como é obtido | Integração real futura |
+| --- | --- | --- |
+| Corredor e vão do remédio | Corredor = categoria principal (a primeira em ordem alfabética); vão = ordem do nome | Coluna de localização no `estoque` |
+| "No turno agora" | Faixa de horário de cada turno (manhã 7–13, tarde 13–19, noite 19–7, integral 8–18) | Registro de ponto/presença |
+| Status ao vivo do funcionário | **Ilustrativo** (marcado na tela): sorteio estável por pessoa a cada 20 min | Endpoint de presença; trocar `statusFuncionario` em `services/operacao.js` |
+| Alerta de validade | Validade até 90 dias (`VALIDADE_ALERTA_DIAS`) | — |
+| Indicador geral (0–100) | Fórmula explicada ao clicar no indicador: 40% estoque, 20% validade, 25% chamados, 15% equipe | — |
+
+Histórico de estoque e desativação de funcionário não existem na API e não aparecem na tela.
+
+### Preparo dos pedidos da rede
+
+Quando o gerente da farmácia fornecedora aceita um pedido (Pedidos da rede → Aceitar pedido), o remédio sai do estoque e o pedido fica **aguardando preparo**.
+- **Funcionários da fornecedora:** todos recebem no topo das telas "Prepare 150× Paracetamol para a Farmácia X" com o botão **Começar** (`components/PreparosFarmacia.jsx`, consulta a cada 4 s).
+- **Quem aperta primeiro assume o preparo** (status `preparando`). Os demais passam a ver "Fulano aceitou o pedido #N". Se dois apertarem ao mesmo tempo, a API aceita só um: o `UPDATE` só vale enquanto o pedido ainda está `aprovada`, e os outros recebem 409 com o nome de quem assumiu.
+- **Preparo:** caixas de 50 unidades, uma ida e volta por caixa, 5 s cada (150 un. = 3 caixas = 15 s). Na Operação 3D da fornecedora, essa pessoa leva as caixas do palete da doca até o caminhão; o vão do remédio fica destacado no estoque.
+- **Saída e chegada:** terminado o preparo, o caminhão sai sozinho (`enviada`) e chega depois do tempo de entrega. Na cena da farmácia que pediu, ele chega de frente.
+- **Notificações (gerente e funcionário de quem pediu):** pedido confirmado → em preparo (com o nome de quem prepara) → saiu → em trânsito → chegou → entregue.
+
+Desempenho: a cena só desenha quando algo muda (`frameloop="demand"`); caixas e estrutura das gôndolas usam instancing; etiquetas ficam numa única camada HTML (`Rotulos.jsx`). Acessibilidade: tudo o que está na cena também está na lista do painel lateral (teclado e leitor de tela), os marcadores são botões e a opção "Reduzir movimento" desliga as transições da câmera.
 
 ## Dados e integração
 

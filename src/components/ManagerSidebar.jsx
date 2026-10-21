@@ -1,5 +1,6 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import PersonaIcon from "./PersonaIcon";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import "../styles/managerSidebar.css";
 
@@ -11,6 +12,8 @@ const links = [
   { path: "chamados", label: "Chamados", icon: "ticket" },
   { path: "servicos", label: "Serviços", icon: "clipboard" },
   { path: "pedidos", label: "Pedidos da rede", icon: "truck" },
+  // no fim da lista: o menu do funcionário usa os itens acima pela posição
+  { path: "operacao", label: "Operação 3D", icon: "cube" },
 ];
 
 function SidebarIcon({ name }) {
@@ -79,7 +82,19 @@ function SidebarIcon({ name }) {
         <path d="M19.9 12a7.9 7.9 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7.7 7.7 0 0 0-2-1.2L15.1 3h-4l-.4 2.7a7.7 7.7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7.7 7.7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7.7 7.7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.07-.4.1-.8.1-1.2Z" />
       </>
     ),
+    cube: (
+      <>
+        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+        <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+      </>
+    ),
     arrow: <path d="m9 5 7 7-7 7" />,
+    // aba Desempenho do admin
+    chart: (
+      <>
+        <path d="M4 20V10m6 10V4m6 16v-7m4 7H3" />
+      </>
+    ),
   };
   return (
     <svg
@@ -98,6 +113,43 @@ function SidebarIcon({ name }) {
   );
 }
 
+// Um único fundo de item ativo que desliza até o link da rota atual, em vez de
+// o item antigo sumir e o novo aparecer. A posição vem do próprio link ativo
+// (offsetTop/Left dentro do nav), então acompanha a sidebar vertical e a
+// faixa horizontal do celular.
+function useIndicadorAtivo(navRef) {
+  const { pathname } = useLocation();
+  const [posicao, setPosicao] = useState(null);
+  const [pronto, setPronto] = useState(false);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return undefined;
+    const medir = () => {
+      const ativo = nav.querySelector("a.active");
+      setPosicao(
+        ativo
+          ? { x: ativo.offsetLeft, y: ativo.offsetTop, w: ativo.offsetWidth, h: ativo.offsetHeight }
+          : null,
+      );
+    };
+    medir();
+    const observer = new ResizeObserver(medir);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [navRef, pathname]);
+
+  // A transição só liga depois da primeira posição, para o indicador não
+  // deslizar a partir do topo quando a área abre.
+  useLayoutEffect(() => {
+    if (!posicao || pronto) return undefined;
+    const quadro = requestAnimationFrame(() => setPronto(true));
+    return () => cancelAnimationFrame(quadro);
+  }, [posicao, pronto]);
+
+  return { posicao, pronto };
+}
+
 export default function ManagerSidebar({
   unitName,
   pendingTickets = 0,
@@ -105,30 +157,31 @@ export default function ManagerSidebar({
   employee = false,
   admin = false,
 }) {
-  // Itens marcados com `soon` ainda nao possuem rota/tela: aparecem no menu
-  // seguindo a referencia, mas sem navegacao ate o back entregar.
+  // Só telas que existem. Rotas, Relatórios e Configurações voltam ao menu
+  // quando tiverem tela própria.
   const adminLinks = [
-    { path: "", label: "Dashboard", icon: "dashboard" },
+    { path: "", label: "Visão geral", icon: "dashboard" },
     { path: "medicamentos", label: "Medicamentos", icon: "pill" },
-    { path: "farmacias", label: "Unidades", icon: "pharmacy" },
+    { path: "farmacias", label: "Farmácias", icon: "pharmacy" },
     { path: "gerentes", label: "Gerentes", icon: "manager" },
     { path: "pacientes", label: "Pacientes", icon: "heart" },
     { path: "chamados", label: "Solicitações", icon: "ticket" },
-    { path: "rotas", label: "Rotas e Distribuição", icon: "truck", soon: true },
-    { path: "relatorios", label: "Relatórios", icon: "report", soon: true },
-    { path: "configuracoes", label: "Configurações", icon: "settings", soon: true },
+    { path: "desempenho", label: "Desempenho", icon: "chart" },
   ];
   const menuLinks = admin
     ? adminLinks
     : employee
-      ? [links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
+      ? [links[0], links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
       : links;
   // Badge no menu: chamados pendentes da equipe e pedidos de outras farmácias
   const contador = (path) => (path === "chamados" ? pendingTickets : path === "pedidos" ? pendingOrders : 0);
   const basePath = admin ? "/admin" : employee ? "/funcionario" : "/gerente";
   const role = admin ? "admin" : employee ? "funcionário" : "gerente";
+  const navRef = useRef(null);
+  const { posicao, pronto } = useIndicadorAtivo(navRef);
   return (
     <aside className="manager-sidebar">
+      <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
       <div className="manager-sidebar-header">
         <Link to="/" className="manager-sidebar-brand">
           <img src={logo} alt="Intermedi — início" />
@@ -139,34 +192,28 @@ export default function ManagerSidebar({
       </div>
 
       <div className="manager-sidebar-menu">
-        <p className="manager-sidebar-caption">PRINCIPAL</p>
-        <nav aria-label={`Menu do ${role}`}>
-          {menuLinks.map(({ path, label, icon, soon }) =>
-            soon ? (
-              <button
-                key={path}
-                type="button"
-                className="manager-sidebar-soon"
-                aria-disabled="true"
-                title="Em breve"
-              >
-                <span className="manager-sidebar-icon">
-                  <SidebarIcon name={icon} />
-                </span>
-                <span className="manager-sidebar-label">{label}</span>
-                <span className="manager-sidebar-soon-tag">Em breve</span>
-              </button>
-            ) : (
+        <nav ref={navRef} aria-label={`Menu do ${role}`} className={posicao ? "has-indicator" : undefined}>
+          <span
+            aria-hidden="true"
+            className={`manager-sidebar-indicator${posicao ? " is-visible" : ""}${pronto ? " is-ready" : ""}`}
+            style={
+              posicao
+                ? { width: posicao.w, height: posicao.h, transform: `translate(${posicao.x}px, ${posicao.y}px)` }
+                : undefined
+            }
+          />
+          {menuLinks.map(({ path, label, icon }) => (
             <NavLink
               key={path}
               end={!path}
               to={`${basePath}${path ? `/${path}` : ""}`}
+              data-track={`menu:${path || "visao-geral"}`}
             >
               <span className="manager-sidebar-icon">
                 <SidebarIcon name={icon} />
               </span>
               <span className="manager-sidebar-label">{label}</span>
-              {contador(path) > 0 ? (
+              {contador(path) > 0 && (
                 <span
                   className="manager-sidebar-count"
                   aria-label={
@@ -177,29 +224,21 @@ export default function ManagerSidebar({
                 >
                   {contador(path)}
                 </span>
-              ) : (
-                <span className="manager-sidebar-chevron">
-                  <SidebarIcon name="arrow" />
-                </span>
               )}
             </NavLink>
-            ),
-          )}
+          ))}
         </nav>
       </div>
 
       <div className="manager-sidebar-bottom">
         <div className="manager-sidebar-unit">
-          <div className="manager-sidebar-unit-heading">
-            <span className="manager-sidebar-unit-icon">
-              <SidebarIcon name="pharmacy" />
-            </span>
-            <span>{admin ? "SUA PLATAFORMA" : "SUA UNIDADE"}</span>
-          </div>
-          <strong>{unitName}</strong>
-          <span className="manager-sidebar-unit-detail">
-            Gestão e cuidado em um só lugar.
+          <span className="manager-sidebar-unit-icon">
+            <SidebarIcon name="pharmacy" />
           </span>
+          <div>
+            <span className="manager-sidebar-unit-heading">{admin ? "Plataforma" : "Unidade"}</span>
+            <strong title={unitName}>{unitName}</strong>
+          </div>
         </div>
       </div>
     </aside>

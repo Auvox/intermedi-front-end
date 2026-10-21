@@ -12,6 +12,9 @@ import ManagerSidebar from "../components/ManagerSidebar";
 import PerfilProvider from "../components/perfil/PerfilProvider";
 import { usePerfil } from "../components/perfil/perfilContext";
 import { mascararCpf, propsLinha } from "../services/perfil";
+import Ferramentas from "../components/Ferramentas";
+import { definirContextoRastreio } from "../services/rastreioCliques";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
@@ -34,6 +37,7 @@ import {
 } from "../components/Chamados";
 import { NotificacoesGerente } from "../components/ChamadosGerente";
 import { EstoqueTabela } from "../components/Remedios";
+import { SkeletonCartoes, SkeletonLinhas, SkeletonTabela } from "../components/Skeleton";
 import { FaixaEmAndamento } from "../components/Rastreio";
 import { useNotificacoesRastreio, usePedidosDoGerente } from "../hooks/useRastreio";
 import { emAndamento } from "../services/rastreio";
@@ -115,13 +119,10 @@ function Modal({ title, children, onClose }) {
     </dialog>
   );
 }
-function Header({ eyebrow, title, description, action, featured = false }) {
+function Header({ title, description, action }) {
   return (
-    <header
-      className={`mgr-page-head${featured ? " mgr-page-head-featured" : ""}`}
-    >
+    <header className="mgr-page-head">
       <div>
-        <p className="mgr-eyebrow">{eyebrow || "GESTÃO DA UNIDADE"}</p>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -129,8 +130,9 @@ function Header({ eyebrow, title, description, action, featured = false }) {
     </header>
   );
 }
+// items: [rótulo, valor, contexto, ícone, carregando, link]
 function Stats({ items }) {
-  return <DirectoryStats items={items.map(([label, value, , icon]) => [label, value, icon])} />;
+  return <DirectoryStats items={items.map(([label, value, hint, icon, loading, to]) => [label, value, icon, hint, loading, to])} />;
 }
 export default function Manager() {
   const location = useLocation();
@@ -167,6 +169,10 @@ export default function Manager() {
   const sessionPending = !user && !sessionError;
   // Sem login (ainda não implementado para as personas), o gerente é escolhido na topbar
   const gerente = useIdGerente(user?.email, { aguardar: sessionPending });
+  // mapa de calor (aba Desempenho do admin): quem está usando
+  useEffect(() => {
+    definirContextoRastreio({ usuarioId: gerente.idGerente, farmaciaId: gerente.idFarmacia });
+  }, [gerente.idGerente, gerente.idFarmacia]);
   // 8 s: a notificação de entrega lista os remédios e é mais longa
   const [toast, notify] = useToast(8000);
   const pendentes = useChamadosPendentes(gerente.idGerente, {
@@ -220,7 +226,7 @@ export default function Manager() {
           />
         </div>
         <PerfilProvider plataforma="gerente" gerenteAtual={{ id: gerente.idGerente, idFarmacia: gerente.idFarmacia }}>
-        <main className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
+        <main id="conteudo" tabIndex={-1} className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
           <Outlet
             context={{
               data,
@@ -261,118 +267,119 @@ export function ManagerDashboard() {
   const estoque = usePolling(buscarEstoque, { enabled: Boolean(gerente.idGerente) });
   const resumo = estoque.data?.resumo;
   const atencao = resumo ? resumo.criticos + resumo.zerados + resumo.vencidos : null;
-  const { items: patients } = useApiList(listarPacientes);
   const managerName = (gerente.temSessao ? user?.name : gerente.nome) || user?.name || "Gerente";
   const managerUnit = user?.unitName || unit;
+  const [hoje] = useState(() =>
+    new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }),
+  );
+  const pedidosPendentes = gerente.idGerente ? pedidosRede.totalPendentes : null;
   return (
     <>
       <Header
-        featured
-        eyebrow="SEU CUIDADO COMEÇA AQUI"
-        title={`Olá, ${managerName} · ${managerUnit}`}
-        description="Acompanhe sua unidade e mantenha o cuidado em movimento."
-        action={
-          <Link className="mgr-primary" to="/gerente/chamados">
-            Abrir chamados <span>↗</span>
-          </Link>
-        }
+        title="Visão geral"
+        description={`${managerUnit} · ${managerName} · ${hoje}`}
       />
       <FaixaEmAndamento
         pedidos={emCurso}
         onAbrirPedido={(p, el) => abrirPerfil("pedido", p.idRedistribuicao, el)}
+      />
+      <Ferramentas
+        itens={[
+          { to: "/gerente/chamados", icone: "ticket", titulo: "Responder chamados", descricao: "Pedidos de reposição da equipe", contador: pendentes.totalPendentes },
+          { to: "/gerente/pedidos", icone: "truck", titulo: "Pedidos da rede", descricao: "Outras farmácias pedindo a você", contador: pedidosPendentes },
+          { to: "/gerente/remedios?acao=adicionar", icone: "pill", titulo: "Adicionar ao estoque", descricao: "Um remédio do catálogo" },
+          { to: "/gerente/funcionarios?acao=novo-funcionario", icone: "userPlus", titulo: "Novo funcionário", descricao: "Cadastrar na sua unidade" },
+          { to: "/gerente/servicos", icone: "clipboard", titulo: "Serviços", descricao: "Atendimentos da unidade" },
+          { to: "/gerente/operacao", icone: "cube", titulo: "Operação 3D", descricao: "A unidade em tempo real" },
+        ]}
       />
       <Stats
         items={[
           [
             "Chamados pendentes",
             gerente.idGerente ? pendentes.totalPendentes : null,
-            "Aguardando sua resposta",
+            "aguardando sua resposta",
             "ticket",
+            gerente.loading || pendentes.loading,
+            "/gerente/chamados",
+          ],
+          [
+            "Pedidos da rede",
+            pedidosPendentes,
+            "de outras farmácias para você",
+            "truck",
+            false,
+            "/gerente/pedidos",
+          ],
+          [
+            "Itens com atenção",
+            atencao,
+            "críticos, zerados ou vencidos",
+            "alert",
+            false,
+            "/gerente/remedios",
           ],
           [
             "Itens no estoque",
             resumo?.totalItens ?? null,
-            "Remédios da sua farmácia",
+            "remédios cadastrados na unidade",
             "pill",
-          ],
-          [
-            "Pacientes cadastrados",
-            patients.length,
-            "Pacientes cadastrados na rede",
-            "heart",
+            gerente.loading || (estoque.loading && !estoque.data),
+            "/gerente/remedios",
           ],
         ]}
       />
-      <div className="mgr-insight chamado-insight-rede">
-        <span className="mgr-insight-icon">
-          <ManagerIcon name="truck" />
-        </span>
-        <div>
-          <strong>Pedidos da rede aguardando você</strong>
-          <p>
-            {gerente.idGerente
-              ? pedidosRede.totalPendentes
-                ? `${pedidosRede.totalPendentes} ${pedidosRede.totalPendentes === 1 ? "farmácia está pedindo" : "pedidos de farmácias"} um remédio do seu estoque.`
-                : "Nenhum pedido de outras farmácias no momento."
-              : "Carregando…"}
-          </p>
-        </div>
-        <Link to="/gerente/pedidos">Ver pedidos →</Link>
-      </div>
-      <div className="mgr-insight">
-        <span className="mgr-insight-icon">
-          <ManagerIcon name="pill" />
-        </span>
-        <div>
-          <strong>Estoque em dia, cuidado que continua.</strong>
-          <p>
-            {atencao === null
-              ? "Consulte o estoque e acompanhe as solicitações da equipe."
-              : `${atencao} ${atencao === 1 ? "item precisa" : "itens precisam"} de atenção (críticos, zerados ou vencidos). Consulte o estoque e acompanhe as solicitações da equipe.`}
-          </p>
-        </div>
-        <Link to="/gerente/remedios">Ver estoque →</Link>
-      </div>
-      <section className="mgr-panel">
-        <div className="mgr-panel-head">
+      {pedidosPendentes > 0 && (
+        <div className="mgr-insight chamado-insight-rede">
+          <span className="mgr-insight-icon">
+            <ManagerIcon name="truck" />
+          </span>
           <div>
-            <h2>Estoque da farmácia</h2>
-            <p>Os itens que mais precisam de atenção aparecem primeiro.</p>
+            <strong>
+              {pedidosPendentes === 1
+                ? "1 farmácia está pedindo um remédio do seu estoque"
+                : `${pedidosPendentes} pedidos de outras farmácias aguardam sua resposta`}
+            </strong>
+            <p>Aceite ou recuse para a farmácia saber se pode contar com você.</p>
           </div>
-          <Link to="/gerente/remedios">Ver todos →</Link>
+          <Link to="/gerente/pedidos">Responder pedidos</Link>
         </div>
-        {!gerente.idGerente || estoque.loading ? (
-          <p className="mgr-empty" role="status">Carregando estoque…</p>
-        ) : estoque.error ? (
-          <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
-        ) : estoque.data?.estoque?.length ? (
-          <EstoqueTabela itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)} />
-        ) : (
-          <p className="mgr-empty">O estoque desta farmácia está vazio.</p>
-        )}
-        <p className="mgr-table-note">
-          Crítico: quantidade no mínimo ou abaixo · Zerado: sem unidades · Lote vencido não pode ser entregue.
-        </p>
-      </section>
+      )}
+      {atencao > 0 && (
+        <div className="mgr-insight">
+          <span className="mgr-insight-icon">
+            <ManagerIcon name="alert" />
+          </span>
+          <div>
+            <strong>
+              {atencao} {atencao === 1 ? "item do estoque precisa" : "itens do estoque precisam"} de atenção
+            </strong>
+            <p>Itens críticos, zerados ou vencidos aparecem primeiro na tabela abaixo.</p>
+          </div>
+          <Link to="/gerente/remedios">Ver estoque</Link>
+        </div>
+      )}
       <section className="mgr-panel">
         <div className="mgr-panel-head">
           <div>
             <h2>Chamados que precisam de você</h2>
             <p>Solicitações de reposição abertas pela sua equipe.</p>
           </div>
-          <Badge tone="yellow">
-            {pendentes.totalPendentes} {pendentes.totalPendentes === 1 ? "pendente" : "pendentes"}
-          </Badge>
+          <Link to="/gerente/chamados">Ver todos →</Link>
         </div>
         {gerente.loading || pendentes.loading ? (
-          <p className="mgr-empty" role="status">Carregando chamados…</p>
+          <SkeletonLinhas rotulo="Carregando chamados…" />
         ) : gerente.error ? (
           <ErroComRetry message={gerente.error} onRetry={gerente.retry} />
         ) : pendentes.error ? (
           <ErroComRetry message={pendentes.error} onRetry={pendentes.retry} />
         ) : (
           pendentes.pendentes.slice(0, 5).map((c) => (
-            <div className="mgr-ticket-line" key={c.idChamado}>
+            <div
+              key={c.idChamado}
+              {...propsLinha((el) => abrirPerfil("chamado", c.idChamado, el), `Abrir chamado: ${c.titulo}`)}
+              className="mgr-ticket-line perfil-linha"
+            >
               <PersonaAvatar className="mgr-avatar" role="funcionario" />
               <div>
                 <strong>{c.titulo}</strong>
@@ -388,8 +395,37 @@ export function ManagerDashboard() {
           ))
         )}
         {!pendentes.loading && !gerente.loading && !gerente.error && !pendentes.error && !pendentes.pendentes.length && (
-          <p className="mgr-empty">Tudo em dia! Nenhuma solicitação pendente.</p>
+          <p className="mgr-empty">Nenhum chamado pendente. Pedidos novos da equipe aparecem aqui.</p>
         )}
+      </section>
+      <section className="mgr-panel">
+        <div className="mgr-panel-head">
+          <div>
+            <h2>Estoque da farmácia</h2>
+            <p>Os itens que mais precisam de atenção aparecem primeiro.</p>
+          </div>
+          <Link to="/gerente/remedios">Ver todos →</Link>
+        </div>
+        {gerente.loading || (gerente.idGerente && estoque.loading) ? (
+          <SkeletonTabela rotulo="Carregando estoque…" />
+        ) : !gerente.idGerente ? (
+          <ErroComRetry
+            message={gerente.error || "Selecione um gerente na barra superior para ver o estoque."}
+            onRetry={gerente.error ? gerente.retry : undefined}
+          />
+        ) : estoque.error ? (
+          <ErroComRetry message={estoque.error} onRetry={estoque.retry} />
+        ) : estoque.data?.estoque?.length ? (
+          <EstoqueTabela
+            itens={ordenarEstoque(estoque.data.estoque).slice(0, 5)}
+            onAbrir={(item, el) => abrirPerfil("remedio", item.idRemedio, el)}
+          />
+        ) : (
+          <p className="mgr-empty">O estoque desta farmácia está vazio.</p>
+        )}
+        <p className="mgr-table-note">
+          Crítico: quantidade no mínimo ou abaixo · Zerado: sem unidades · Lote vencido não pode ser entregue.
+        </p>
       </section>
     </>
   );
@@ -404,6 +440,8 @@ export function ManagerEmployees() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
+  // atalho "Novo funcionário" da visão geral
+  useAcaoDaUrl("novo-funcionario", useCallback(() => setAdding(true), []));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -416,33 +454,24 @@ export function ManagerEmployees() {
   const [carregandoFuncionarios, setCarregandoFuncionarios] = useState(true);
   const [erroFuncionarios, setErroFuncionarios] = useState("");
 
+  // só para mostrar o nome da unidade no cadastro: o funcionário novo é
+  // sempre da farmácia do gerente que o cadastra (o back confere pelo gerente)
   const [farmacias, setFarmacias] = useState([]);
-  const [carregandoFarmacias, setCarregandoFarmacias] = useState(true);
-  const [erroFarmacias, setErroFarmacias] = useState("");
   async function buscarFarmacias() {
-    setCarregandoFarmacias(true);
-    setErroFarmacias("");
     try {
       const lista = await listarFarmacias();
-
-      const mapped = lista.map((farmacia) => ({
-        id: farmacia.idFarmacia ?? farmacia.id,
-        idGerente: farmacia.idGerente ?? farmacia.gerenteId,
-        name: farmacia.nomeFarmacia ?? farmacia.name ?? farmacia.nome,
-      }));
-
-      setFarmacias(mapped);
-      return lista;
-    } catch (error) {
-      setErroFarmacias(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível conectar ao servidor de farmácias.",
+      setFarmacias(
+        lista.map((farmacia) => ({
+          id: String(farmacia.idFarmacia ?? farmacia.id),
+          name: farmacia.nomeFarmacia ?? farmacia.name ?? farmacia.nome,
+        })),
       );
-    } finally {
-      setCarregandoFarmacias(false);
+    } catch {
+      setFarmacias([]);
     }
   }
+  const nomeDaUnidade =
+    farmacias.find((farmacia) => farmacia.id === String(gerente.idFarmacia))?.name;
 
   async function buscarFuncionarios(farmaciaId = "") {
     setCarregandoFuncionarios(true);
@@ -473,7 +502,7 @@ export function ManagerEmployees() {
     if (gerente.loading) return;
     async function carregarUnidadeDoGerenteLogado() {
       try {
-        await buscarFarmacias(); // opções do formulário de cadastro
+        await buscarFarmacias(); // nome da unidade no formulário de cadastro
         await buscarFuncionarios(gerente.idFarmacia ?? "");
       } catch (error) {
         setErroFuncionarios(
@@ -510,7 +539,6 @@ export function ManagerEmployees() {
   const [telFuncionario, setTelFuncionario] = useState("");
   const [cargoFuncionario, setCargoFuncionario] = useState("atendente");
   const [turnoFuncionario, setTurnoFuncionario] = useState("manha");
-  const [idFarmaciaFuncionario, setIdFarmaciaFuncionario] = useState("");
   const [cadastroMensagem, setCadastroMensagem] = useState("");
   const [cadastroNotificacao, setCadastroNotificacao] = useState(null);
   const [cadastrando, setCadastrando] = useState(false);
@@ -528,8 +556,9 @@ export function ManagerEmployees() {
       telFuncionario: telFuncionario.trim(),
       cargoFuncionario,
       turnoFuncionario,
-      fkIdFarmacia: idFarmaciaFuncionario,
-      idFarmacia: idFarmaciaFuncionario,
+      // o back usa a farmácia deste gerente
+      idGerenteCadastro: gerente.idGerente,
+      fkIdFarmacia: gerente.idFarmacia,
     };
 
     try {
@@ -547,7 +576,7 @@ export function ManagerEmployees() {
       }
 
       // busca a lista atualizada para o novo funcionário aparecer na hora
-      const listaAtualizada = await buscarFuncionarios();
+      const listaAtualizada = await buscarFuncionarios(gerente.idFarmacia ?? "");
       const criado = result.funcionario || result;
       const registro = listaAtualizada?.find((item) =>
         criado.idFuncionario != null
@@ -571,7 +600,6 @@ export function ManagerEmployees() {
       setTelFuncionario("");
       setCargoFuncionario("atendente");
       setTurnoFuncionario("manha");
-      setIdFarmaciaFuncionario("");
     } catch (error) {
       setCadastroMensagem(
         error instanceof Error
@@ -634,7 +662,7 @@ export function ManagerEmployees() {
         title="Funcionários"
         description="Conheça os profissionais que fazem o cuidado acontecer."
         action={
-          <button
+          <button data-track="novo-funcionario"
             className="mgr-primary"
             onClick={() => {
               setCadastroMensagem("");
@@ -685,6 +713,7 @@ export function ManagerEmployees() {
             funcionarios.length,
             "Sua equipe de atendimento",
             "people",
+            carregandoFuncionarios,
           ],
           [
             "Atendimentos registrados",
@@ -712,12 +741,15 @@ export function ManagerEmployees() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {carregandoFuncionarios && <p className="mgr-empty">Carregando funcionários…</p>}
-        <TeamTable
-          employees={employees}
-          onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)}
-          onExcluir={(employee) => { setSelected(employee); setPeriod(""); setConfirmDelete(true); }}
-        />
+        {carregandoFuncionarios ? (
+          <SkeletonCartoes rotulo="Carregando funcionários…" />
+        ) : (
+          <TeamTable
+            employees={employees}
+            onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)}
+            onExcluir={(employee) => { setSelected(employee); setPeriod(""); setConfirmDelete(true); }}
+          />
+        )}
         <p className="mgr-table-note">{employees.length} de {funcionarios.length} registros</p>
         {erroFuncionarios && <p className="mgr-empty">{erroFuncionarios}</p>}
         {!carregandoFuncionarios && !erroFuncionarios && !employees.length && (
@@ -728,6 +760,10 @@ export function ManagerEmployees() {
         // adicionar funcionarios
         <Modal title="Adicionar funcionário" onClose={() => setAdding(false)}>
           <form className="mgr-form" onSubmit={cadastrarFuncionario}>
+            <p className="mgr-form-unidade">
+              O funcionário vai entrar na sua farmácia:{" "}
+              <strong>{nomeDaUnidade || "a unidade do gerente selecionado"}</strong>
+            </p>
             <label>
               Nome completo
               <input
@@ -784,28 +820,6 @@ export function ManagerEmployees() {
               </select>
             </label>
             <label>
-              Farmácia
-              <select
-                name="idFarmaciaFuncionario"
-                required
-                value={idFarmaciaFuncionario}
-                onChange={({ target }) =>
-                  setIdFarmaciaFuncionario(target.value)
-                }
-                disabled={carregandoFarmacias || !!erroFarmacias}
-              >
-                <option value="">Selecione a farmácia</option>
-                {farmacias.map((farmacia) => (
-                  <option key={farmacia.id} value={farmacia.id}>
-                    {farmacia.name}
-                  </option>
-                ))}
-              </select>
-              {erroFarmacias && (
-                <small className="mgr-form-error">{erroFarmacias}</small>
-              )}
-            </label>
-            <label>
               Turno
               <select
                 name="turnoFuncionario"
@@ -821,9 +835,7 @@ export function ManagerEmployees() {
             {cadastroMensagem && <p role="status">{cadastroMensagem}</p>}
             <button
               className="mgr-primary"
-              disabled={
-                cadastrando || carregandoFarmacias || !idFarmaciaFuncionario
-              }
+              disabled={cadastrando || !gerente.idGerente}
             >
               {cadastrando ? "Cadastrando…" : "Cadastrar funcionário"}
             </button>
@@ -943,13 +955,14 @@ export function ManagerPatients() {
       />
       <Stats
         items={[
-          ["Pacientes cadastrados", patients.length, "Total na rede", "heart"],
-          ["Resultados da busca", filtered.length, "Conforme os filtros", "check"],
+          ["Pacientes cadastrados", patients.length, "Total na rede", "heart", loading],
+          ["Resultados da busca", filtered.length, "Conforme os filtros", "check", loading],
           [
             "Com remédio frequente",
             patients.filter((p) => p.frequentMedicine).length,
             "Uso contínuo informado",
             "pill",
+            loading,
           ],
         ]}
       />
@@ -964,7 +977,7 @@ export function ManagerPatients() {
           />
         </div>
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando pacientes…</p>
+          <SkeletonCartoes rotulo="Carregando pacientes…" />
         ) : error ? (
           <p className="mgr-empty" role="alert">{error}</p>
         ) : (
@@ -1041,12 +1054,12 @@ export function ManagerTickets() {
   const abrir = (idChamado, elemento) => abrirPerfil("chamado", idChamado, elemento);
   const header = (
     <Header
-      title="Cada chamado importa."
+      title="Chamados"
       description="Aceite ou recuse os pedidos de reposição da sua equipe."
     />
   );
   if (gerente.loading) {
-    return <>{header}<section className="mgr-panel"><p className="mgr-empty" role="status">Carregando chamados…</p></section></>;
+    return <>{header}<section className="mgr-panel"><SkeletonTabela rotulo="Carregando chamados…" foto={false} /></section></>;
   }
   if (gerente.error) {
     return <>{header}<section className="mgr-panel"><ErroComRetry message={gerente.error} onRetry={gerente.retry} /></section></>;
@@ -1087,7 +1100,7 @@ export function ManagerTickets() {
           </button>
         </div>
         {loading ? (
-          <p className="mgr-empty" role="status">Carregando chamados…</p>
+          <SkeletonTabela rotulo="Carregando chamados…" foto={false} />
         ) : error && !carregado ? (
           <ErroComRetry message={error} onRetry={retry} />
         ) : (

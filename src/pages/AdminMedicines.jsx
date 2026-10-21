@@ -5,6 +5,7 @@ import { ConfirmarModal, FotoRemedio, TarjaBadge } from "../components/Remedios"
 import RemedioForm from "../components/RemedioForm";
 import { usePolling, useToast } from "../hooks/useChamados";
 import useDebounce from "../hooks/useDebounce";
+import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import {
   apagarRemedio,
   enviarFotoRemedio,
@@ -26,6 +27,8 @@ export default function AdminMedicines() {
   const buscaDebounced = useDebounce(busca.trim(), 300);
   const [categorias, setCategorias] = useState([]);
   const [modal, setModal] = useState(null); // { tipo: "form"|"detalhe"|"foto"|"apagar", remedio }
+  // atalho "Cadastrar medicamento" da visão geral
+  useAcaoDaUrl("cadastrar", useCallback(() => setModal({ tipo: "form" }), []));
   const [toast, notify] = useToast();
   const { abrirPerfil } = usePerfil();
 
@@ -64,11 +67,10 @@ export default function AdminMedicines() {
     <>
       <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">CATÁLOGO DA REDE</p>
           <h1>Medicamentos</h1>
           <p>Cadastre os remédios do sistema. Os gerentes só adicionam ao estoque o que estiver aqui.</p>
         </div>
-        <button type="button" className="mgr-primary" onClick={() => setModal({ tipo: "form" })}>
+        <button data-track="novo-remedio" type="button" className="mgr-primary" onClick={() => setModal({ tipo: "form" })}>
           + Cadastrar medicamento
         </button>
       </header>
@@ -116,15 +118,13 @@ export default function AdminMedicines() {
                     {r.categorias || "Sem categoria"} · ANVISA {mostrar(r.registroAnvisaRemedio)}
                   </p>
                 </div>
+                {/* o cartão inteiro abre os detalhes; aqui ficam só as ações de gestão */}
                 <div className="remedio-acoes remedio-card-acoes">
-                  <button type="button" className="directory-row-action" aria-label={`Ver detalhes de ${r.nomeRemedio}`} onClick={(e) => abrirPerfil("remedio", r.idRemedio, e.currentTarget.closest("li"))}>
-                    Ver detalhes
-                  </button>
                   <button type="button" className="directory-row-action" aria-label={`Editar ${r.nomeRemedio}`} onClick={() => setModal({ tipo: "form", remedio: r })}>
                     Editar
                   </button>
                   <button type="button" className="directory-row-action" aria-label={`${r.fotoRemedio ? "Trocar ou remover a foto" : "Adicionar foto"} de ${r.nomeRemedio}`} onClick={() => setModal({ tipo: "foto", remedio: r })}>
-                    {r.fotoRemedio ? "Trocar/remover foto" : "Adicionar foto"}
+                    {r.fotoRemedio ? "Trocar foto" : "Adicionar foto"}
                   </button>
                   <button
                     type="button"

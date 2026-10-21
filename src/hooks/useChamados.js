@@ -59,7 +59,10 @@ export function usePolling(fetcher, { enabled = true, interval: intervalOpcao = 
     [],
   );
 
-  return { ...state, reload: load, retry, setData };
+  // Quem começa desligado (ex.: esperando o idGerente) também está carregando
+  // até a primeira resposta; sem isso a tela piscava "vazio"/"0" antes dos dados.
+  const loading = state.loading || (enabled && state.data === null && !state.error);
+  return { ...state, loading, reload: load, retry, setData };
 }
 
 // Segundos até `dataPrevistaChegada` (UTC), recalculados a cada 1 s no próprio
