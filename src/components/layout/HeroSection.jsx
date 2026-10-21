@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import Pill3D from "./Pill3D";
 import logoI from "../../assets/logoI.png";
 
-// Hero centralizado: nome, título grande, uma frase, duas ações, a assinatura
-// com frases que se alternam e o produto.
+// Hero: texto à esquerda (nome, título grande, uma frase, duas ações e a
+// assinatura com frases que se alternam) e o produto à direita.
 const signaturePhrases = [
   "Faltou um medicamento? Encontre quem tem.",
   "Sua próxima parceria começa com uma busca.",

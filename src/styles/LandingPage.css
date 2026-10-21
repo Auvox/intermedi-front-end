@@ -252,7 +252,7 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 }
 @media (prefers-reduced-motion: reduce) { .hero-signature-phrase.is-active { animation: none; } }
 
-/* Produto em destaque, centralizado abaixo do texto */
+/* Produto em destaque: abaixo do texto no celular, à direita em telas largas */
 .lp-hero-visual {
   position: relative;
   display: flex;
@@ -290,6 +290,26 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 }
 .hero-pill-3d canvas { display: block; width: 100%; height: 100%; opacity: 0; }
 .hero-pill-fallback { position: absolute; top: 50%; left: 50%; width: 100%; height: auto; transform: translate(-50%, -50%) rotate(-12deg); }
+
+/* Telas largas: texto à esquerda e a pílula à direita */
+@media (min-width: 900px) {
+  .lp-hero { padding: 132px 40px 72px; text-align: left; }
+  .lp-hero-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    align-items: center;
+    gap: 40px;
+  }
+  .lp-hero-content { align-items: flex-start; }
+  /* "medicamentos." não pode quebrar no "i" (imagem) no meio da palavra */
+  .lp-hero-title { font-size: clamp(44px, 5vw, 70px); }
+  .lp-hero-title strong { white-space: nowrap; }
+  .lp-hero-sub { max-width: 520px; margin: 0 0 32px; }
+  .lp-hero-actions { justify-content: flex-start; }
+  .hero-signature { justify-content: flex-start; text-align: left; }
+  .lp-hero-visual { margin-top: 0; }
+  .lp-hero-img-wrap { width: min(520px, 100%); }
+}
 
 /* ══════════ SEÇÕES ══════════ */
 .lp-section { padding: 120px 22px; background: var(--white); }
