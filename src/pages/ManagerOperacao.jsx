@@ -164,7 +164,6 @@ export default function ManagerOperacao() {
     <>
       <header className="mgr-page-head op-cabecalho">
         <div>
-          <p className="mgr-eyebrow">DIGITAL TWIN DA UNIDADE</p>
           <h1>Operação 3D</h1>
           <p>
             Estoque, equipe, chamados e entregas da {nomeUnidade} em uma visão espacial. São os mesmos dados das outras

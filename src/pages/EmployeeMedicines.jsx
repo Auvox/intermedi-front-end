@@ -40,9 +40,8 @@ export default function EmployeeMedicines() {
 
   return (
     <>
-      <header className="mgr-page-head mgr-page-head-featured">
+      <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">ESPAÇO DO FUNCIONÁRIO</p>
           <h1>Remédios</h1>
           <p>
             Estoque {data?.farmacia?.nomeFarmacia ? `da ${data.farmacia.nomeFarmacia}` : "da sua farmácia"}.

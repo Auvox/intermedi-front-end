@@ -51,7 +51,6 @@ export default function ManagerServices() {
     <>
       <header className="mgr-page-head">
         <div>
-          <p className="mgr-eyebrow">GESTÃO DA UNIDADE</p>
           <h1>Serviços</h1>
           <p>Consulte os atendimentos registrados pelos funcionários.</p>
         </div>

@@ -50,7 +50,6 @@ export default function ManagerMedicines() {
   const header = (
     <header className="mgr-page-head">
       <div>
-        <p className="mgr-eyebrow">GESTÃO DA UNIDADE</p>
         <h1>Estoque de remédios</h1>
         <p>
           {data?.farmacia?.nomeFarmacia ? `${data.farmacia.nomeFarmacia} · ` : ""}

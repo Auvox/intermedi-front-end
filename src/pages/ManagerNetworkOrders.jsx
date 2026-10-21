@@ -69,7 +69,6 @@ export default function ManagerNetworkOrders() {
   const header = (
     <header className="mgr-page-head">
       <div>
-        <p className="mgr-eyebrow">REDE INTERMEDI</p>
         <h1>Pedidos da rede</h1>
         <p>Farmácias da rede pedem remédios umas às outras. Aceite para enviar do seu estoque.</p>
       </div>

@@ -76,13 +76,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Sora", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
   color: white;
   flex-shrink: 0;
 }
-.testi-name  { font-family: "Sora", sans-serif; font-size: 14px; font-weight: 600; color: var(--black); }
+.testi-name  { font-family: var(--font-sans); font-size: 14px; font-weight: 600; color: var(--black); }
 .testi-role  { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
 
 /* Verified badge */

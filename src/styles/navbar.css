@@ -41,7 +41,7 @@
   stroke: #fff; stroke-width: 2.2; fill: none;
 }
 .nav-logo-text {
-  font-family: "Sora", sans-serif;
+  font-family: var(--font-sans);
   font-size: 17px;
   font-weight: 700;
   color: var(--black);

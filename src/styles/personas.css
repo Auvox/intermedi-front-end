@@ -67,7 +67,7 @@
 .persona-label.blue  { color: #2563eb; }
 
 .persona-title {
-  font-family: "Sora", sans-serif;
+  font-family: var(--font-sans);
   font-size: 22px;
   font-weight: 800;
   margin-bottom: 12px;
@@ -124,7 +124,7 @@
   cursor: pointer;
   border: none;
   transition: all var(--t);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-sans);
   text-decoration: none;
   display: inline-flex;
 }

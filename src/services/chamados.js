@@ -13,7 +13,7 @@ export const STATUS_CHAMADO = {
 
 export const PRIORIDADE_CHAMADO = {
   baixa: { label: "Baixa", tone: "neutral" },
-  media: { label: "Média", tone: "yellow" },
+  media: { label: "Média", tone: "neutral" },
   alta: { label: "Alta", tone: "red" },
   urgente: { label: "Urgente", tone: "urgent" },
 };

@@ -128,11 +128,11 @@ export function EstoqueTabela({ itens, acoes, onAbrir }) {
                   </div>
                 </div>
               </td>
-              <td><BarraEstoque quantidade={item.quantidade} minimo={item.estoqueMinimo} /></td>
-              <td><SituacaoBadges item={item} /></td>
-              <td>{item.lote || "—"}</td>
-              <td>{formatarValidade(item.validade)}</td>
-              {acoes && <td><div className="remedio-acoes">{acoes(item)}</div></td>}
+              <td data-rotulo="Quantidade"><BarraEstoque quantidade={item.quantidade} minimo={item.estoqueMinimo} /></td>
+              <td data-rotulo="Situação"><SituacaoBadges item={item} /></td>
+              <td data-rotulo="Lote">{item.lote || "—"}</td>
+              <td data-rotulo="Validade">{formatarValidade(item.validade)}</td>
+              {acoes && <td className="remedio-td-acoes"><div className="remedio-acoes">{acoes(item)}</div></td>}
             </tr>
           ))}
         </tbody>
