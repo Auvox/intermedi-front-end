@@ -229,16 +229,28 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 }
 .btn-hero-outline:hover { background: var(--green-dark); color: #fff; }
 
-.hero-benefits {
+/* Assinatura com frases que se alternam a cada 4,5 s (HeroSection) */
+.hero-signature {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 22px;
-  margin-top: 22px;
-  list-style: none;
+  align-items: baseline;
+  gap: 4px 8px;
+  max-width: 100%;
+  margin: 22px 0 0;
+  font-size: 14px;
+  text-align: center;
 }
-.hero-benefits li { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 14px; }
-.hero-benefits li::before { content: '✓'; color: var(--green-dark); font-weight: 600; }
+.hero-signature strong { color: var(--green-dark); font-weight: 600; }
+.hero-signature span { color: var(--text-muted); }
+.hero-signature-phrases { display: grid; min-width: 0; max-width: 100%; }
+.hero-signature-phrase { grid-area: 1 / 1; visibility: hidden; }
+.hero-signature-phrase.is-active { visibility: visible; animation: signatureEnter .4s ease-out both; }
+@keyframes signatureEnter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-signature-phrase.is-active { animation: none; } }
 
 /* Produto em destaque, centralizado abaixo do texto */
 .lp-hero-visual {

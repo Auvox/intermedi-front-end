@@ -52,7 +52,7 @@ html:has(.a11y-motion) { scroll-behavior: auto !important; }
 .a11y-images .a11y-image-letter { display: inline; }
 /* Improve text contrast without painting over transparent artwork or canvases. */
 .a11y-contrast { --text: #111827; --text-muted: #34473b; --green: #08743c; --green-dark: #065b30; }
-.a11y-contrast :is(.lp-hero-sub, .hero-benefits li, .lp-section-sub, .journey-copy p, .map-network-description, .map-feed-item, .map-feed-subtitle) { color: #263b2e !important; }
+.a11y-contrast :is(.lp-hero-sub, .hero-signature span, .lp-section-sub, .journey-description, .map-network-description, .map-feed-item, .map-feed-subtitle) { color: #263b2e !important; }
 .a11y-contrast :is(.benefit-card, .audience-card) { --card-ink: #10291b; --card-accent: #244f30; --card-body: #263b2e; --audience-ink: #10291b; --audience-muted: #263b2e; }
 .a11y-contrast :is(.benefit-card--security, .audience-card--business) { --card-ink: #fff; --card-accent: #e1f5e7; --card-body: #fff; --audience-ink: #fff; --audience-muted: #fff; }
 .a11y-contrast :is(.lp-footer-invitation p, .lp-footer-brand p, .lp-footer-col a, .lp-footer-bottom, .lp-footer-bottom a) { color: #fff; }

@@ -1,8 +1,38 @@
+import { useEffect, useState } from "react";
 import Pill3D from "./Pill3D";
 import logoI from "../../assets/logoI.png";
 
-// Hero centralizado: nome, título grande, uma frase, duas ações e o produto.
+// Hero centralizado: nome, título grande, uma frase, duas ações, a assinatura
+// com frases que se alternam e o produto.
+const signaturePhrases = [
+  "Faltou um medicamento? Encontre quem tem.",
+  "Sua próxima parceria começa com uma busca.",
+  "Conecte sua unidade a novos fornecedores.",
+  "Do medicamento ao contato, em um só lugar.",
+];
+
 function HeroSection({ paused = false }) {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let interval;
+    const update = () => {
+      window.clearInterval(interval);
+      if (!paused && !motion.matches) {
+        interval = window.setInterval(() => {
+          setPhraseIndex(index => (index + 1) % signaturePhrases.length);
+        }, 4500);
+      }
+    };
+    update();
+    motion.addEventListener("change", update);
+    return () => {
+      window.clearInterval(interval);
+      motion.removeEventListener("change", update);
+    };
+  }, [paused]);
+
   return (
     <section className="lp-hero" id="inicio">
       <div className="lp-hero-inner">
@@ -26,11 +56,20 @@ function HeroSection({ paused = false }) {
             <a className="btn-hero-primary" href="#catalogo">Conhecer benefícios</a>
             <a className="btn-hero-outline" href="#como-funciona">Como funciona</a>
           </div>
-          <ul className="hero-benefits" aria-label="Recursos da Intermedi">
-            <li>Encontre medicamentos</li>
-            <li>Conecte farmácias</li>
-            <li>Simplifique pedidos</li>
-          </ul>
+          <p className="hero-signature">
+            <strong>De farmácia para farmácia.</strong>
+            <span className="hero-signature-phrases">
+              {signaturePhrases.map((phrase, index) => (
+                <span
+                  key={phrase}
+                  className={`hero-signature-phrase${index === phraseIndex ? " is-active" : ""}`}
+                  aria-hidden={index !== phraseIndex}
+                >
+                  {phrase}
+                </span>
+              ))}
+            </span>
+          </p>
         </div>
 
         <div className="lp-hero-visual">
