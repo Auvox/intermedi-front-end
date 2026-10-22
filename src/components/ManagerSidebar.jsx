@@ -171,7 +171,8 @@ export default function ManagerSidebar({
   const menuLinks = admin
     ? adminLinks
     : employee
-      ? [links[0], links[2], links[1], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
+      // o funcionário não vê a equipe: sem "Funcionários" (links[1])
+      ? [links[0], links[2], links[3], { path: "chamados", label: "Solicitações", icon: "ticket" }, links[5]]
       : links;
   // Badge no menu: chamados pendentes da equipe e pedidos de outras farmácias
   const contador = (path) => (path === "chamados" ? pendingTickets : path === "pedidos" ? pendingOrders : 0);

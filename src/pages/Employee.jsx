@@ -1,5 +1,5 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { CartaoPessoa, GradePessoas, TeamTable } from "../components/Directory";
+import { CartaoPessoa, GradePessoas } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
@@ -10,12 +10,11 @@ import useApiList from "../hooks/useApiList";
 import {
   API_URL,
   listarFarmacias,
-  listarFuncionarios,
   listarPacientes,
-  normalizeFuncionario,
   normalizePaciente,
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
+import { primeiroNome } from "../services/nomes";
 import { definirContextoRastreio } from "../services/rastreioCliques";
 import { SeletorPersona, ToastRegion } from "../components/Chamados";
 import { SinoFuncionario } from "../components/NotificacoesEntregas";
@@ -331,7 +330,7 @@ export default function Employee() {
             >
             <PersonaAvatar className="mgr-account-avatar" role="funcionario" photo={session?.fotoPerfilFuncionario ?? session?.photo} />
             <span className="mgr-account-person">
-              <strong>{employeeName}</strong>
+              <strong title={employeeName}>{primeiroNome(employeeName, "Funcionário")}</strong>
               <small>Funcionário da unidade · {employeeUnit}</small>
             </span>
             </button>
@@ -542,67 +541,4 @@ export function EmployeePatients() {
   );
 }
 
-export function EmployeeTeam() {
-  const { abrirPerfil } = usePerfil();
-  const [search, setSearch] = useState("");
-  const [shift, setShift] = useState("");
-  const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
-  const session = readEmployeeSession();
-  // farmácia da sessão ou, sem sessão, a do funcionário escolhido no topo
-  const { idFarmacia } = useOutletContext() ?? {};
-  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? idFarmacia ?? "");
-  const sameUnit = targetFarmaciaId
-    ? allEmployees.filter((item) => item.farmaciaId === targetFarmaciaId)
-    : [];
-  const employees = sameUnit.length ? sameUnit : allEmployees;
-
-  const filtered = employees.filter((employee) =>
-    (!shift || employee.shift === shift) && normalize(`${employee.name} ${employee.role} ${employee.email}`).includes(
-      normalize(search.trim()),
-    ),
-  );
-
-  return (
-    <>
-      <PageHeader
-        title="Funcionários"
-        description="Equipe da sua unidade, com cargo, turno e contato."
-      />
-      <section className="mgr-panel" aria-labelledby="emp-team-title">
-        <div className="mgr-toolbar">
-          <h2 id="emp-team-title">
-            Funcionários <span className="mgr-badge">{employees.length}</span>
-          </h2>
-          <input
-            type="search"
-            aria-label="Buscar funcionário por nome ou cargo"
-            placeholder="Buscar nome ou cargo…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select aria-label="Filtrar funcionários por turno" value={shift} onChange={event => setShift(event.target.value)}>
-            <option value="">Todos os turnos</option>
-            {[...new Set(employees.map(employee => employee.shift).filter(Boolean))].map(value => <option key={value} value={value}>{value}</option>)}
-          </select>
-        </div>
-        <TeamTable employees={filtered} onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)} />
-        {!loading && !error && !filtered.length && (
-          <p className="mgr-empty">
-            Nenhum funcionário encontrado. Tente outro nome ou cargo.
-          </p>
-        )}
-        {loading && <SkeletonCartoes rotulo="Carregando funcionários…" />}
-        {error && (
-          <p className="mgr-empty" role="alert">
-            {error}
-          </p>
-        )}
-        <p className="mgr-table-note" role="status">
-          {filtered.length} de {employees.length} funcionários · Somente
-          consulta
-        </p>
-      </section>
-    </>
-  );
-}
 

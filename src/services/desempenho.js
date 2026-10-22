@@ -70,7 +70,9 @@ const comFiltros = (caminho, filtros, extra = {}) => {
   return query ? `${caminho}?${query}` : caminho;
 };
 
-export const buscarResumo = (filtros, options) => pedido(comFiltros("/analytics/resumo", filtros), options);
+// quem é o admin logado (nome no topo da área do admin)
+export const buscarAdminLogado = (options) => pedido("/auth/me", options).then((d) => d.usuario);
+export const buscarResumo =(filtros, options) => pedido(comFiltros("/analytics/resumo", filtros), options);
 export const buscarRotas = (filtros, options) => pedido(comFiltros("/analytics/rotas", filtros), options).then((d) => d.rotas ?? []);
 export const buscarPontos = (filtros, extra, options) => pedido(comFiltros("/analytics/cliques", filtros, extra), options);
 export const buscarSaude = (filtros, options) => pedido(comFiltros("/saude", filtros), options);

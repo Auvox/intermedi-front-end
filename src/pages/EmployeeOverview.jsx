@@ -9,6 +9,7 @@ import { usePerfil } from "../components/perfil/perfilContext";
 import { INTERVALO_CHAMADOS, useFarmaciaDoFuncionario, usePolling } from "../hooks/useChamados";
 import { listarChamadosFuncionario, listarEstoqueFarmacia, listarServicosDaFarmacia } from "../services/api";
 import { INTERVALO_A_CAMINHO, temACaminho } from "../services/chamados";
+import { primeiroNome } from "../services/nomes";
 
 // Primeira aba do funcionário: as ferramentas do dia a dia (atender, pedir
 // reposição, preparar pedidos) e os números da unidade, todos clicáveis.
@@ -46,7 +47,7 @@ export default function EmployeeOverview() {
       <header className="mgr-page-head">
         <div>
           <h1>Visão geral</h1>
-          <p>{[unidade, nomeFuncionario, hoje].filter(Boolean).join(" · ")}</p>
+          <p>{[unidade, primeiroNome(nomeFuncionario), hoje].filter(Boolean).join(" · ")}</p>
         </div>
       </header>
 

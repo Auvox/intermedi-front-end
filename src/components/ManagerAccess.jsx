@@ -2,6 +2,7 @@ import PersonaAvatar from "./PersonaAvatar";
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { buscarSessaoGerente, sairGerente } from "../services/sessaoGerente";
+import { primeiroNome } from "../services/nomes";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { API_URL } from "../services/api";
 
@@ -294,7 +295,7 @@ export function AccountControls({ user }) {
         >
           <PersonaAvatar className="mgr-account-avatar" role="gerente" photo={user.fotoPerfilGerente ?? user.photo} />
           <span className="mgr-account-person" title={user.email}>
-            <strong>{user.name}</strong>
+            <strong>{primeiroNome(user.name, "Gerente")}</strong>
             <small>Gerente da unidade</small>
           </span>
         </button>

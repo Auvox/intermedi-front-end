@@ -13,6 +13,8 @@ import FarmaciaSelect from "../components/FarmaciaSelect";
 import SinoAlertas from "../components/desempenho/SinoAlertas";
 import { ToastRegion } from "../components/Chamados";
 import { useAlertas } from "../hooks/useAlertas";
+import { aoMudarToken, buscarAdminLogado, tokenAdmin } from "../services/desempenho";
+import { primeiroNome } from "../services/nomes";
 import { useToast } from "../hooks/useChamados";
 import {
   API_URL,
@@ -293,6 +295,20 @@ export default function Admin() {
   // alertas da saúde do sistema: sino, aviso na hora (toast) e a aba Desempenho
   const [toast, notify] = useToast(10000);
   const alertas = useAlertas({ onCritico: (alerta) => notify(`Alerta crítico: ${alerta.titulo}`) });
+  // nome do admin logado no topo (só o primeiro nome); sem login, "Admin"
+  const [nomeAdmin, setNomeAdmin] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    const carregar = (token) => {
+      if (!token) return setNomeAdmin("");
+      buscarAdminLogado({ signal: controller.signal })
+        .then((usuario) => setNomeAdmin(usuario?.nome ?? ""))
+        .catch(() => {});
+    };
+    carregar(tokenAdmin());
+    const parar = aoMudarToken(carregar);
+    return () => { controller.abort(); parar(); };
+  }, []);
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -315,7 +331,7 @@ export default function Admin() {
             <SinoAlertas alertas={alertas} />
             <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
-              <strong>Admin Local</strong>
+              <strong title={nomeAdmin || undefined}>{primeiroNome(nomeAdmin, "Admin")}</strong>
               <small>Administrador da plataforma</small>
             </span>
             <Link className="account-action account-exit" to="/login?perfil=admin">

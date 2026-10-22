@@ -19,6 +19,7 @@ import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
 import { buscarSessaoGerente } from "../services/sessaoGerente";
+import { primeiroNome } from "../services/nomes";
 import useApiList from "../hooks/useApiList";
 import {
   useChamadosGerente,
@@ -277,7 +278,7 @@ export function ManagerDashboard() {
     <>
       <Header
         title="Visão geral"
-        description={`${managerUnit} · ${managerName} · ${hoje}`}
+        description={`${managerUnit} · ${primeiroNome(managerName, "Gerente")} · ${hoje}`}
       />
       <FaixaEmAndamento
         pedidos={emCurso}

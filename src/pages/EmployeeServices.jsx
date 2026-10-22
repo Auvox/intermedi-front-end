@@ -18,6 +18,7 @@ import {
 } from "../services/api";
 import { formatarDataHora, nomeComDosagem, reposicaoDoEstoque } from "../services/remedios";
 import TicketServico from "../components/TicketServico";
+import BuscaSelect from "../components/BuscaSelect";
 import { SkeletonTabela } from "../components/Skeleton";
 
 const novoItem = () => ({ key: crypto.randomUUID(), idRemedio: "", quantidade: "1" });
@@ -318,23 +319,24 @@ function NovoServico({ funcionario, farmacia, estoque, pacientes, onClose, onReg
             )}
             <label>Farmácia do atendimento<input readOnly value={farmacia?.nomeFarmacia || ""} /></label>
           </div>
-          <label htmlFor={id("paciente")}>
-            Paciente
-            <select
-              id={id("paciente")}
-              ref={primeiroCampo}
-              value={idPaciente}
-              aria-invalid={Boolean(erros.paciente)}
-              aria-describedby={erros.paciente ? `${id("paciente")}-erro` : undefined}
-              onChange={(e) => { setIdPaciente(e.target.value); setErros((a) => ({ ...a, paciente: undefined })); }}
-            >
-              <option value="">Selecione o paciente</option>
-              {pacientes.map((p) => (
-                <option key={p.idPaciente} value={p.idPaciente}>{p.nomePaciente} · CPF {p.cpfPaciente}</option>
-              ))}
-            </select>
+          <BuscaSelect
+            label="Paciente"
+            itens={pacientes}
+            valorId={idPaciente}
+            onChange={(p) => { setIdPaciente(p ? String(p.idPaciente) : ""); setErros((a) => ({ ...a, paciente: undefined })); }}
+            getId={(p) => p.idPaciente}
+            rotulo={(p) => p.nomePaciente}
+            detalhe={(p) => `CPF ${p.cpfPaciente}`}
+            // CPF com ou sem pontuação
+            textoBusca={(p) => `${p.nomePaciente} ${p.cpfPaciente} ${String(p.cpfPaciente ?? "").replace(/\D/g, "")}`}
+            placeholder="Busque por nome ou CPF"
+            inputRef={primeiroCampo}
+            invalido={Boolean(erros.paciente)}
+            describedBy={erros.paciente ? `${id("paciente")}-erro` : undefined}
+            semResultado="Nenhum paciente encontrado para esta busca."
+          >
             {erros.paciente && <small className="chamado-field-error" id={`${id("paciente")}-erro`}>{erros.paciente}</small>}
-          </label>
+          </BuscaSelect>
 
           <fieldset className="emp-service-medicines">
             <legend>Remédios entregues</legend>
