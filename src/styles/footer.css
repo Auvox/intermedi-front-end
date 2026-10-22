@@ -1,7 +1,8 @@
 /* Footer */
-/* Fundo no verde da marca; textos secundários quase brancos para manter contraste AA */
-.lp-footer { padding: 0; background: var(--color-primary); color: #fff; text-align: left; }
-.lp-footer-panel { position: relative; isolation: isolate; overflow: hidden; border-radius: 0; background: var(--color-primary); }
+/* Painel verde arredondado, solto do fundo branco como um "modal";
+   textos secundários quase brancos para manter contraste AA */
+.lp-footer { padding: 0 16px 16px; background: #fff; color: #fff; text-align: left; }
+.lp-footer-panel { position: relative; isolation: isolate; overflow: hidden; border-radius: 32px; background: var(--color-primary); }
 .lp-footer-panel::before, .lp-footer-panel::after { content: ""; position: absolute; z-index: -1; width: 560px; height: 560px; display: none; }
 .lp-footer-panel::before { right: -240px; top: -290px; }
 .lp-footer-panel::after { right: -170px; top: -230px; }
@@ -44,8 +45,8 @@
   .lp-footer-map-link { max-width: 260px; }
 }
 @media (max-width: 600px) {
-  .lp-footer { padding: 0; }
-  .lp-footer-panel { border-radius: 0; }
+  .lp-footer { padding: 0 8px 8px; }
+  .lp-footer-panel { border-radius: 24px; }
   .lp-footer-inner { margin: 0; padding: 72px 20px 0; }
   .lp-footer-intro { grid-template-columns: 1fr; gap: 24px; padding-bottom: 32px; }
   .lp-footer-intro h2 { font-size: clamp(27px, 7.5vw, 36px); }
