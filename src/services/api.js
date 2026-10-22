@@ -35,13 +35,18 @@ function extractList(payload, keys) {
   throw new Error("O servidor não retornou uma lista válida.");
 }
 
-const list = (path, keys) => async (options) => extractList(await apiRequest(path, options), keys);
+// Cadastros mais novos primeiro: o id maior é o último cadastrado
+export const maisNovosPrimeiro = (lista, campoId) =>
+  [...lista].sort((a, b) => (Number(b?.[campoId] ?? b?.id) || 0) - (Number(a?.[campoId] ?? a?.id) || 0));
 
-export const listarPacientes = list("/paciente", ["paciente", "pacientes"]);
-export const listarFuncionarios = list("/funcionario", ["funcionario", "funcionarios"]);
-export const listarGerentes = list("/gerente", ["gerente", "gerentes"]);
-export const listarFarmacias = list("/farmacia", ["farmacia", "farmacias"]);
-export const listarServicos = list("/servicos", ["servicos", "servico"]);
+const list = (path, keys, campoId) => async (options) =>
+  maisNovosPrimeiro(extractList(await apiRequest(path, options), keys), campoId);
+
+export const listarPacientes = list("/paciente", ["paciente", "pacientes"], "idPaciente");
+export const listarFuncionarios = list("/funcionario", ["funcionario", "funcionarios"], "idFuncionario");
+export const listarGerentes = list("/gerente", ["gerente", "gerentes"], "idGerente");
+export const listarFarmacias = list("/farmacia", ["farmacia", "farmacias"], "idFarmacia");
+export const listarServicos = list("/servicos", ["servicos", "servico"], "idServico");
 
 // Estoque e validade ainda não existem na API; ficam null até o endpoint de
 // estoque por farmácia ser criado.
@@ -64,7 +69,7 @@ export function normalizeRemedio(item) {
 
 export async function listarRemedios(options) {
   const lista = extractList(await apiRequest("/remedios", options), ["remedios", "remedio"]);
-  return lista.map(normalizeRemedio);
+  return maisNovosPrimeiro(lista, "idRemedio").map(normalizeRemedio);
 }
 
 const json = (method, body) => ({
@@ -90,7 +95,9 @@ export const fotoPessoa = (foto) =>
   !foto ? null : /^(https?:|data:|blob:)/.test(foto) ? foto : `${API_URL}${foto.startsWith("/") ? "" : "/"}${foto}`;
 
 // Catálogo de medicamentos (cadastrado pelo admin)
-export const listarCatalogo = (filtros, options) => apiRequest(`/remedios${query(filtros)}`, options);
+export const listarCatalogo = (filtros, options) =>
+  apiRequest(`/remedios${query(filtros)}`, options).then((data) =>
+    Array.isArray(data?.remedios) ? { ...data, remedios: maisNovosPrimeiro(data.remedios, "idRemedio") } : data);
 export const buscarRemedio = (idRemedio, options) =>
   apiRequest(`/remedios/${idRemedio}`, options).then((data) => data.resultado);
 export const cadastrarRemedio = (dados) => apiRequest("/remedios", json("POST", dados));

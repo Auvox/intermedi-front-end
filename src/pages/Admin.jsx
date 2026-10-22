@@ -804,7 +804,8 @@ export function AdminDirectory({ section }) {
         ...result.recebido,
         nomeFarmacia: farmaciaGerente.nomeFarmacia,
       }]);
-      setData((current) => ({ ...current, gerentes: [...current.gerentes, novoGerente] }));
+      // cadastro novo entra no topo da lista
+      setData((current) => ({ ...current, gerentes: [novoGerente, ...current.gerentes] }));
 
       // se o e-mail falhou, o back devolve a senha para entregar pessoalmente
       setNotice(result.senhaProvisoria
@@ -975,7 +976,7 @@ export function AdminDirectory({ section }) {
 
       setData((current) => ({
         ...current,
-        farmacias: [...current.farmacias, nextFarmacia],
+        farmacias: [nextFarmacia, ...current.farmacias],
       }));
       setNotice(`${nomeFarmacia}: cadastrada com sucesso!`);
       setModal(null);
