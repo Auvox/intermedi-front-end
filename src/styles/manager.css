@@ -840,6 +840,55 @@
 .mgr-form textarea {
   resize: vertical;
 }
+/* Farmácia do gerente: um campo que filtra e uma lista logo abaixo */
+.farmacia-combo {
+  display: grid;
+  gap: 6px;
+}
+.farmacia-combo > label {
+  display: block;
+}
+.farmacia-combo-field {
+  position: relative;
+}
+.farmacia-combo-list {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 264px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.farmacia-combo-list li {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.farmacia-combo-list li[aria-selected="true"] {
+  background: var(--color-fill);
+}
+.farmacia-combo-list li.is-chosen strong {
+  color: var(--color-primary-ink);
+}
+.farmacia-combo-list strong {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+.farmacia-combo-list span {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
 .mgr-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

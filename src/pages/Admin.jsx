@@ -529,8 +529,6 @@ export function AdminDirectory({ section }) {
   const [emailGerente, setEmailGerente] = useState("");
   const [cpfGerente, setCpfGerente] = useState("");
   const [crfGerente, setCrfGerente] = useState("");
-  const [senhaGerente, setSenhaGerente] = useState("");
-  const [confirmarSenhaGerente, setConfirmarSenhaGerente] = useState("");
   const [cepGerente, setCepGerente] = useState("");
   const [enderecoGerente, setEnderecoGerente] = useState("");
   const [numeroGerente, setNumeroGerente] = useState("");
@@ -753,17 +751,12 @@ export function AdminDirectory({ section }) {
       setErroCadastroGerente("Selecione uma farmácia cadastrada.");
       return;
     }
-    if (senhaGerente !== confirmarSenhaGerente) {
-      setErroCadastroGerente("As senhas não coincidem.");
-      return;
-    }
-
     const gerente = {
       nomeGerente,
       emailGerente,
       cpfGerente,
       crfGerente,
-      senhaGerente,
+      // sem senha: o back gera a provisória e manda por e-mail com a matrícula
       cepGerente,
       enderecoGerente,
       numeroGerente,
@@ -797,7 +790,10 @@ export function AdminDirectory({ section }) {
       }]);
       setData((current) => ({ ...current, gerentes: [...current.gerentes, novoGerente] }));
 
-      setNotice(`${nomeGerente}: cadastrado com sucesso!`);
+      // se o e-mail falhou, o back devolve a senha para entregar pessoalmente
+      setNotice(result.senhaProvisoria
+        ? `${nomeGerente}: cadastrado, mas o e-mail não foi enviado. Entregue pessoalmente a matrícula ${result.matricula} e a senha provisória ${result.senhaProvisoria}.`
+        : `${nomeGerente}: cadastrado! Matrícula ${result.matricula}; o acesso foi enviado para ${emailGerente}.`);
       setModal(null);
 
       // Limpa os campos depois do cadastro
@@ -805,8 +801,6 @@ export function AdminDirectory({ section }) {
       setEmailGerente("");
       setCpfGerente("");
       setCrfGerente("");
-      setSenhaGerente("");
-      setConfirmarSenhaGerente("");
       setCepGerente("");
       setEnderecoGerente("");
       setNumeroGerente("");
@@ -1788,11 +1782,7 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="XXX.XXX.XXX-XX"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
+                  onInput={(event) => event.currentTarget.setCustomValidity("")}
                 />
               </label>
               <label>
@@ -1810,40 +1800,10 @@ export function AdminDirectory({ section }) {
               </label>
             </div>
 
-            <div className="mgr-form-row">
-              <label>
-                Senha
-                <input
-                  name="senhaGerente"
-                  value={senhaGerente}
-                  onChange={({ target }) => setSenhaGerente(target.value)}
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Crie uma senha"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
-                />
-              </label>
-              <label>
-                Confirmar senha
-                <input
-                  name="confirmPassword"
-                  value={confirmarSenhaGerente}
-                  onChange={({ target }) =>
-                    setConfirmarSenhaGerente(target.value)
-                  }
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Repita a senha"
-                  onInput={(event) => event.currentTarget.setCustomValidity("")}
-                />
-              </label>
-            </div>
+            <p className="mgr-form-unidade">
+              O sistema gera a <strong>matrícula</strong> e uma <strong>senha provisória</strong> e
+              manda as duas para o e-mail do gerente.
+            </p>
 
             <label>
               CEP
@@ -1855,11 +1815,7 @@ export function AdminDirectory({ section }) {
                 required
                 // autoComplete="new-password"
                 placeholder="Ex. 00000-000"
-                onInput={(event) =>
-                  event.currentTarget.form.elements
-                    .namedItem("confirmPassword")
-                    .setCustomValidity("")
-                }
+                onInput={(event) => event.currentTarget.setCustomValidity("")}
               />
             </label>
             <label>
@@ -1872,11 +1828,7 @@ export function AdminDirectory({ section }) {
                 required
                 // autoComplete="new-password"
                 placeholder="Ex. Rua Alcindo Pereira"
-                onInput={(event) =>
-                  event.currentTarget.form.elements
-                    .namedItem("confirmPassword")
-                    .setCustomValidity("")
-                }
+                onInput={(event) => event.currentTarget.setCustomValidity("")}
               />
             </label>
 
@@ -1891,11 +1843,7 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="Ex. 45"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
+                  onInput={(event) => event.currentTarget.setCustomValidity("")}
                 />
               </label>
               <label>
@@ -1907,11 +1855,7 @@ export function AdminDirectory({ section }) {
                   type="text"
                   // autoComplete="new-password"
                   placeholder="Ex. Apartamento, casa, andar, etc."
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
+                  onInput={(event) => event.currentTarget.setCustomValidity("")}
                 />
               </label>
             </div>
@@ -1927,11 +1871,7 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="Ex. São Paulo"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
+                  onInput={(event) => event.currentTarget.setCustomValidity("")}
                 />
               </label>
               <label>
@@ -1944,11 +1884,7 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="Ex. SP"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
+                  onInput={(event) => event.currentTarget.setCustomValidity("")}
                 />
               </label>
             </div>
