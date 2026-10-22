@@ -1,11 +1,11 @@
-/* Parceiros (SUS e Farmácia Popular): seção preta do design system com
-   cartões claros, como vitrines de produto. */
-.lp-partners { background: #000; scroll-margin-top: 52px; }
-.lp-partners .lp-section-title { color: #f5f5f7; }
-.lp-partners .lp-section-title .green { color: #4cd17f; }
-.lp-partners .lp-section-sub { color: #a1a1a6; }
+/* Parceiros (SUS e Farmácia Popular): seção branca com cartões
+   contornados, como vitrines de produto. */
+.lp-partners { background: #fff; scroll-margin-top: 52px; }
+.lp-partners .lp-section-title { color: #1d1d1f; }
+.lp-partners .lp-section-title .green { color: var(--color-primary); }
+.lp-partners .lp-section-sub { color: #6e6e73; }
 .partner-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.partner-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 28px; background: #fff; text-align: left; transition: transform .3s ease; }
+.partner-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #e8e8ed; border-radius: 28px; background: #fff; text-align: left; transition: transform .3s ease; }
 .partner-card:hover { transform: translateY(-4px); }
 .partner-brand-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 242px; padding: 28px; background: #f5f5f7; }
 .partner-category { align-self: flex-start; color: #6e6e73; font-size: 12px; font-weight: 600; letter-spacing: 0; }

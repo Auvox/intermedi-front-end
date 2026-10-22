@@ -15,6 +15,7 @@
   --border: #d2d2d7;
   --font: var(--font-sans);
   --lp-gray: #f5f5f7;
+  --lp-bg: var(--color-primary-soft); /* fundo da landing: verde claro da marca */
   --lp-black: #000000;
   --lp-max: 1080px;
 }
@@ -25,6 +26,7 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 .lp-root {
   width: 100%;
   min-width: 0;
+  background: var(--lp-bg);
   font-family: var(--font-sans);
   letter-spacing: -0.01em;
   font-optical-sizing: auto;
@@ -154,7 +156,7 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
   position: relative;
   overflow: hidden;
   padding: 120px 22px 0;
-  background: var(--white);
+  background: var(--lp-bg);
   text-align: center;
 }
 .lp-hero-inner {
@@ -312,7 +314,7 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
 }
 
 /* ══════════ SEÇÕES ══════════ */
-.lp-section { padding: 120px 22px; background: var(--white); }
+.lp-section { padding: 120px 22px; background: var(--lp-bg); }
 .lp-section-inner { max-width: var(--lp-max); margin: 0 auto; }
 .lp-section-head { max-width: 760px; margin: 0 auto 64px; text-align: center; }
 .lp-section-title {
