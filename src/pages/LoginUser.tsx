@@ -3,13 +3,16 @@ import type { FormEvent, ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import phoneMockup from "../assets/intermedi-phones.png";
-import { authRequest } from "../services/auth";
+import { entrarComoGerente } from "../services/sessaoGerente";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
 import { API_URL } from "../services/api";
+import { entrarComoAdmin } from "../services/desempenho";
 
 type Role = "gerente" | "funcionario" | "admin";
-type Mode = "login" | "cadastro";
+// Matrícula da equipe: G000123 gerente, 000123 funcionário, A000123 admin
+const MATRICULA_GERENTE = /^G\d{6}$/i;
+const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const profiles = [
   {
     id: "gerente" as Role,
@@ -75,22 +78,12 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     </svg>
   );
 }
-export default function LoginUser({
-  initialMode = "login",
-}: {
-  initialMode?: Mode;
-}) {
+export default function LoginUser() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [role, setRole] = useState<Role | null>(
     profiles.find((profile) => profile.id === params.get("perfil"))?.id ?? null,
   );
-
-  const [requestedMode, setMode] = useState<Mode>(initialMode);
-  const mode: Mode =
-    role === "funcionario" || role === "admin"
-      ? "login"
-      : requestedMode;
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -104,14 +97,10 @@ export default function LoginUser({
   }, []);
   useEffect(() => {
     if (role) heading.current?.focus();
-  }, [role, mode]);
+  }, [role]);
   function resetRequest() {
     setMessage("");
     setVisible(false);
-  }
-  function changeMode(next: Mode) {
-    resetRequest();
-    setMode(next);
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -290,23 +279,60 @@ export default function LoginUser({
       return;
     }
 
+    // Admin entra com CPF + matrícula + senha (POST /auth/login)
+    if (role === "admin") {
+      const cpf = String(formData.get("cpf") || "").trim();
+      const matricula = String(formData.get("matricula") || "").trim();
+      const senha = String(formData.get("senha") || "");
+      if (!cpf) {
+        setMessage("Informe o CPF do admin.");
+        return;
+      }
+      if (!matricula) {
+        setMessage("Informe a matrícula do admin.");
+        return;
+      }
+      if (!senha) {
+        setMessage("Informe a senha do admin.");
+        return;
+      }
+      try {
+        await entrarComoAdmin({ cpf, matricula, senha });
+        navigate("/admin", { replace: true });
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Não foi possível entrar como admin. Tente novamente.");
+      }
+      return;
+    }
+
     if (role !== "gerente") {
       setMessage("Este fluxo de login é exclusivo para o perfil de gerente.");
       return;
     }
 
+    // Gerente entra com e-mail + matrícula + senha, conferidos no back-end
     const email = String(formData.get("email") || "")
       .trim()
       .toLowerCase();
+    const matricula = String(formData.get("matricula") || "")
+      .trim()
+      .toUpperCase();
     const senha = String(formData.get("senha") || "");
 
-    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!email) {
       setMessage("Informe o e-mail do gerente.");
       return;
     }
-    if (!emailIsValid) {
+    if (!EMAIL_VALIDO.test(email)) {
       setMessage("Informe um e-mail válido do gerente.");
+      return;
+    }
+    if (!matricula) {
+      setMessage("Informe a matrícula do gerente.");
+      return;
+    }
+    if (!MATRICULA_GERENTE.test(matricula)) {
+      setMessage("A matrícula do gerente tem a letra G e 6 números (ex.: G000123).");
       return;
     }
     if (!senha) {
@@ -314,25 +340,8 @@ export default function LoginUser({
       return;
     }
 
-    const nome = String(formData.get("nome") || "").trim();
-    const unidade = String(formData.get("unidade") || "").trim();
-    const confirmarSenha = String(formData.get("confirmarSenha") || "");
-    if (mode === "cadastro") {
-      if (nome.length < 3 || unidade.length < 3) {
-        setMessage("Informe seu nome e o nome da nova unidade (mínimo de 3 caracteres).");
-        return;
-      }
-      if (senha !== confirmarSenha) {
-        setMessage("As senhas não coincidem.");
-        return;
-      }
-    }
-    setMessage("");
     try {
-      await authRequest(mode === "cadastro" ? "register" : "login", {
-        email, senha, role: "gerente",
-        ...(mode === "cadastro" ? { nome, unidade, confirmarSenha } : {}),
-      });
+      await entrarComoGerente({ email, matricula, senha });
       navigate("/gerente", { replace: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível concluir o acesso. Tente novamente.");
@@ -355,10 +364,8 @@ export default function LoginUser({
           </nav>
         )}
         <div
-          key={`${role ?? "welcome"}-${mode}`}
-          className={`auth-content${
-            selected && mode === "cadastro" ? " auth-register" : ""
-          }`}
+          key={role ?? "welcome"}
+          className="auth-content"
         >
           {!selected ? (
             <>
@@ -380,8 +387,6 @@ export default function LoginUser({
                     onClick={() => {
                       setRole(profile.id);
                       setMessage("");
-                      if (profile.id !== "gerente")
-                        setMode("login");
                     }}
                   >
                     <span className="auth-profile-icon">
@@ -408,97 +413,55 @@ export default function LoginUser({
               </p>
                 </div>
               </div>
-              {role === "gerente" && (
-                <div className="auth-mode" aria-label="Tipo de acesso">
-                  <button type="button" aria-pressed={mode === "login"} disabled={submitting} onClick={() => changeMode("login")}>Entrar</button>
-                  <button type="button" aria-pressed={mode === "cadastro"} disabled={submitting} onClick={() => changeMode("cadastro")}>Criar conta</button>
-                </div>
-              )}
               <form
-                key={`${role}-${mode}`}
+                key={role}
                 className="auth-form"
                 onSubmit={submit}
                 aria-busy={submitting}
+                noValidate
               >
-                {mode === "cadastro" && (
+                {role === "gerente" ? (
                   <label>
-                    Nome completo
+                    E-mail
                     <input
-                      name="nome"
-                      autoComplete="name"
-                      placeholder="Como podemos chamar você?"
-                      minLength={3}
-                      maxLength={120}
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="voce@farmacia.com.br"
+                      maxLength={254}
                     />
                   </label>
-                )}
-                {mode === "cadastro" && role === "gerente" && (
-                  <label>
-                    Nome da sua nova unidade
-                    <input
-                      name="unidade"
-                      autoComplete="organization"
-                      placeholder="Ex.: Farmácia São Lucas"
-                      minLength={3}
-                      maxLength={150}
-                    />
-                    <small>
-                      O cadastro cria uma unidade própria. Não concede acesso a
-                      uma farmácia já cadastrada.
-                    </small>
-                  </label>
-                )}
-                {role === "funcionario" ? (
-                  <>
-                    <label>
-                      CPF
-                      <input
-                        name="cpf"
-                        type="text"
-                        autoComplete="off"
-                        placeholder="Digite seu CPF"
-                        maxLength={14}
-                      />
-                    </label>
-                    <label>
-                      Matrícula
-                      <input
-                        name="matricula"
-                        type="text"
-                        autoComplete="off"
-                        placeholder="Digite sua matrícula"
-                        maxLength={20}
-                      />
-                    </label>
-                  </>
                 ) : (
-                  <>
-                    <label>
-                      E-mail
-                      <input
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="voce@farmacia.com.br"
-                        maxLength={254}
-                      />
-                    </label>
+                  <label>
+                    CPF
+                    <input
+                      name="cpf"
+                      type="text"
+                      autoComplete="off"
+                      placeholder="Digite seu CPF"
+                      maxLength={14}
+                    />
+                  </label>
+                )}
+                <label>
+                  Matrícula
+                  <input
+                    name="matricula"
+                    type="text"
+                    autoComplete="off"
+                    placeholder={role === "gerente" ? "Ex.: G000123" : "Digite sua matrícula"}
+                    maxLength={20}
+                  />
+                </label>
+                {role !== "funcionario" && (
                     <label>
                       Senha
                       <span className="auth-password">
                         <input
                           name="senha"
                           type={visible ? "text" : "password"}
-                          autoComplete={
-                            mode === "login"
-                              ? "current-password"
-                              : "new-password"
-                          }
-                          placeholder={
-                            mode === "login"
-                              ? "Digite sua senha"
-                              : "Crie sua senha"
-                          }
+                          autoComplete="current-password"
+                          placeholder="Digite sua senha"
                         />
                         <button
                           type="button"
@@ -512,18 +475,6 @@ export default function LoginUser({
                         </button>
                       </span>
                     </label>
-                  </>
-                )}
-                {mode === "cadastro" && (
-                  <label>
-                    Confirmar senha
-                    <input
-                      name="confirmarSenha"
-                      type={visible ? "text" : "password"}
-                      autoComplete="new-password"
-                      placeholder="Digite sua senha novamente"
-                    />
-                  </label>
                 )}
                 {role === "admin" && (
                   <p className="auth-admin-note">
@@ -538,9 +489,7 @@ export default function LoginUser({
                 )}
                 <button className={`auth-submit${submitting ? " is-loading" : ""}`} type="submit" disabled={submitting}>
                   {submitting && <span className="auth-spinner" aria-hidden="true" />}
-                  <span role="status" aria-live="polite">{submitting ? (mode === "login" ? "Entrando…" : "Criando conta…") : mode === "login"
-                    ? "Entrar"
-                    : "Criar minha conta"}</span>
+                  <span role="status" aria-live="polite">{submitting ? "Entrando…" : "Entrar"}</span>
                 </button>
               </form>
               <div className="auth-divider"><span>ou</span></div>

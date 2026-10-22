@@ -1,7 +1,7 @@
 import PersonaAvatar from "./PersonaAvatar";
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
-import { authRequest } from "../services/auth";
+import { buscarSessaoGerente, sairGerente } from "../services/sessaoGerente";
 import { normalizeGerentes } from "../services/gerenteMapper";
 import { API_URL } from "../services/api";
 
@@ -15,9 +15,7 @@ export default function ManagerAccess() {
       if (checking) return;
       checking = true;
       try {
-        const { user } = await authRequest(
-          "session",
-          undefined,
+        const user = await buscarSessaoGerente(
           AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
         );
         if (!controller.signal.aborted) setState({ user });
@@ -277,7 +275,7 @@ export function AccountControls({ user }) {
     setPending(true);
     setError("");
     try {
-      await authRequest("logout", {});
+      await sairGerente();
       navigate("/login?perfil=gerente", { replace: true });
     } catch {
       setError("Não foi possível sair. Tente novamente.");

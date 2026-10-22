@@ -18,7 +18,7 @@ import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
-import { authRequest } from "../services/auth";
+import { buscarSessaoGerente } from "../services/sessaoGerente";
 import useApiList from "../hooks/useApiList";
 import {
   useChamadosGerente,
@@ -143,7 +143,7 @@ export default function Manager() {
     let active = true;
     async function loadSession() {
       try {
-        const { user } = await authRequest("session", undefined);
+        const user = await buscarSessaoGerente();
         if (!active) return;
         setSessionUser(user);
         setSessionError("");

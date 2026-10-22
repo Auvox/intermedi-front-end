@@ -10,7 +10,6 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminMedicines from "../pages/AdminMedicines";
 import AdminRequests from "../pages/AdminRequests";
 import LoginUser from "../pages/LoginUser";
-import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
 import AccessibleArea from "../components/layout/AccessibleArea";
 import RastreadorCliques from "../components/RastreadorCliques";
@@ -46,7 +45,8 @@ function Rotas() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginUser />} />
-        <Route path="/cadastro" element={<CadastroUser />} />
+        {/* gerente não cria conta: quem cadastra é o admin */}
+        <Route path="/cadastro" element={<Navigate to="/login?perfil=gerente" replace />} />
         <Route path="/admin" element={<AccessibleArea><Admin /></AccessibleArea>}>
           <Route index element={<AdminDashboard />} />
           <Route path="medicamentos" element={<AdminMedicines />} />
