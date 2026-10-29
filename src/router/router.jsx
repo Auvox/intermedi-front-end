@@ -1,6 +1,6 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Employee, { EmployeePatients, EmployeeTeam } from "../pages/Employee";
+import Employee, { EmployeePatients } from "../pages/Employee";
 import EmployeeOverview from "../pages/EmployeeOverview";
 import EmployeeServices from "../pages/EmployeeServices";
 import EmployeeMedicines from "../pages/EmployeeMedicines";
@@ -10,7 +10,6 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminMedicines from "../pages/AdminMedicines";
 import AdminRequests from "../pages/AdminRequests";
 import LoginUser from "../pages/LoginUser";
-import CadastroUser from "../pages/CadastroUser";
 import LandingPage from "../pages/LandingPage";
 import AccessibleArea from "../components/layout/AccessibleArea";
 import RastreadorCliques from "../components/RastreadorCliques";
@@ -46,7 +45,7 @@ function Rotas() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginUser />} />
-        <Route path="/cadastro" element={<CadastroUser />} />
+        <Route path="/cadastro" element={<Navigate to="/login" replace />} />
         <Route path="/admin" element={<AccessibleArea><Admin /></AccessibleArea>}>
           <Route index element={<AdminDashboard />} />
           <Route path="medicamentos" element={<AdminMedicines />} />
@@ -72,7 +71,6 @@ function Rotas() {
           <Route path="servicos" element={<EmployeeServices />} />
           <Route path="remedios" element={<EmployeeMedicines />} />
           <Route path="chamados" element={<EmployeeTickets />} />
-          <Route path="funcionarios" element={<EmployeeTeam />} />
           <Route
             path="*"
             element={<Navigate to="/funcionario" replace />}

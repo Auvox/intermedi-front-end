@@ -6,7 +6,17 @@ import { API_URL, apiRequest } from "./api";
 // aba do navegador (sessionStorage).
 
 const CHAVE_TOKEN = "intermedi.desempenho.token";
+// nome do admin logado, para o topo do painel
+const CHAVE_NOME = "intermedi.admin.nome";
 const ouvintes = new Set();
+
+export function nomeAdmin() {
+  try {
+    return sessionStorage.getItem(CHAVE_NOME);
+  } catch {
+    return null;
+  }
+}
 
 export function tokenAdmin() {
   try {
@@ -16,10 +26,12 @@ export function tokenAdmin() {
   }
 }
 
-function definirToken(token) {
+function definirToken(token, nome) {
   try {
     if (token) sessionStorage.setItem(CHAVE_TOKEN, token);
     else sessionStorage.removeItem(CHAVE_TOKEN);
+    if (token && nome) sessionStorage.setItem(CHAVE_NOME, nome);
+    else if (!token) sessionStorage.removeItem(CHAVE_NOME);
   } catch {
     // modo privado sem storage: o login vale até recarregar
   }
@@ -41,7 +53,7 @@ export async function entrarComoAdmin({ cpf, matricula, senha }) {
   if (dados.usuario?.papel !== "admin") {
     throw new Error("Esta conta não é de admin. Só o admin vê o desempenho do sistema.");
   }
-  definirToken(dados.token);
+  definirToken(dados.token, dados.usuario.nome);
   return dados.usuario;
 }
 
@@ -49,16 +61,11 @@ export function sairDoDesempenho() {
   definirToken(null);
 }
 
+// A aba não pede login: o token do admin vai junto só se ele entrou pelo /login
 async function pedido(caminho, options = {}) {
   const token = tokenAdmin();
-  if (!token) throw Object.assign(new Error("Entre como admin para ver o desempenho."), { status: 401 });
-  try {
-    return await apiRequest(caminho, { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}` } });
-  } catch (error) {
-    // sessão vencida ou encerrada: pede o login de novo
-    if (error.status === 401) definirToken(null);
-    throw error;
-  }
+  const headers = token ? { ...options.headers, Authorization: `Bearer ${token}` } : options.headers;
+  return apiRequest(caminho, { ...options, headers });
 }
 
 const comFiltros = (caminho, filtros, extra = {}) => {
@@ -119,7 +126,6 @@ const NOMES_WEB = {
   "/gerente/operacao": "Gerente · Operação 3D",
   "/funcionario": "Funcionário · Visão geral",
   "/funcionario/pacientes": "Funcionário · Pacientes",
-  "/funcionario/funcionarios": "Funcionário · Equipe",
   "/funcionario/remedios": "Funcionário · Remédios",
   "/funcionario/chamados": "Funcionário · Solicitações",
   "/funcionario/servicos": "Funcionário · Serviços",

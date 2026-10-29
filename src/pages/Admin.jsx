@@ -10,6 +10,7 @@ import { propsLinha } from "../services/perfil";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import PersonaIcon from "../components/PersonaIcon";
 import FarmaciaSelect from "../components/FarmaciaSelect";
+import { buscarCep, digitosCep, formatarCep } from "../services/cep";
 import SinoAlertas from "../components/desempenho/SinoAlertas";
 import { ToastRegion } from "../components/Chamados";
 import { useAlertas } from "../hooks/useAlertas";
@@ -23,6 +24,8 @@ import {
   fotoPessoa,
 } from "../services/api";
 import { normalizeGerentes } from "../services/gerenteMapper";
+import { aoMudarToken, nomeAdmin } from "../services/desempenho";
+import { primeiroNome } from "../services/nomes";
 import { initialData, unit, formatDate } from "./managerData";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
@@ -293,6 +296,9 @@ export default function Admin() {
   // alertas da saúde do sistema: sino, aviso na hora (toast) e a aba Desempenho
   const [toast, notify] = useToast(10000);
   const alertas = useAlertas({ onCritico: (alerta) => notify(`Alerta crítico: ${alerta.titulo}`) });
+  // nome de quem entrou como admin (some ao sair)
+  const [adminName, setAdminName] = useState(nomeAdmin);
+  useEffect(() => aoMudarToken(() => setAdminName(nomeAdmin())), []);
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -315,7 +321,7 @@ export default function Admin() {
             <SinoAlertas alertas={alertas} />
             <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
-              <strong>Admin Local</strong>
+              <strong>{primeiroNome(adminName, "Admin")}</strong>
               <small>Administrador da plataforma</small>
             </span>
             <Link className="account-action account-exit" to="/login?perfil=admin">
@@ -529,9 +535,11 @@ export function AdminDirectory({ section }) {
   const [emailGerente, setEmailGerente] = useState("");
   const [cpfGerente, setCpfGerente] = useState("");
   const [crfGerente, setCrfGerente] = useState("");
-  const [senhaGerente, setSenhaGerente] = useState("");
-  const [confirmarSenhaGerente, setConfirmarSenhaGerente] = useState("");
   const [cepGerente, setCepGerente] = useState("");
+  // "", "buscando", "nao-encontrado" ou "erro"
+  const [statusCepGerente, setStatusCepGerente] = useState("");
+  const buscaCepGerente = useRef(null);
+  const numeroGerenteRef = useRef(null);
   const [enderecoGerente, setEnderecoGerente] = useState("");
   const [numeroGerente, setNumeroGerente] = useState("");
   const [complementoGerente, setComplementoGerente] = useState("");
@@ -745,6 +753,35 @@ export function AdminDirectory({ section }) {
     setNotice(`${record.name}: ${config.result} nesta demonstração.`);
     setModal(null);
   }
+  // com os 8 dígitos do CEP, preenche endereço, bairro, cidade e UF pelo ViaCEP
+  async function alterarCepGerente(texto) {
+    setCepGerente(formatarCep(texto));
+    buscaCepGerente.current?.abort();
+    setStatusCepGerente("");
+    if (digitosCep(texto).length !== 8) return;
+
+    const controller = new AbortController();
+    buscaCepGerente.current = controller;
+    setStatusCepGerente("buscando");
+    try {
+      const endereco = await buscarCep(texto, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      if (!endereco) {
+        setStatusCepGerente("nao-encontrado");
+        return;
+      }
+      // CEP de cidade inteira vem sem rua e bairro: mantém o que já foi digitado
+      if (endereco.endereco) setEnderecoGerente(endereco.endereco);
+      if (endereco.bairro) setBairroGerente(endereco.bairro);
+      setCidadeGerente(endereco.cidade);
+      setUfGerente(endereco.uf);
+      setStatusCepGerente("");
+      numeroGerenteRef.current?.focus();
+    } catch {
+      if (!controller.signal.aborted) setStatusCepGerente("erro");
+    }
+  }
+
   async function register(event) {
     event.preventDefault();
     if (cadastrandoGerente) return;
@@ -753,17 +790,12 @@ export function AdminDirectory({ section }) {
       setErroCadastroGerente("Selecione uma farmácia cadastrada.");
       return;
     }
-    if (senhaGerente !== confirmarSenhaGerente) {
-      setErroCadastroGerente("As senhas não coincidem.");
-      return;
-    }
 
     const gerente = {
       nomeGerente,
       emailGerente,
       cpfGerente,
       crfGerente,
-      senhaGerente,
       cepGerente,
       enderecoGerente,
       numeroGerente,
@@ -797,7 +829,12 @@ export function AdminDirectory({ section }) {
       }]);
       setData((current) => ({ ...current, gerentes: [...current.gerentes, novoGerente] }));
 
-      setNotice(`${nomeGerente}: cadastrado com sucesso!`);
+      // a senha é gerada pelo back e vai por e-mail junto com a matrícula
+      setNotice(
+        result.email?.status === "falhou"
+          ? `${nomeGerente}: cadastrado, mas o e-mail não foi enviado. Entregue pessoalmente a matrícula ${result.matricula} e a senha provisória ${result.senhaProvisoria}.`
+          : `${nomeGerente}: cadastrado! A matrícula e a senha provisória foram enviadas para ${emailGerente}.`,
+      );
       setModal(null);
 
       // Limpa os campos depois do cadastro
@@ -805,8 +842,6 @@ export function AdminDirectory({ section }) {
       setEmailGerente("");
       setCpfGerente("");
       setCrfGerente("");
-      setSenhaGerente("");
-      setConfirmarSenhaGerente("");
       setCepGerente("");
       setEnderecoGerente("");
       setNumeroGerente("");
@@ -1788,11 +1823,6 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="XXX.XXX.XXX-XX"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
                 />
               </label>
               <label>
@@ -1810,57 +1840,25 @@ export function AdminDirectory({ section }) {
               </label>
             </div>
 
-            <div className="mgr-form-row">
-              <label>
-                Senha
-                <input
-                  name="senhaGerente"
-                  value={senhaGerente}
-                  onChange={({ target }) => setSenhaGerente(target.value)}
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Crie uma senha"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
-                />
-              </label>
-              <label>
-                Confirmar senha
-                <input
-                  name="confirmPassword"
-                  value={confirmarSenhaGerente}
-                  onChange={({ target }) =>
-                    setConfirmarSenhaGerente(target.value)
-                  }
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Repita a senha"
-                  onInput={(event) => event.currentTarget.setCustomValidity("")}
-                />
-              </label>
-            </div>
-
             <label>
               CEP
               <input
                 name="cepGerente"
                 value={cepGerente}
-                onChange={({ target }) => setCepGerente(target.value)}
+                onChange={({ target }) => alterarCepGerente(target.value)}
                 type="text"
+                inputMode="numeric"
+                autoComplete="postal-code"
                 required
-                // autoComplete="new-password"
+                pattern="\d{5}-?\d{3}"
                 placeholder="Ex. 00000-000"
-                onInput={(event) =>
-                  event.currentTarget.form.elements
-                    .namedItem("confirmPassword")
-                    .setCustomValidity("")
-                }
+                aria-describedby="cep-gerente-status"
               />
+              <small id="cep-gerente-status" role="status" className="mgr-cep-status">
+                {statusCepGerente === "buscando" && "Buscando o endereço…"}
+                {statusCepGerente === "nao-encontrado" && "CEP não encontrado. Preencha o endereço abaixo."}
+                {statusCepGerente === "erro" && "Não foi possível buscar o CEP. Preencha o endereço abaixo."}
+              </small>
             </label>
             <label>
               Endereço
@@ -1872,11 +1870,6 @@ export function AdminDirectory({ section }) {
                 required
                 // autoComplete="new-password"
                 placeholder="Ex. Rua Alcindo Pereira"
-                onInput={(event) =>
-                  event.currentTarget.form.elements
-                    .namedItem("confirmPassword")
-                    .setCustomValidity("")
-                }
               />
             </label>
 
@@ -1884,6 +1877,7 @@ export function AdminDirectory({ section }) {
               <label>
                 Nº
                 <input
+                  ref={numeroGerenteRef}
                   name="numeroGerente"
                   value={numeroGerente}
                   onChange={({ target }) => setNumeroGerente(target.value)}
@@ -1891,11 +1885,6 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="Ex. 45"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
                 />
               </label>
               <label>
@@ -1907,11 +1896,6 @@ export function AdminDirectory({ section }) {
                   type="text"
                   // autoComplete="new-password"
                   placeholder="Ex. Apartamento, casa, andar, etc."
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
                 />
               </label>
             </div>
@@ -1927,11 +1911,6 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="Ex. São Paulo"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
                 />
               </label>
               <label>
@@ -1944,11 +1923,6 @@ export function AdminDirectory({ section }) {
                   required
                   // autoComplete="new-password"
                   placeholder="Ex. SP"
-                  onInput={(event) =>
-                    event.currentTarget.form.elements
-                      .namedItem("confirmPassword")
-                      .setCustomValidity("")
-                  }
                 />
               </label>
             </div>

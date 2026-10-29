@@ -6,11 +6,11 @@ import phoneMockup from "../assets/intermedi-phones.png";
 import { authRequest } from "../services/auth";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
-import { API_URL } from "../services/api";
+import { apiRequest } from "../services/api";
 import { entrarComoAdmin } from "../services/desempenho";
+import { guardarTokenSessao } from "../services/presenca";
 
 type Role = "gerente" | "funcionario" | "admin";
-type Mode = "login" | "cadastro";
 const profiles = [
   {
     id: "gerente" as Role,
@@ -76,22 +76,12 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     </svg>
   );
 }
-export default function LoginUser({
-  initialMode = "login",
-}: {
-  initialMode?: Mode;
-}) {
+export default function LoginUser() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [role, setRole] = useState<Role | null>(
     profiles.find((profile) => profile.id === params.get("perfil"))?.id ?? null,
   );
-
-  const [requestedMode, setMode] = useState<Mode>(initialMode);
-  const mode: Mode =
-    role === "funcionario" || role === "admin"
-      ? "login"
-      : requestedMode;
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -105,14 +95,10 @@ export default function LoginUser({
   }, []);
   useEffect(() => {
     if (role) heading.current?.focus();
-  }, [role, mode]);
+  }, [role]);
   function resetRequest() {
     setMessage("");
     setVisible(false);
-  }
-  function changeMode(next: Mode) {
-    resetRequest();
-    setMode(next);
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -132,12 +118,10 @@ export default function LoginUser({
     const formData = new FormData(form);
 
     if (role === "funcionario") {
-      const cpf = String(formData.get("cpf") || "")
-        .trim()
-        .replace(/[^\d]/g, "");
-      const matricula = String(formData.get("matricula") || "")
-        .trim()
-        .toLowerCase();
+      // CPF, matrícula e senha provisória chegam no e-mail de boas-vindas
+      const cpf = String(formData.get("cpf") || "").trim();
+      const matricula = String(formData.get("matricula") || "").trim();
+      const senha = String(formData.get("senha") || "");
 
       if (!cpf) {
         setMessage("Informe o CPF do funcionário.");
@@ -147,145 +131,47 @@ export default function LoginUser({
         setMessage("Informe a matrícula do funcionário.");
         return;
       }
+      if (!senha) {
+        setMessage("Informe a senha do funcionário.");
+        return;
+      }
 
       try {
-        const listResponse = await fetch(`${API_URL}/funcionario`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
+        const { usuario, token } = await apiRequest("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cpf, matricula, senha }),
         });
-        const listPayload = await listResponse.json().catch(() => ({}));
-        if (!listResponse.ok) {
-          throw new Error(
-            listPayload.message ||
-              listPayload.error ||
-              "Não foi possível consultar os funcionários.",
-          );
-        }
-
-        const rawList = Array.isArray(listPayload)
-          ? listPayload
-          : Array.isArray(listPayload?.funcionario)
-            ? listPayload.funcionario
-            : Array.isArray(listPayload?.funcionarios)
-              ? listPayload.funcionarios
-              : [];
-
-        const found = rawList.find((item: any) => {
-          const storedCpf = String(item.cpfFuncionario ?? item.cpf ?? "")
-            .trim()
-            .replace(/[^\d]/g, "");
-          const storedMatricula = String(
-            item.matriculaFuncionario ?? item.matricula ?? "",
-          )
-            .trim()
-            .toLowerCase();
-          return storedCpf === cpf && storedMatricula === matricula;
-        });
-
-        if (!found) {
-          setMessage("CPF ou matrícula incorretos.");
+        if (usuario?.papel !== "funcionario") {
+          setMessage("Esta conta não é de funcionário. Escolha o seu perfil em Trocar perfil.");
           return;
         }
 
-        const funcionarioId = found.idFuncionario ?? found.id;
-        if (!funcionarioId) {
-          setMessage("Funcionário sem identificação válida.");
-          return;
-        }
-
-        const detailResponse = await fetch(
-          `${API_URL}/funcionario/${encodeURIComponent(funcionarioId)}`,
-          { method: "GET", headers: { Accept: "application/json" } },
-        );
-        const detailPayload = await detailResponse.json().catch(() => ({}));
-        if (!detailResponse.ok) {
-          throw new Error(
-            detailPayload.message ||
-              detailPayload.error ||
-              "Não foi possível consultar o perfil do funcionário.",
-          );
-        }
-
-        const detail = Array.isArray(detailPayload)
-          ? detailPayload[0]
-          : (detailPayload?.resultado ??
-            detailPayload?.funcionario ??
-            detailPayload?.funcionarios ??
-            detailPayload);
-
-        const farmaciaId = String(
-          detail.fkIdFarmacia ??
-            detail.idFarmacia ??
-            found.fkIdFarmacia ??
-            found.idFarmacia ??
-            "",
-        ).trim();
-
-        let unitName = "Unidade não vinculada";
-        if (farmaciaId) {
-          const farmaciaResponse = await fetch(
-            `${API_URL}/farmacia`,
-            {
-              method: "GET",
-              headers: { Accept: "application/json" },
-            },
-          );
-          const farmaciaPayload = await farmaciaResponse
-            .json()
-            .catch(() => ({}));
-          if (farmaciaResponse.ok) {
-            const farmacias = Array.isArray(farmaciaPayload)
-              ? farmaciaPayload
-              : Array.isArray(farmaciaPayload?.farmacia)
-                ? farmaciaPayload.farmacia
-                : Array.isArray(farmaciaPayload?.farmacias)
-                  ? farmaciaPayload.farmacias
-                  : [];
-            const unidade = farmacias.find((item: any) => {
-              return String(item.idFarmacia ?? item.id) === String(farmaciaId);
-            });
-            if (unidade) {
-              unitName = String(
-                unidade.nomeFarmacia ??
-                  unidade.nome ??
-                  unidade.farmacia ??
-                  "Unidade não vinculada",
-              ).trim();
-            }
-          }
-        }
-
-        const sessionUser = {
-          id: detail.idFuncionario ?? found.idFuncionario ?? funcionarioId,
-          name:
-            detail.nomeFuncionario ??
-            found.nomeFuncionario ??
-            found.name ??
-            "Funcionário",
-          cpf: detail.cpfFuncionario ?? found.cpfFuncionario ?? cpf,
-          matricula:
-            detail.matriculaFuncionario ??
-            found.matriculaFuncionario ??
-            matricula,
-          email: detail.emailFuncionario ?? found.emailFuncionario ?? "",
-          role: "funcionario",
-          unitName,
-          farmaciasId: farmaciaId,
-        };
-
+        // token do back: conta o tempo logado (o gerente e o admin veem)
+        guardarTokenSessao(token);
         sessionStorage.setItem(
           "intermediEmployeeSession",
-          JSON.stringify(sessionUser),
+          JSON.stringify({
+            id: usuario.id,
+            name: usuario.nome || "Funcionário",
+            cpf: usuario.cpf,
+            matricula: usuario.matricula,
+            email: usuario.email || "",
+            role: "funcionario",
+            unitName: usuario.nomeFarmacia || "Unidade não vinculada",
+            farmaciasId: usuario.idFarmacia == null ? "" : String(usuario.idFarmacia),
+          }),
         );
 
         setMessage("");
         navigate("/funcionario", { replace: true });
-        return;
-      } catch (error) {
+      } catch (error: any) {
         setMessage(
-          error instanceof Error
-            ? error.message
-            : "Não foi possível validar o funcionário. Tente novamente.",
+          error?.status === 401
+            ? "CPF, matrícula ou senha incorretos."
+            : error instanceof Error
+              ? error.message
+              : "Não foi possível entrar. Tente novamente.",
         );
       }
       return;
@@ -330,18 +216,17 @@ export default function LoginUser({
       return;
     }
 
-    const email = String(formData.get("email") || "")
-      .trim()
-      .toLowerCase();
+    // CPF, matrícula e senha provisória chegam no e-mail de boas-vindas
+    const cpf = String(formData.get("cpf") || "").trim();
+    const matricula = String(formData.get("matricula") || "").trim();
     const senha = String(formData.get("senha") || "");
 
-    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!email) {
-      setMessage("Informe o e-mail do gerente.");
+    if (!cpf) {
+      setMessage("Informe o CPF do gerente.");
       return;
     }
-    if (!emailIsValid) {
-      setMessage("Informe um e-mail válido do gerente.");
+    if (!matricula) {
+      setMessage("Informe a matrícula do gerente.");
       return;
     }
     if (!senha) {
@@ -349,25 +234,10 @@ export default function LoginUser({
       return;
     }
 
-    const nome = String(formData.get("nome") || "").trim();
-    const unidade = String(formData.get("unidade") || "").trim();
-    const confirmarSenha = String(formData.get("confirmarSenha") || "");
-    if (mode === "cadastro") {
-      if (nome.length < 3 || unidade.length < 3) {
-        setMessage("Informe seu nome e o nome da nova unidade (mínimo de 3 caracteres).");
-        return;
-      }
-      if (senha !== confirmarSenha) {
-        setMessage("As senhas não coincidem.");
-        return;
-      }
-    }
     setMessage("");
     try {
-      await authRequest(mode === "cadastro" ? "register" : "login", {
-        email, senha, role: "gerente",
-        ...(mode === "cadastro" ? { nome, unidade, confirmarSenha } : {}),
-      });
+      const { token } = await authRequest("login", { cpf, matricula, senha, role: "gerente" });
+      guardarTokenSessao(token);
       navigate("/gerente", { replace: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível concluir o acesso. Tente novamente.");
@@ -390,10 +260,8 @@ export default function LoginUser({
           </nav>
         )}
         <div
-          key={`${role ?? "welcome"}-${mode}`}
-          className={`auth-content${
-            selected && mode === "cadastro" ? " auth-register" : ""
-          }`}
+          key={role ?? "welcome"}
+          className="auth-content"
         >
           {!selected ? (
             <>
@@ -415,8 +283,6 @@ export default function LoginUser({
                     onClick={() => {
                       setRole(profile.id);
                       setMessage("");
-                      if (profile.id !== "gerente")
-                        setMode("login");
                     }}
                   >
                     <span className="auth-profile-icon">
@@ -443,123 +309,54 @@ export default function LoginUser({
               </p>
                 </div>
               </div>
-              {role === "gerente" && (
-                <div className="auth-mode" aria-label="Tipo de acesso">
-                  <button type="button" aria-pressed={mode === "login"} disabled={submitting} onClick={() => changeMode("login")}>Entrar</button>
-                  <button type="button" aria-pressed={mode === "cadastro"} disabled={submitting} onClick={() => changeMode("cadastro")}>Criar conta</button>
-                </div>
-              )}
               <form
-                key={`${role}-${mode}`}
+                key={role}
                 className="auth-form"
                 onSubmit={submit}
                 aria-busy={submitting}
               >
-                {mode === "cadastro" && (
-                  <label>
-                    Nome completo
+                <label>
+                  CPF
+                  <input
+                    name="cpf"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Digite seu CPF"
+                    maxLength={14}
+                  />
+                </label>
+                <label>
+                  Matrícula
+                  <input
+                    name="matricula"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Digite sua matrícula"
+                    maxLength={20}
+                  />
+                </label>
+                <label>
+                  Senha
+                  <span className="auth-password">
                     <input
-                      name="nome"
-                      autoComplete="name"
-                      placeholder="Como podemos chamar você?"
-                      minLength={3}
-                      maxLength={120}
-                    />
-                  </label>
-                )}
-                {mode === "cadastro" && role === "gerente" && (
-                  <label>
-                    Nome da sua nova unidade
-                    <input
-                      name="unidade"
-                      autoComplete="organization"
-                      placeholder="Ex.: Farmácia São Lucas"
-                      minLength={3}
-                      maxLength={150}
-                    />
-                    <small>
-                      O cadastro cria uma unidade própria. Não concede acesso a
-                      uma farmácia já cadastrada.
-                    </small>
-                  </label>
-                )}
-                {role === "gerente" ? (
-                  <label>
-                    E-mail
-                    <input
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="voce@farmacia.com.br"
-                      maxLength={254}
-                    />
-                  </label>
-                ) : (
-                  <>
-                    <label>
-                      CPF
-                      <input
-                        name="cpf"
-                        type="text"
-                        autoComplete="off"
-                        placeholder="Digite seu CPF"
-                        maxLength={14}
-                      />
-                    </label>
-                    <label>
-                      Matrícula
-                      <input
-                        name="matricula"
-                        type="text"
-                        autoComplete="off"
-                        placeholder="Digite sua matrícula"
-                        maxLength={20}
-                      />
-                    </label>
-                  </>
-                )}
-                {role !== "funcionario" && (
-                  <label>
-                    Senha
-                    <span className="auth-password">
-                      <input
-                        name="senha"
-                        type={visible ? "text" : "password"}
-                        autoComplete={
-                          mode === "login"
-                            ? "current-password"
-                            : "new-password"
-                        }
-                        placeholder={
-                          mode === "login"
-                            ? "Digite sua senha"
-                            : "Crie sua senha"
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setVisible(!visible)}
-                        aria-label={
-                          visible ? "Ocultar senha" : "Mostrar senha"
-                        }
-                        aria-pressed={visible}
-                      >
-                        <Icon name={visible ? "hidden" : "eye"} />
-                      </button>
-                    </span>
-                  </label>
-                )}
-                {mode === "cadastro" && (
-                  <label>
-                    Confirmar senha
-                    <input
-                      name="confirmarSenha"
+                      name="senha"
                       type={visible ? "text" : "password"}
-                      autoComplete="new-password"
-                      placeholder="Digite sua senha novamente"
+                      autoComplete="current-password"
+                      placeholder="Digite sua senha"
                     />
-                  </label>
-                )}
+                    <button
+                      type="button"
+                      onClick={() => setVisible(!visible)}
+                      aria-label={
+                        visible ? "Ocultar senha" : "Mostrar senha"
+                      }
+                      aria-pressed={visible}
+                    >
+                      <Icon name={visible ? "hidden" : "eye"} />
+                    </button>
+                  </span>
+                </label>
                 {role === "admin" && (
                   <p className="auth-admin-note">
                     <Icon name="shield" /> Acesso exclusivo para administradores
@@ -573,9 +370,7 @@ export default function LoginUser({
                 )}
                 <button className={`auth-submit${submitting ? " is-loading" : ""}`} type="submit" disabled={submitting}>
                   {submitting && <span className="auth-spinner" aria-hidden="true" />}
-                  <span role="status" aria-live="polite">{submitting ? (mode === "login" ? "Entrando…" : "Criando conta…") : mode === "login"
-                    ? "Entrar"
-                    : "Criar minha conta"}</span>
+                  <span role="status" aria-live="polite">{submitting ? "Entrando…" : "Entrar"}</span>
                 </button>
               </form>
               <div className="auth-divider"><span>ou</span></div>

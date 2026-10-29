@@ -1,3 +1,5 @@
+import TempoLogado from "./TempoLogado";
+import { primeiroNome } from "../../services/nomes";
 import { Link } from "react-router-dom";
 import CardNumero from "./CardNumero";
 import EnviarFoto from "./EnviarFoto";
@@ -55,7 +57,7 @@ export default function PerfilGerente({ id }) {
             ),
           },
           periodo: d.periodo,
-          semPeriodo: ["estoque"],
+          semPeriodo: ["estoque", "tempo"],
           abas: [
             ["geral", "Visão geral", () => (
               <>
@@ -120,6 +122,8 @@ export default function PerfilGerente({ id }) {
                 </Secao>
               </Grade>
             )],
+            // o admin vê quando o gerente entrou e saiu da plataforma
+            plataforma === "admin" && ["tempo", "Tempo logado", () => <TempoLogado tipo="gerente" id={g.idGerente} nome={primeiroNome(g.nomeGerente)} />],
           ],
         };
       }}

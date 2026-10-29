@@ -153,15 +153,7 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .auth-page * { transition: none !important; } }
 
-.auth-mode { display: flex; gap: 2px; padding: 3px; margin-bottom: 20px; border-radius: 980px; background: rgb(0 0 0 / 0.05); }
-.auth-mode button { flex: 1; border: 0; border-radius: 980px; padding: 9px; background: transparent; color: #424245; font-size: 14px; font-weight: 500; }
-.auth-mode button[aria-pressed="true"] { background: #fff; color: var(--auth-ink); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); }
-.auth-submit:disabled, .auth-mode button:disabled { cursor: wait; opacity: .65; }
-.auth-register .auth-persona-heading { margin-bottom: 12px; }
-.auth-register .auth-form { gap: 9px; }
-.auth-register .auth-form input { padding-top: 9px; padding-bottom: 9px; }
-.auth-register .auth-mode { margin-bottom: 12px; }
-.auth-register .auth-divider { margin-top: 12px; margin-bottom: 10px; }
+.auth-submit:disabled { cursor: wait; opacity: .65; }
 
 /* Gentle arrival from the site and between access steps. */
 .auth-content { animation: auth-content-enter .48s cubic-bezier(.22, 1, .36, 1) both; }

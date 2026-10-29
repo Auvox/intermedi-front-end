@@ -12,10 +12,9 @@ export function useTokenAdmin() {
 // Alertas ativos da saúde do sistema (sino do topo, toast e banner).
 // Consulta a cada 15 s; onCritico(alerta) é chamado quando surge um crítico novo.
 export function useAlertas({ onCritico } = {}) {
-  const token = useTokenAdmin();
   const fetcher = useCallback((options) => buscarAlertas("ativo", options), []);
-  const consulta = usePolling(fetcher, { enabled: Boolean(token), interval: 15000 });
-  const alertas = token ? consulta.data?.alertas ?? [] : [];
+  const consulta = usePolling(fetcher, { enabled: true, interval: 15000 });
+  const alertas = consulta.data?.alertas ?? [];
 
   const vistos = useRef(null);
   const callback = useRef(onCritico);
@@ -36,10 +35,10 @@ export function useAlertas({ onCritico } = {}) {
   }, [consulta.data]);
 
   return {
-    logado: Boolean(token),
+    logado: true,
     alertas,
     criticos: alertas.filter((a) => a.severidade === "critico"),
-    carregando: Boolean(token) && consulta.loading,
+    carregando: consulta.loading,
     erro: consulta.error,
     recarregar: consulta.reload,
   };

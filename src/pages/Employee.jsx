@@ -1,5 +1,5 @@
 import PersonaAvatar from "../components/PersonaAvatar";
-import { CartaoPessoa, GradePessoas, TeamTable } from "../components/Directory";
+import { CartaoPessoa, GradePessoas } from "../components/Directory";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 import ManagerSidebar from "../components/ManagerSidebar";
@@ -8,14 +8,17 @@ import { usePerfil } from "../components/perfil/perfilContext";
 import { unit } from "./managerData";
 import useApiList from "../hooks/useApiList";
 import {
-  API_URL,
-  listarFarmacias,
+  fotoPessoa,
   listarFuncionarios,
+  listarFarmacias,
   listarPacientes,
-  normalizeFuncionario,
   normalizePaciente,
 } from "../services/api";
 import { readEmployeeSession } from "../services/employeeSession";
+import { primeiroNome } from "../services/nomes";
+import { useAoAlterarDados } from "../hooks/useResumo";
+import { sairDaConta, usePresenca } from "../services/presenca";
+import BoasVindas from "../components/BoasVindas";
 import { definirContextoRastreio } from "../services/rastreioCliques";
 import { SeletorPersona, ToastRegion } from "../components/Chamados";
 import { SinoFuncionario } from "../components/NotificacoesEntregas";
@@ -58,6 +61,8 @@ export default function Employee() {
   const nomeDaFarmacia = new Map(farmacias.map((f) => [String(f.idFarmacia ?? f.id), f.nomeFarmacia ?? f.nome]));
   const escolhido = funcionario.funcionarios.find((f) => f.id === funcionario.idFuncionario);
   const employeeName = session?.name || escolhido?.name || "Funcionário";
+  // nos painéis a pessoa aparece só pelo primeiro nome
+  const employeeFirstName = primeiroNome(employeeName, "Funcionário");
   const employeeUnit = session?.unitName || nomeDaFarmacia.get(String(funcionario.idFarmacia ?? "")) || unit;
   const opcoesFuncionario = funcionario.funcionarios
     .map((f) => ({ ...f, farmacia: nomeDaFarmacia.get(f.farmaciaId) ?? "" }))
@@ -75,226 +80,9 @@ export default function Employee() {
   const preparos = usePreparos(funcionario.idFuncionario, {
     onNovo: (p) => notify(`Novo pedido para preparar: ${p.mensagemPreparo}`),
   });
+  // tempo logado: avisa o back a cada minuto enquanto o funcionário está aqui
+  usePresenca(Boolean(session?.id));
 
-
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [profileError, setProfileError] = useState("");
-  const [profile, setProfile] = useState(null);
-  const [draft, setDraft] = useState(null);
-  const [editingField, setEditingField] = useState(null);
-
-  async function loadEmployeeProfile() {
-    setLoadingProfile(true);
-    setProfileError("");
-
-    try {
-      const listResponse = await fetch(`${API_URL}/funcionario`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-      const listPayload = await listResponse.json().catch(() => ({}));
-
-      if (!listResponse.ok) {
-        throw new Error(
-          listPayload.message ||
-            listPayload.error ||
-            "Não foi possível buscar os funcionários.",
-        );
-      }
-
-      const rawList = Array.isArray(listPayload)
-        ? listPayload
-        : Array.isArray(listPayload?.funcionario)
-          ? listPayload.funcionario
-          : Array.isArray(listPayload?.funcionarios)
-            ? listPayload.funcionarios
-            : [];
-
-      const targetId = String(session?.id ?? funcionario.idFuncionario ?? "");
-      const raw =
-        rawList.find((item) => {
-          const id = String(item.idFuncionario ?? item.id ?? "");
-          return id === targetId;
-        }) ??
-        rawList.find((item) => {
-          const storedCpf = String(item.cpfFuncionario ?? item.cpf ?? "")
-            .trim()
-            .replace(/[^\d]/g, "");
-          return (
-            storedCpf ===
-            String(session?.cpf ?? "")
-              .trim()
-              .replace(/[^\d]/g, "")
-          );
-        }) ??
-        rawList[0] ??
-        {};
-
-      const funcionarioId = raw.idFuncionario ?? raw.id ?? session?.id;
-      if (!funcionarioId) {
-        throw new Error("Funcionário não encontrado.");
-      }
-
-      const detailResponse = await fetch(
-        `${API_URL}/funcionario/${encodeURIComponent(funcionarioId)}`,
-        {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        },
-      );
-      const detailPayload = await detailResponse.json().catch(() => ({}));
-
-      if (!detailResponse.ok) {
-        throw new Error(
-          detailPayload.message ||
-            detailPayload.error ||
-            detailPayload.error?.message ||
-            "Não foi possível consultar o funcionário.",
-        );
-      }
-
-      const detail = Array.isArray(detailPayload)
-        ? detailPayload[0]
-        : (detailPayload?.resultado ??
-          detailPayload?.funcionario ??
-          detailPayload?.funcionarios ??
-          detailPayload);
-
-      const profileData = {
-        id: funcionarioId,
-        name:
-          detail.nomeFuncionario ??
-          raw.nomeFuncionario ??
-          session?.name ??
-          "Funcionário",
-        email:
-          detail.emailFuncionario ??
-          raw.emailFuncionario ??
-          session?.email ??
-          "",
-        cpf: detail.cpfFuncionario ?? raw.cpfFuncionario ?? session?.cpf ?? "",
-        matricula:
-          detail.matriculaFuncionario ??
-          raw.matriculaFuncionario ??
-          session?.matricula ??
-          "",
-        role: detail.cargoFuncionario ?? raw.cargoFuncionario ?? "Funcionário",
-        shift: detail.turnoFuncionario ?? raw.turnoFuncionario ?? "",
-        phone: detail.telFuncionario ?? raw.telFuncionario ?? "",
-        farmaciaId: String(
-          detail.fkIdFarmacia ??
-            raw.fkIdFarmacia ??
-            session?.farmaciasId ??
-            session?.farmaciaId ??
-            "",
-        ),
-      };
-
-      setProfile(profileData);
-      setDraft(profileData);
-    } catch (error) {
-      const fallback = {
-        id: session?.id ?? funcionario.idFuncionario ?? "",
-        name: session?.name ?? escolhido?.name ?? "Funcionário",
-        email: session?.email ?? "",
-        cpf: session?.cpf ?? "",
-        matricula: session?.matricula ?? "",
-        role: "Funcionário",
-        shift: "",
-        phone: "",
-        farmaciaId: session?.farmaciasId ?? session?.farmaciaId ?? "",
-      };
-      setProfile(fallback);
-      setDraft(fallback);
-      setProfileError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível carregar o perfil do funcionário.",
-      );
-    } finally {
-      setLoadingProfile(false);
-    }
-  }
-
-  async function openEmployeeProfile() {
-    await loadEmployeeProfile();
-    setProfileOpen(true);
-  }
-
-  async function saveEmployeeProfile(event) {
-    event?.preventDefault?.();
-    if (!draft || !profile) return;
-
-    const payload = {
-      nomeFuncionario: draft.name,
-      emailFuncionario: draft.email,
-      cpfFuncionario: draft.cpf,
-      matriculaFuncionario: draft.matricula,
-      cargoFuncionario: draft.role,
-      turnoFuncionario: draft.shift,
-      telFuncionario: draft.phone,
-      fkIdFarmacia:
-        draft.farmaciaId || session?.farmaciasId || session?.farmaciaId || "",
-    };
-
-    try {
-      const response = await fetch(
-        `${API_URL}/funcionario/${encodeURIComponent(profile.id)}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(
-          result.message ||
-            result.error?.message ||
-            result.error?.errstr ||
-            "Não foi possível salvar o perfil do funcionário.",
-        );
-      }
-
-      const nextSession = {
-        ...(session || {}),
-        id: profile.id,
-        name: draft.name,
-        cpf: draft.cpf,
-        matricula: draft.matricula,
-        email: draft.email,
-        role: "funcionario",
-        farmaciasId: String(draft.farmaciaId || session?.farmaciasId || ""),
-        unitName: session?.unitName || employeeUnit,
-      };
-      sessionStorage.setItem(
-        "intermediEmployeeSession",
-        JSON.stringify(nextSession),
-      );
-
-      setProfile({ ...draft, id: profile.id });
-      setDraft({ ...draft, id: profile.id });
-      setEditingField(null);
-      setProfileOpen(false);
-    } catch (error) {
-      setProfileError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível salvar o perfil do funcionário.",
-      );
-    }
-  }
-
-  function cancelEmployeeProfile() {
-    setDraft(profile);
-    setEditingField(null);
-    setProfileError("");
-  }
 
   useEffect(() => {
     document.title = "Área do funcionário | Intermedi";
@@ -305,11 +93,19 @@ export default function Employee() {
 
   return (
     <div className="mgr-shell emp-shell">
+      {session?.id && (
+        <BoasVindas
+          papel="funcionario"
+          pessoa={{ id: session.id, nome: session.name }}
+          farmacia={{ id: session.farmaciasId, nome: session.unitName }}
+        />
+      )}
       <ManagerSidebar employee unitName={employeeUnit} />
+      <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia} idFuncionarioAtual={funcionario.idFuncionario}>
       <div className="mgr-workspace">
         <div className="mgr-topbar">
           <span>
-            <span className="mgr-topbar-unit-prefix">Olá, {employeeName}</span>{" "}
+            <span className="mgr-topbar-unit-prefix">Olá, {employeeFirstName}</span>{" "}
             <span className="mgr-topbar-divider">/</span>{" "}
             <strong>{employeeUnit}</strong>
           </span>
@@ -322,26 +118,8 @@ export default function Employee() {
             />
           )}
           <SinoFuncionario rastreio={rastreio} fonte={fonteRastreio} />
-          <div className="mgr-account emp-account">
-            <button
-              type="button"
-              className="mgr-account-button"
-              aria-label="Abrir perfil do funcionário"
-              onClick={openEmployeeProfile}
-            >
-            <PersonaAvatar className="mgr-account-avatar" role="funcionario" photo={session?.fotoPerfilFuncionario ?? session?.photo} />
-            <span className="mgr-account-person">
-              <strong>{employeeName}</strong>
-              <small>Funcionário da unidade · {employeeUnit}</small>
-            </span>
-            </button>
-            <Link className="account-action account-exit" to="/login?perfil=funcionario">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
-              Sair
-            </Link>
-          </div>
+          <ContaFuncionario idFuncionario={funcionario.idFuncionario} nome={employeeFirstName} unidade={employeeUnit} />
         </div>
-        <PerfilProvider plataforma="funcionario" idFarmacia={funcionario.idFarmacia}>
           <main id="conteudo" tabIndex={-1} className="mgr-main directory-layout">
             <PreparosFarmacia preparos={preparos} idFuncionario={funcionario.idFuncionario} onAviso={notify} />
             <Outlet
@@ -349,111 +127,68 @@ export default function Employee() {
                 chamadosDoFuncionario: fonteRastreio.chamados,
                 idFarmacia: funcionario.idFarmacia,
                 // visão geral
-                nomeFuncionario: employeeName,
+                nomeFuncionario: employeeFirstName,
                 unidade: employeeUnit,
               }}
             />
           </main>
-        </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      </PerfilProvider>
       <ToastRegion message={toast} />
-
-      {profileOpen && (
-        <dialog
-          open
-          className="mgr-modal mgr-profile-modal"
-          aria-label="Perfil do funcionário"
-        >
-          <div className="mgr-modal-head">
-            <h2>Perfil do funcionário</h2>
-            <button
-              type="button"
-              aria-label="Fechar perfil"
-              onClick={() => setProfileOpen(false)}
-            >
-              ×
-            </button>
-          </div>
-          {loadingProfile && <p className="mgr-empty">Carregando perfil…</p>}
-          {profileError && (
-            <p className="mgr-empty" role="alert">
-              {profileError}
-            </p>
-          )}
-          {profile && draft && (
-            <form
-              className="mgr-form mgr-profile-form"
-              onSubmit={saveEmployeeProfile}
-            >
-              <div className="mgr-profile-fields">
-                {[
-                  ["name", "Nome completo"],
-                  ["email", "E-mail"],
-                  ["cpf", "CPF"],
-                  ["matricula", "Matrícula"],
-                  ["role", "Cargo"],
-                  ["shift", "Turno"],
-                  ["phone", "Telefone"],
-                ].map(([key, label]) => (
-                  <div className="mgr-profile-row" key={key}>
-                    <span className="mgr-profile-label">{label}</span>
-                    <div className="mgr-profile-value">
-                      {editingField === key ? (
-                        <input
-                          className="mgr-profile-input"
-                          value={draft[key] ?? ""}
-                          onChange={({ target }) =>
-                            setDraft({ ...draft, [key]: target.value })
-                          }
-                        />
-                      ) : (
-                        <span className="mgr-profile-readonly">
-                          {draft[key] || "Não informado"}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        className="mgr-profile-edit"
-                        aria-label={`Editar ${label}`}
-                        onClick={() => setEditingField(key)}
-                      >
-                        ✎
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mgr-modal-actions">
-                <button
-                  className="mgr-secondary"
-                  type="button"
-                  onClick={() => {
-                    cancelEmployeeProfile();
-                    setProfileOpen(false);
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="mgr-primary"
-                  type="button"
-                  onClick={saveEmployeeProfile}
-                >
-                  Salvar
-                </button>
-              </div>
-            </form>
-          )}
-        </dialog>
-      )}
     </div>
   );
 }
 
+
+// Conta no topo: abre o perfil completo do funcionário (com a foto, que ele
+// mesmo pode trocar) e mostra a foto atual.
+function ContaFuncionario({ idFuncionario, nome, unidade }) {
+  const { abrirPerfil } = usePerfil();
+  const [foto, setFoto] = useState(null);
+  const [versao, setVersao] = useState(0);
+
+  useEffect(() => {
+    if (!idFuncionario) return undefined;
+    const controller = new AbortController();
+    listarFuncionarios({ signal: controller.signal })
+      .then((lista) => {
+        const eu = lista.find((f) => String(f.idFuncionario) === String(idFuncionario));
+        setFoto(fotoPessoa(eu?.fotoFuncionario));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [idFuncionario, versao]);
+
+  // trocou a foto no perfil: atualiza o avatar do topo
+  useAoAlterarDados((evento) => {
+    if (evento?.tipo === "funcionario" && String(evento.id) === String(idFuncionario)) setVersao((v) => v + 1);
+  });
+
+  return (
+    <div className="mgr-account emp-account">
+      <button
+        type="button"
+        className="mgr-account-button"
+        aria-label="Abrir meu perfil"
+        disabled={!idFuncionario}
+        onClick={(event) => abrirPerfil("funcionario", idFuncionario, event.currentTarget)}
+      >
+        <PersonaAvatar className="mgr-account-avatar" role="funcionario" photo={foto} />
+        <span className="mgr-account-person">
+          <strong>{nome}</strong>
+          <small>Funcionário da unidade · {unidade}</small>
+        </span>
+      </button>
+      <Link className="account-action account-exit" to="/login?perfil=funcionario" onClick={sairDaConta}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
+        Sair
+      </Link>
+    </div>
+  );
+}
 // O total aparece no título da lista e o resultado da busca no rodapé dela
 function PageHeader({ title, description }) {
   return (
@@ -541,68 +276,3 @@ export function EmployeePatients() {
     </>
   );
 }
-
-export function EmployeeTeam() {
-  const { abrirPerfil } = usePerfil();
-  const [search, setSearch] = useState("");
-  const [shift, setShift] = useState("");
-  const { items: allEmployees, loading, error } = useApiList(listarFuncionarios, normalizeFuncionario);
-  const session = readEmployeeSession();
-  // farmácia da sessão ou, sem sessão, a do funcionário escolhido no topo
-  const { idFarmacia } = useOutletContext() ?? {};
-  const targetFarmaciaId = String(session?.farmaciasId ?? session?.farmaciaId ?? idFarmacia ?? "");
-  const sameUnit = targetFarmaciaId
-    ? allEmployees.filter((item) => item.farmaciaId === targetFarmaciaId)
-    : [];
-  const employees = sameUnit.length ? sameUnit : allEmployees;
-
-  const filtered = employees.filter((employee) =>
-    (!shift || employee.shift === shift) && normalize(`${employee.name} ${employee.role} ${employee.email}`).includes(
-      normalize(search.trim()),
-    ),
-  );
-
-  return (
-    <>
-      <PageHeader
-        title="Funcionários"
-        description="Equipe da sua unidade, com cargo, turno e contato."
-      />
-      <section className="mgr-panel" aria-labelledby="emp-team-title">
-        <div className="mgr-toolbar">
-          <h2 id="emp-team-title">
-            Funcionários <span className="mgr-badge">{employees.length}</span>
-          </h2>
-          <input
-            type="search"
-            aria-label="Buscar funcionário por nome ou cargo"
-            placeholder="Buscar nome ou cargo…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select aria-label="Filtrar funcionários por turno" value={shift} onChange={event => setShift(event.target.value)}>
-            <option value="">Todos os turnos</option>
-            {[...new Set(employees.map(employee => employee.shift).filter(Boolean))].map(value => <option key={value} value={value}>{value}</option>)}
-          </select>
-        </div>
-        <TeamTable employees={filtered} onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)} />
-        {!loading && !error && !filtered.length && (
-          <p className="mgr-empty">
-            Nenhum funcionário encontrado. Tente outro nome ou cargo.
-          </p>
-        )}
-        {loading && <SkeletonCartoes rotulo="Carregando funcionários…" />}
-        {error && (
-          <p className="mgr-empty" role="alert">
-            {error}
-          </p>
-        )}
-        <p className="mgr-table-note" role="status">
-          {filtered.length} de {employees.length} funcionários · Somente
-          consulta
-        </p>
-      </section>
-    </>
-  );
-}
-

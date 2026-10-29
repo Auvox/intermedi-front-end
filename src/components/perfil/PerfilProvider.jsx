@@ -14,7 +14,7 @@ const PARAM_SECAO = "secao";
 // gerenteAtual: { id, idFarmacia } — define de quem o gerente pode trocar a foto.
 // (Sem useCallback/useMemo manuais: o React Compiler memoiza.)
 // idFarmacia: farmácia do funcionário (o gerente usa a de gerenteAtual)
-export default function PerfilProvider({ plataforma, gerenteAtual = null, idFarmacia = null, children }) {
+export default function PerfilProvider({ plataforma, gerenteAtual = null, idFarmacia = null, idFuncionarioAtual = null, children }) {
   const [params, setParams] = useSearchParams();
   const pilha = lerPilha(params.get("perfil"));
   const topo = pilha.at(-1) ?? null;
@@ -94,8 +94,11 @@ export default function PerfilProvider({ plataforma, gerenteAtual = null, idFarm
   }, [aberto]);
 
   // Quem pode trocar foto: admin (gerente, farmácia); gerente (funcionários da
-  // farmácia dele e a própria foto); funcionário só vê.
+  // farmácia dele e a própria foto); funcionário só a própria.
   function podeTrocarFoto(tipo, dados) {
+    if (plataforma === "funcionario") {
+      return tipo === "funcionario" && Boolean(idFuncionarioAtual) && String(dados?.idFuncionario) === String(idFuncionarioAtual);
+    }
     if (plataforma === "admin") return tipo === "gerente" || tipo === "farmacia";
     if (plataforma === "gerente" && gerenteAtual?.id) {
       if (tipo === "gerente") return String(dados?.idGerente) === String(gerenteAtual.id);
