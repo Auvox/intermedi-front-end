@@ -222,21 +222,6 @@
 }
 .adm-dsp-historico summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; border-radius: var(--radius-lg); }
 
-/* ── Login do admin ───────────────────────────────────────────── */
-.adm-dsp-login { max-width: 520px; padding: var(--space-8); }
-.adm-dsp-login-icone {
-  display: inline-grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: var(--space-4);
-  border-radius: 14px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-.adm-dsp-login h2 { margin: 0 0 var(--space-2); font-size: 22px; }
-.adm-dsp-login > p { margin: 0 0 var(--space-6); color: var(--color-text-muted); }
-
 /* ── Rotas e telas ────────────────────────────────────────────── */
 .adm-dsp-destaque h2 { display: flex; align-items: center; gap: 6px; margin: 0; padding: var(--space-5) var(--space-5) var(--space-3); font-size: 17px; }
 .adm-dsp-destaque ol { margin: 0; padding: 0 var(--space-3) var(--space-3); list-style: none; }

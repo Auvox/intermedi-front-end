@@ -1,13 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePolling } from "./useChamados";
-import { aoMudarToken, buscarAlertas, tokenAdmin } from "../services/desempenho";
-
-// Admin logado na aba Desempenho (o token fica na aba do navegador)
-export function useTokenAdmin() {
-  const [token, setToken] = useState(tokenAdmin);
-  useEffect(() => aoMudarToken(setToken), []);
-  return token;
-}
+import { buscarAlertas } from "../services/desempenho";
 
 // Alertas ativos da saúde do sistema (sino do topo, toast e banner).
 // Consulta a cada 15 s; onCritico(alerta) é chamado quando surge um crítico novo.

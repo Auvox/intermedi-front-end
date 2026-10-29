@@ -57,10 +57,6 @@ export async function entrarComoAdmin({ cpf, matricula, senha }) {
   return dados.usuario;
 }
 
-export function sairDoDesempenho() {
-  definirToken(null);
-}
-
 // A aba não pede login: o token do admin vai junto só se ele entrou pelo /login
 async function pedido(caminho, options = {}) {
   const token = tokenAdmin();

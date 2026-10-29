@@ -1,11 +1,8 @@
 import { NavLink, Outlet, useOutletContext } from "react-router-dom";
 import ManagerIcon from "../../components/ManagerIcon";
-import LoginAdmin from "../../components/desempenho/LoginAdmin";
 import useApiList from "../../hooks/useApiList";
-import { useTokenAdmin } from "../../hooks/useAlertas";
 import useFiltrosDesempenho from "../../hooks/useFiltrosDesempenho";
 import { listarFarmacias } from "../../services/api";
-import { sairDoDesempenho } from "../../services/desempenho";
 import "../../styles/desempenho.css";
 
 const SUB_ABAS = [
@@ -16,10 +13,9 @@ const SUB_ABAS = [
 ];
 
 // Aba "Desempenho" do admin: filtros globais (na URL), as 4 sub-abas e o
-// aviso fixo enquanto houver alerta crítico ativo.
+// aviso fixo enquanto houver alerta crítico ativo. Abre sem login.
 export default function Desempenho() {
   const { alertas } = useOutletContext();
-  const token = useTokenAdmin();
   const filtros = useFiltrosDesempenho();
   const { items: farmacias } = useApiList(listarFarmacias);
   const criticos = alertas?.criticos ?? [];
@@ -31,16 +27,8 @@ export default function Desempenho() {
           <h1>Desempenho</h1>
           <p>Como o sistema está sendo usado e se tudo está funcionando.</p>
         </div>
-        {token && (
-          <button type="button" className="mgr-secondary" onClick={sairDoDesempenho} data-track="desempenho-sair">
-            Sair do desempenho
-          </button>
-        )}
       </header>
 
-      {!token ? (
-        <LoginAdmin />
-      ) : (
         <>
           {criticos.length > 0 && (
             <div className="adm-dsp-banner" role="alert">
@@ -110,7 +98,6 @@ export default function Desempenho() {
             <Outlet context={{ filtros, alertas, farmacias }} />
           )}
         </>
-      )}
     </div>
   );
 }
