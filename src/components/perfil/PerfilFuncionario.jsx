@@ -1,3 +1,5 @@
+import TempoLogado from "./TempoLogado";
+import { primeiroNome } from "../../services/nomes";
 import CardNumero from "./CardNumero";
 import EnviarFoto from "./EnviarFoto";
 import { usePerfil } from "./perfilContext";
@@ -19,7 +21,7 @@ import { formatarDataChamado } from "../../services/chamados";
 import { endereco, numero, quando, turno } from "../../services/perfil";
 
 export default function PerfilFuncionario({ id }) {
-  const { podeTrocarFoto } = usePerfil();
+  const { podeTrocarFoto, plataforma } = usePerfil();
   const estado = usePerfilDados("funcionario", id, (d) => d.funcionario?.nomeFuncionario);
 
   return (
@@ -51,6 +53,7 @@ export default function PerfilFuncionario({ id }) {
             ),
           },
           periodo: d.periodo,
+          semPeriodo: ["tempo"],
           abas: [
             ["geral", "Visão geral", () => (
               <>
@@ -98,6 +101,8 @@ export default function PerfilFuncionario({ id }) {
                 </Secao>
               </Grade>
             )],
+            // o gerente (equipe dele) e o admin veem quando o funcionário entrou e saiu
+            (plataforma === "gerente" || plataforma === "admin") && ["tempo", "Tempo logado", () => <TempoLogado tipo="funcionario" id={f.idFuncionario} nome={primeiroNome(f.nomeFuncionario)} />],
           ],
         };
       }}

@@ -1,4 +1,4 @@
-import { fotoPessoa } from "./api";
+import { fotoPessoa } from "./api.js";
 export function normalizeGerentes(payload = []) {
   return payload.map((manager, index) => {
     const id = manager.idGerente ?? manager.id ?? String(index + 1);

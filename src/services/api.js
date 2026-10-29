@@ -1,7 +1,7 @@
 // Cliente único da API do Intermedi. Todas as personas (admin, gerente e
 // funcionário) consultam os mesmos endpoints por aqui, para que abas iguais
 // mostrem os mesmos dados.
-export const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/$/, "");
+export const API_URL = (import.meta.env?.VITE_API_URL || "http://localhost:3000").replace(/\/$/, "");
 
 export async function apiRequest(path, options = {}) {
   let response;

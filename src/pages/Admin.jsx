@@ -10,11 +10,10 @@ import { propsLinha } from "../services/perfil";
 import { useAoAlterarDados } from "../hooks/useResumo";
 import PersonaIcon from "../components/PersonaIcon";
 import FarmaciaSelect from "../components/FarmaciaSelect";
+import { buscarCep, digitosCep, formatarCep } from "../services/cep";
 import SinoAlertas from "../components/desempenho/SinoAlertas";
 import { ToastRegion } from "../components/Chamados";
 import { useAlertas } from "../hooks/useAlertas";
-import { aoMudarToken, buscarAdminLogado, tokenAdmin } from "../services/desempenho";
-import { primeiroNome } from "../services/nomes";
 import { useToast } from "../hooks/useChamados";
 import {
   API_URL,
@@ -25,6 +24,8 @@ import {
   fotoPessoa,
 } from "../services/api";
 import { normalizeGerentes } from "../services/gerenteMapper";
+import { aoMudarToken, nomeAdmin } from "../services/desempenho";
+import { primeiroNome } from "../services/nomes";
 import { initialData, unit, formatDate } from "./managerData";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
@@ -295,20 +296,9 @@ export default function Admin() {
   // alertas da saúde do sistema: sino, aviso na hora (toast) e a aba Desempenho
   const [toast, notify] = useToast(10000);
   const alertas = useAlertas({ onCritico: (alerta) => notify(`Alerta crítico: ${alerta.titulo}`) });
-  // nome do admin logado no topo (só o primeiro nome); sem login, "Admin"
-  const [nomeAdmin, setNomeAdmin] = useState("");
-  useEffect(() => {
-    const controller = new AbortController();
-    const carregar = (token) => {
-      if (!token) return setNomeAdmin("");
-      buscarAdminLogado({ signal: controller.signal })
-        .then((usuario) => setNomeAdmin(usuario?.nome ?? ""))
-        .catch(() => {});
-    };
-    carregar(tokenAdmin());
-    const parar = aoMudarToken(carregar);
-    return () => { controller.abort(); parar(); };
-  }, []);
+  // nome de quem entrou como admin (some ao sair)
+  const [adminName, setAdminName] = useState(nomeAdmin);
+  useEffect(() => aoMudarToken(() => setAdminName(nomeAdmin())), []);
   useEffect(() => {
     document.title = "Área do admin | Intermedi";
     return () => {
@@ -331,7 +321,7 @@ export default function Admin() {
             <SinoAlertas alertas={alertas} />
             <PersonaAvatar className="mgr-account-avatar" role="admin" />
             <span className="mgr-account-person">
-              <strong title={nomeAdmin || undefined}>{primeiroNome(nomeAdmin, "Admin")}</strong>
+              <strong>{primeiroNome(adminName, "Admin")}</strong>
               <small>Administrador da plataforma</small>
             </span>
             <Link className="account-action account-exit" to="/login?perfil=admin">
@@ -546,6 +536,10 @@ export function AdminDirectory({ section }) {
   const [cpfGerente, setCpfGerente] = useState("");
   const [crfGerente, setCrfGerente] = useState("");
   const [cepGerente, setCepGerente] = useState("");
+  // "", "buscando", "nao-encontrado" ou "erro"
+  const [statusCepGerente, setStatusCepGerente] = useState("");
+  const buscaCepGerente = useRef(null);
+  const numeroGerenteRef = useRef(null);
   const [enderecoGerente, setEnderecoGerente] = useState("");
   const [numeroGerente, setNumeroGerente] = useState("");
   const [complementoGerente, setComplementoGerente] = useState("");
@@ -759,6 +753,35 @@ export function AdminDirectory({ section }) {
     setNotice(`${record.name}: ${config.result} nesta demonstração.`);
     setModal(null);
   }
+  // com os 8 dígitos do CEP, preenche endereço, bairro, cidade e UF pelo ViaCEP
+  async function alterarCepGerente(texto) {
+    setCepGerente(formatarCep(texto));
+    buscaCepGerente.current?.abort();
+    setStatusCepGerente("");
+    if (digitosCep(texto).length !== 8) return;
+
+    const controller = new AbortController();
+    buscaCepGerente.current = controller;
+    setStatusCepGerente("buscando");
+    try {
+      const endereco = await buscarCep(texto, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      if (!endereco) {
+        setStatusCepGerente("nao-encontrado");
+        return;
+      }
+      // CEP de cidade inteira vem sem rua e bairro: mantém o que já foi digitado
+      if (endereco.endereco) setEnderecoGerente(endereco.endereco);
+      if (endereco.bairro) setBairroGerente(endereco.bairro);
+      setCidadeGerente(endereco.cidade);
+      setUfGerente(endereco.uf);
+      setStatusCepGerente("");
+      numeroGerenteRef.current?.focus();
+    } catch {
+      if (!controller.signal.aborted) setStatusCepGerente("erro");
+    }
+  }
+
   async function register(event) {
     event.preventDefault();
     if (cadastrandoGerente) return;
@@ -807,10 +830,12 @@ export function AdminDirectory({ section }) {
       // cadastro novo entra no topo da lista
       setData((current) => ({ ...current, gerentes: [novoGerente, ...current.gerentes] }));
 
-      // se o e-mail falhou, o back devolve a senha para entregar pessoalmente
-      setNotice(result.senhaProvisoria
-        ? `${nomeGerente}: cadastrado, mas o e-mail não foi enviado. Entregue pessoalmente a matrícula ${result.matricula} e a senha provisória ${result.senhaProvisoria}.`
-        : `${nomeGerente}: cadastrado! Matrícula ${result.matricula}; o acesso foi enviado para ${emailGerente}.`);
+      // a senha é gerada pelo back e vai por e-mail junto com a matrícula
+      setNotice(
+        result.email?.status === "falhou"
+          ? `${nomeGerente}: cadastrado, mas o e-mail não foi enviado. Entregue pessoalmente a matrícula ${result.matricula} e a senha provisória ${result.senhaProvisoria}.`
+          : `${nomeGerente}: cadastrado! A matrícula e a senha provisória foram enviadas para ${emailGerente}.`,
+      );
       setModal(null);
 
       // Limpa os campos depois do cadastro
@@ -1827,13 +1852,21 @@ export function AdminDirectory({ section }) {
               <input
                 name="cepGerente"
                 value={cepGerente}
-                onChange={({ target }) => setCepGerente(target.value)}
+                onChange={({ target }) => alterarCepGerente(target.value)}
                 type="text"
+                inputMode="numeric"
+                autoComplete="postal-code"
                 required
-                // autoComplete="new-password"
+                pattern="\d{5}-?\d{3}"
                 placeholder="Ex. 00000-000"
+                aria-describedby="cep-gerente-status"
                 onInput={(event) => event.currentTarget.setCustomValidity("")}
               />
+              <small id="cep-gerente-status" role="status" className="mgr-cep-status">
+                {statusCepGerente === "buscando" && "Buscando o endereço…"}
+                {statusCepGerente === "nao-encontrado" && "CEP não encontrado. Preencha o endereço abaixo."}
+                {statusCepGerente === "erro" && "Não foi possível buscar o CEP. Preencha o endereço abaixo."}
+              </small>
             </label>
             <label>
               Endereço
@@ -1853,6 +1886,7 @@ export function AdminDirectory({ section }) {
               <label>
                 Nº
                 <input
+                  ref={numeroGerenteRef}
                   name="numeroGerente"
                   value={numeroGerente}
                   onChange={({ target }) => setNumeroGerente(target.value)}

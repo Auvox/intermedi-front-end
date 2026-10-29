@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { guardarTokenSessao } from "./presenca";
 
 // Sessão do gerente no back-end (POST /auth/login com e-mail + matrícula +
 // senha). O JWT fica só nesta aba do navegador (sessionStorage).
@@ -46,6 +47,8 @@ export async function entrarComoGerente({ email, matricula, senha }) {
     throw new Error("Esta conta não é de gerente. Escolha o perfil certo para entrar.");
   }
   definirToken(dados.token);
+  // o mesmo token conta o tempo logado (presenca.js)
+  guardarTokenSessao(dados.token);
   return paraUsuario(dados.usuario);
 }
 

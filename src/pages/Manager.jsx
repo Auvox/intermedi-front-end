@@ -19,7 +19,6 @@ import { useAoAlterarDados } from "../hooks/useResumo";
 import ManagerIcon from "../components/ManagerIcon";
 import { AccountControls } from "../components/ManagerAccess";
 import { buscarSessaoGerente } from "../services/sessaoGerente";
-import { primeiroNome } from "../services/nomes";
 import useApiList from "../hooks/useApiList";
 import {
   useChamadosGerente,
@@ -67,6 +66,9 @@ import {
   inPeriod,
   unit,
 } from "./managerData";
+import { primeiroNome } from "../services/nomes";
+import BoasVindas from "../components/BoasVindas";
+import { usePresenca } from "../services/presenca";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 
@@ -170,6 +172,8 @@ export default function Manager() {
   const sessionPending = !user && !sessionError;
   // Sem login (ainda não implementado para as personas), o gerente é escolhido na topbar
   const gerente = useIdGerente(user?.email, { aguardar: sessionPending });
+  // tempo logado: avisa o back a cada minuto enquanto o gerente está aqui
+  usePresenca(Boolean(user));
   // mapa de calor (aba Desempenho do admin): quem está usando
   useEffect(() => {
     definirContextoRastreio({ usuarioId: gerente.idGerente, farmaciaId: gerente.idFarmacia });
@@ -199,11 +203,19 @@ export default function Manager() {
   }, []);
   return (
     <div className="mgr-shell">
+      {gerente.temSessao && user && (
+        <BoasVindas
+          papel="gerente"
+          pessoa={{ id: user.id, nome: user.name, email: user.email }}
+          farmacia={{ id: gerente.idFarmacia, nome: user.unitName }}
+        />
+      )}
       <ManagerSidebar
         unitName={user?.unitName || "Minha unidade"}
         pendingTickets={pendentes.totalPendentes}
         pendingOrders={pedidosRede.totalPendentes}
       />
+      <PerfilProvider plataforma="gerente" gerenteAtual={{ id: gerente.idGerente, idFarmacia: gerente.idFarmacia }}>
       <div className="mgr-workspace">
         <div className="mgr-topbar">
           <span>
@@ -224,9 +236,9 @@ export default function Manager() {
             user={
               user || { id: "", name: gerente.nome || "Gerente", email: "", role: "gerente" }
             }
+            idGerente={gerente.idGerente}
           />
         </div>
-        <PerfilProvider plataforma="gerente" gerenteAtual={{ id: gerente.idGerente, idFarmacia: gerente.idFarmacia }}>
         <main id="conteudo" tabIndex={-1} className={`mgr-main${location.pathname.replace(/\/$/, "") !== "/gerente" ? " directory-layout" : ""}`}>
           <Outlet
             context={{
@@ -245,11 +257,11 @@ export default function Manager() {
             }}
           />
         </main>
-        </PerfilProvider>
         <footer className="mgr-footer">
           Intermedi <span>Conectando farmácias. Aproximando o cuidado.</span>
         </footer>
       </div>
+      </PerfilProvider>
       <ToastRegion message={toast} />
     </div>
   );
@@ -268,7 +280,7 @@ export function ManagerDashboard() {
   const estoque = usePolling(buscarEstoque, { enabled: Boolean(gerente.idGerente) });
   const resumo = estoque.data?.resumo;
   const atencao = resumo ? resumo.criticos + resumo.zerados + resumo.vencidos : null;
-  const managerName = (gerente.temSessao ? user?.name : gerente.nome) || user?.name || "Gerente";
+  const managerName = primeiroNome((gerente.temSessao ? user?.name : gerente.nome) || user?.name, "Gerente");
   const managerUnit = user?.unitName || unit;
   const [hoje] = useState(() =>
     new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }),

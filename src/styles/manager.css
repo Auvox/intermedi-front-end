@@ -918,6 +918,62 @@
   color: var(--color-text-primary);
   font-weight: var(--weight-semibold);
 }
+/* Farmácia do gerente: campo de busca com a lista logo abaixo */
+.farmacia-busca {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+.farmacia-busca-lista {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline: 0;
+  z-index: var(--z-dropdown);
+  max-height: 260px;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.farmacia-busca-lista li {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.farmacia-busca-lista li.is-ativa {
+  background: var(--color-fill);
+}
+.farmacia-busca-lista li[aria-selected="true"] strong {
+  color: var(--color-primary-ink);
+}
+.farmacia-busca-lista strong {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+.farmacia-busca-lista span {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.farmacia-busca [role="status"] {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+.mgr-cep-status {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-regular, 400);
+  color: var(--color-text-muted);
+}
+.mgr-cep-status:empty {
+  display: none;
+}
 .mgr-form [role="alert"] {
   font-size: var(--text-small);
   color: var(--color-danger);

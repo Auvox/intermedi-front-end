@@ -1,18 +1,10 @@
 import { createServer } from "node:http";
 import { DatabaseSync } from "node:sqlite";
-import {
-  randomBytes,
-  randomUUID,
-  scrypt,
-  createHash,
-  timingSafeEqual,
-} from "node:crypto";
-import { promisify } from "node:util";
+import { randomBytes, createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const deriveKey = promisify(scrypt);
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 const lifetime = 8 * 60 * 60 * 1000;
 const cookieName = "intermedi_session";
@@ -21,6 +13,8 @@ export function createAuthServer({
   databasePath = fileURLToPath(new URL("./data/auth.sqlite", import.meta.url)),
   secure = false,
   origins = ["http://localhost:5173", "http://127.0.0.1:5173"],
+  // back do Intermedi, que confere o login do gerente
+  backendUrl = (process.env.INTERMEDI_API_URL || "http://localhost:3000").replace(/\/$/, ""),
 } = {}) {
   if (databasePath !== ":memory:")
     mkdirSync(dirname(databasePath), { recursive: true });
@@ -36,7 +30,6 @@ export function createAuthServer({
       token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), expires INTEGER NOT NULL
     );`);
   const attempts = new Map();
-  const dummySalt = randomBytes(16).toString("hex");
   function cookie(value, age) {
     return `${cookieName}=${value}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=${age}${secure ? "; Secure" : ""}`;
   }
@@ -79,95 +72,52 @@ export function createAuthServer({
     });
     res.end(JSON.stringify(data));
   }
-  function listFromGerentesPayload(payload) {
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.gerente)) return payload.gerente;
-    if (Array.isArray(payload?.gerentes)) return payload.gerentes;
-    return [];
-  }
-  function detailFromGerentePayload(payload) {
-    if (Array.isArray(payload)) return payload[0] ?? {};
-    if (payload?.resultado) return payload.resultado;
-    if (payload?.gerente) return payload.gerente;
-    if (payload?.gerentes) return payload.gerentes[0] ?? {};
-    return payload ?? {};
-  }
-  function listFromFarmaciasPayload(payload) {
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.farmacia)) return payload.farmacia;
-    if (Array.isArray(payload?.farmacias)) return payload.farmacias;
-    return [];
-  }
-  async function syncGerenteFromFakeServer(email, password) {
+  // O gerente entra com CPF + matrícula + senha (os dados do e-mail de
+  // boas-vindas). Quem confere é o back (/auth/login); aqui só guardamos a
+  // pessoa e a farmácia dela para a sessão do front.
+  async function loginNoBack({ cpf, matricula, senha }) {
+    let response;
     try {
-      const listResponse = await fetch("http://localhost:3000/gerente", {
-        method: "GET",
-        headers: { Accept: "application/json" },
+      response = await fetch(`${backendUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf, matricula, senha }),
+        signal: AbortSignal.timeout(10000),
       });
-      if (!listResponse.ok) return null;
-      const listPayload = await listResponse.json().catch(() => ({}));
-      const rawList = listFromGerentesPayload(listPayload);
-      const found = rawList.find((item) => {
-        const storedEmail = String(item.emailGerente ?? item.email ?? "")
-          .trim()
-          .toLowerCase();
-        return storedEmail === email;
-      });
-      if (!found) return null;
-      const gerenteId = found.idGerente ?? found.id;
-      const detailResponse = await fetch(
-        `http://localhost:3000/gerente/${encodeURIComponent(gerenteId)}`,
-        { method: "GET", headers: { Accept: "application/json" } },
-      );
-      if (!detailResponse.ok) return null;
-      const detailPayload = await detailResponse.json().catch(() => ({}));
-      const detail = detailFromGerentePayload(detailPayload);
-      const storedPassword = String(
-        detail.senhaGerente ??
-          detail.senha ??
-          found.senhaGerente ??
-          found.senha ??
-          "",
-      ).trim();
-      if (storedPassword !== password) return null;
-      const pharmacyResponse = await fetch("http://localhost:3000/farmacia", {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-      const pharmacyPayload = await pharmacyResponse.json().catch(() => ({}));
-      const rawFarmacies = listFromFarmaciasPayload(pharmacyPayload);
-      const matchingPharmacy = rawFarmacies.find((farmacia) => {
-        const relation =
-          farmacia.idGerente ?? farmacia.gerenteId ?? farmacia.fkIdGerente;
-        return String(relation ?? "") === String(gerenteId);
-      });
-      const unitName = String(
-        matchingPharmacy?.nomeFarmacia ??
-          matchingPharmacy?.nome ??
-          `Farmácia ${detail.nomeGerente ?? found.nomeGerente ?? email}`,
-      ).trim();
-      const existingUnit =
-        db.prepare("SELECT id FROM units WHERE name = ?").get(unitName) ?? null;
-      const unitId = existingUnit?.id ?? randomUUID();
-      if (!existingUnit) {
-        db.prepare("INSERT INTO units VALUES (?, ?)").run(unitId, unitName);
-      }
-      const salt = randomBytes(16).toString("hex");
-      const hash = (await deriveKey(password, salt, 64)).toString("hex");
-      const id = randomUUID();
-      db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)").run(
-        id,
-        String(detail.nomeGerente ?? found.nomeGerente ?? email),
-        email,
-        hash,
-        salt,
-        "gerente",
-        unitId,
-      );
-      return db.prepare("SELECT * FROM users WHERE email = ?").get(email);
     } catch {
-      return null;
+      throw { status: 503, message: "Não foi possível conectar ao servidor do Intermedi. Tente novamente." };
     }
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 429) throw { status: 429, message: result.error || "Muitas tentativas. Aguarde e tente de novo." };
+    if (!response.ok) throw { status: 401, message: "CPF, matrícula ou senha incorretos." };
+    if (result.usuario?.papel !== "gerente")
+      throw { status: 403, message: "Esta conta não é de gerente. Escolha o seu perfil em Trocar perfil." };
+    return { usuario: result.usuario, token: result.token };
+  }
+  function guardarGerente(usuario) {
+    const id = `gerente-${usuario.id}`;
+    const email = String(usuario.email || `${id}@intermedi.local`).trim().toLowerCase();
+    const unitId = usuario.idFarmacia == null ? "sem-farmacia" : `farmacia-${usuario.idFarmacia}`;
+    const unitName = String(usuario.nomeFarmacia || "Unidade não vinculada").trim();
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare("INSERT INTO units VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name").run(unitId, unitName);
+      // contas antigas com o mesmo e-mail (do cadastro público que saiu) dão lugar a esta
+      const antigas = db.prepare("SELECT id FROM users WHERE email = ? AND id <> ?").all(email, id);
+      for (const antiga of antigas) {
+        db.prepare("DELETE FROM sessions WHERE user_id = ?").run(antiga.id);
+        db.prepare("DELETE FROM users WHERE id = ?").run(antiga.id);
+      }
+      // a senha de verdade fica só no back: aqui vai um valor aleatório
+      db.prepare(`INSERT INTO users VALUES (?, ?, ?, ?, ?, 'gerente', ?)
+        ON CONFLICT(id) DO UPDATE SET name = excluded.name, email = excluded.email, unit_id = excluded.unit_id`)
+        .run(id, String(usuario.nome || email), email, randomBytes(32).toString("hex"), randomBytes(16).toString("hex"), unitId);
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return { id, name: String(usuario.nome || email), email, role: "gerente", unitId, unitName };
   }
   async function body(req) {
     if (!req.headers["content-type"]?.startsWith("application/json"))
@@ -202,9 +152,7 @@ export function createAuthServer({
       }
       if (
         req.method !== "POST" ||
-        !["/api/auth/register", "/api/auth/login", "/api/auth/logout"].includes(
-          path,
-        )
+        !["/api/auth/login", "/api/auth/logout"].includes(path)
       )
         return send(res, 404, { message: "Rota não encontrada." });
       // Only explicitly configured same-origin frontends may mutate sessions.
@@ -237,89 +185,23 @@ export function createAuthServer({
       limit.count++;
       attempts.set(address, limit);
       const data = await body(req);
-      const email =
-        typeof data.email === "string" ? data.email.trim().toLowerCase() : "";
-      const password = typeof data.senha === "string" ? data.senha : "";
-      if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      const cpf = typeof data.cpf === "string" ? data.cpf.trim() : "";
+      const matricula =
+        typeof data.matricula === "string" ? data.matricula.trim() : "";
+      const senha = typeof data.senha === "string" ? data.senha : "";
+      if (!cpf || cpf.length > 20 || !matricula || matricula.length > 20 || !senha)
         return send(res, 400, {
-          message: "Informe um e-mail válido e uma senha.",
+          message: "Informe o CPF, a matrícula e a senha.",
         });
       if (data.role !== "gerente")
         return send(res, 403, {
           message: "Este serviço permite somente o acesso de gerente.",
         });
-      if (path === "/api/auth/register") {
-        const name = typeof data.nome === "string" ? data.nome.trim() : "";
-        const unitName =
-          typeof data.unidade === "string" ? data.unidade.trim() : "";
-        if (
-          name.length < 3 ||
-          name.length > 120 ||
-          unitName.length < 3 ||
-          unitName.length > 150
-        )
-          return send(res, 400, {
-            message:
-              "Informe seu nome e o nome da nova unidade (mínimo de 3 caracteres).",
-          });
-        if (data.confirmarSenha !== password)
-          return send(res, 400, { message: "As senhas não coincidem." });
-        const salt = randomBytes(16).toString("hex");
-        const hash = (await deriveKey(password, salt, 64)).toString("hex");
-        const id = randomUUID();
-        const unitId = randomUUID();
-        db.exec("BEGIN IMMEDIATE");
-        try {
-          // Public registration creates a NEW unit, never access to an existing pharmacy.
-          db.prepare("INSERT INTO units VALUES (?, ?)").run(unitId, unitName);
-          db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)").run(
-            id,
-            name,
-            email,
-            hash,
-            salt,
-            "gerente",
-            unitId,
-          );
-          db.exec("COMMIT");
-        } catch (error) {
-          db.exec("ROLLBACK");
-          if (error.message.includes("UNIQUE constraint failed: users.email"))
-            return send(res, 409, {
-              message:
-                "Não foi possível cadastrar este e-mail. Se já possui conta, use Entrar.",
-            });
-          throw error;
-        }
-        session(req, res, id);
-        return send(res, 201, {
-          user: { id, name, email, role: "gerente", unitId, unitName },
-        });
-      }
-      let user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-      if (!user) {
-        user = await syncGerenteFromFakeServer(email, password);
-      }
-      const hash = await deriveKey(password, user?.salt || dummySalt, 64);
-      if (
-        !user ||
-        !timingSafeEqual(hash, Buffer.from(user.password_hash, "hex"))
-      )
-        return send(res, 401, { message: "E-mail ou senha incorretos." });
+      const { usuario, token: tokenDoBack } = await loginNoBack({ cpf, matricula, senha });
+      const user = guardarGerente(usuario);
       session(req, res, user.id);
-      const unit = db
-        .prepare("SELECT name FROM units WHERE id = ?")
-        .get(user.unit_id);
-      return send(res, 200, {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          unitId: user.unit_id,
-          unitName: unit.name,
-        },
-      });
+      // o token do back vai para a aba do gerente: é com ele que o tempo logado é contado
+      return send(res, 200, { user, token: tokenDoBack });
     } catch (error) {
       send(res, error.status || 500, {
         message: error.status

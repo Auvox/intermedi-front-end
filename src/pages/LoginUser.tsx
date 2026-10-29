@@ -8,6 +8,7 @@ import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
 import { apiRequest } from "../services/api";
 import { entrarComoAdmin } from "../services/desempenho";
+import { guardarTokenSessao } from "../services/presenca";
 
 type Role = "gerente" | "funcionario" | "admin";
 // Matrícula da equipe: G000123 gerente, 000123 funcionário, A000123 admin
@@ -159,6 +160,9 @@ export default function LoginUser() {
           return;
         }
 
+        // token do back: conta o tempo logado (o gerente e o admin veem)
+        guardarTokenSessao(token);
+
         // mesmo formato que a área do funcionário já lê (employeeSession.js)
         const sessionUser = {
           id: usuario.id,
@@ -179,12 +183,47 @@ export default function LoginUser() {
 
         setMessage("");
         navigate("/funcionario", { replace: true });
-        return;
-      } catch (error) {
+      } catch (error: any) {
         setMessage(
-          error instanceof Error
-            ? error.message
-            : "Não foi possível validar o funcionário. Tente novamente.",
+          error?.status === 401
+            ? "CPF, matrícula ou senha incorretos."
+            : error instanceof Error
+              ? error.message
+              : "Não foi possível entrar. Tente novamente.",
+        );
+      }
+      return;
+    }
+
+    if (role === "admin") {
+      const cpf = String(formData.get("cpf") || "").trim();
+      const matricula = String(formData.get("matricula") || "").trim();
+      const senha = String(formData.get("senha") || "");
+
+      if (!cpf) {
+        setMessage("Informe o CPF do admin.");
+        return;
+      }
+      if (!matricula) {
+        setMessage("Informe a matrícula do admin.");
+        return;
+      }
+      if (!senha) {
+        setMessage("Informe a senha do admin.");
+        return;
+      }
+
+      try {
+        // o mesmo token serve para a aba Desempenho, que não pede login de novo
+        await entrarComoAdmin({ cpf, matricula, senha });
+        navigate("/admin", { replace: true });
+      } catch (error: any) {
+        setMessage(
+          error?.status === 401
+            ? "CPF, matrícula ou senha incorretos."
+            : error instanceof Error
+              ? error.message
+              : "Não foi possível entrar. Tente novamente.",
         );
       }
       return;

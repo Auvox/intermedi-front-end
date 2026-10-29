@@ -1,10 +1,13 @@
+import { primeiroNome } from "../services/nomes";
 import PersonaAvatar from "./PersonaAvatar";
 import { useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { buscarSessaoGerente, sairGerente } from "../services/sessaoGerente";
-import { primeiroNome } from "../services/nomes";
-import { normalizeGerentes } from "../services/gerenteMapper";
-import { API_URL } from "../services/api";
+
+import { fotoPessoa, listarGerentes } from "../services/api";
+import { usePerfil } from "./perfil/perfilContext";
+import { useAoAlterarDados } from "../hooks/useResumo";
+import { sairDaConta } from "../services/presenca";
 
 export default function ManagerAccess() {
   const [state, setState] = useState({ loading: true });
@@ -75,207 +78,38 @@ export default function ManagerAccess() {
   return <Outlet key={state.user.id} context={{ user: state.user }} />;
 }
 
-export function AccountControls({ user }) {
+// Conta no topo: abre o perfil completo do gerente (com a foto, que ele mesmo
+// pode trocar) e mostra a foto atual. Precisa estar dentro do PerfilProvider.
+export function AccountControls({ user, idGerente }) {
   const navigate = useNavigate();
+  const { abrirPerfil } = usePerfil();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [draft, setDraft] = useState(null);
-  const [editingField, setEditingField] = useState(null);
-  const [profileError, setProfileError] = useState("");
+  const [foto, setFoto] = useState(null);
+  const [versao, setVersao] = useState(0);
 
-  async function loadProfile() {
-    setLoadingProfile(true);
-    setProfileError("");
-    try {
-      const signal = AbortSignal.timeout(15000);
-      const listResponse = await fetch(`${API_URL}/gerente`, {
-        signal,
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-      const listPayload = await listResponse.json().catch(() => ({}));
+  useEffect(() => {
+    if (!idGerente) return undefined;
+    const controller = new AbortController();
+    listarGerentes({ signal: controller.signal })
+      .then((lista) => {
+        const eu = lista.find((g) => String(g.idGerente) === String(idGerente));
+        setFoto(fotoPessoa(eu?.fotoGerente));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [idGerente, versao]);
 
-      if (!listResponse.ok) {
-        throw new Error(
-          listPayload.message ||
-            listPayload.error ||
-            "Erro ao buscar perfil do gerente",
-        );
-      }
-
-      const rawList = Array.isArray(listPayload)
-        ? listPayload
-        : Array.isArray(listPayload?.gerente)
-          ? listPayload.gerente
-          : Array.isArray(listPayload?.gerentes)
-            ? listPayload.gerentes
-            : [];
-
-      const raw =
-        rawList.find(
-          (item) =>
-            String(item.emailGerente ?? item.email ?? "")
-              .trim()
-              .toLowerCase() ===
-            String(user.email || "")
-              .trim()
-              .toLowerCase(),
-        ) ||
-        rawList[0] ||
-        {};
-
-      const gerenteId = raw.idGerente ?? raw.id;
-      if (!gerenteId) {
-        throw new Error("Gerente não encontrado pelo e-mail autenticado.");
-      }
-
-      const detailResponse = await fetch(
-        `${API_URL}/gerente/${encodeURIComponent(gerenteId)}`,
-        {
-          method: "GET",
-          signal,
-          headers: { Accept: "application/json" },
-        },
-      );
-      const detailPayload = await detailResponse.json().catch(() => ({}));
-
-      if (!detailResponse.ok) {
-        throw new Error(
-          detailPayload.message ||
-            detailPayload.error ||
-            detailPayload.error?.message ||
-            "Erro ao buscar o perfil do gerente por id.",
-        );
-      }
-
-      const detail =
-        detailPayload?.resultado ??
-        detailPayload?.gerente ??
-        detailPayload?.gerentes ??
-        detailPayload;
-
-      const profileData = {
-        id: detail.idGerente ?? detail.id ?? gerenteId,
-        name: detail.nomeGerente ?? detail.name ?? raw.nomeGerente ?? user.name,
-        email:
-          detail.emailGerente ?? detail.email ?? raw.emailGerente ?? user.email,
-        cpf: detail.cpfGerente ?? detail.cpf ?? "",
-        crf: detail.crfGerente ?? detail.crf ?? "",
-        senha: detail.senhaGerente ?? detail.senha ?? "",
-        cep: detail.cepGerente ?? detail.cep ?? "",
-        endereco: detail.enderecoGerente ?? detail.endereco ?? "",
-        numero: detail.numeroGerente ?? detail.numero ?? "",
-        complemento: detail.complementoGerente ?? detail.complemento ?? "",
-        bairro: detail.bairroGerente ?? detail.bairro ?? "",
-        cidade: detail.cidadeGerente ?? detail.cidade ?? "",
-      };
-
-      setProfile(profileData);
-      setDraft(profileData);
-    } catch (error) {
-      const fallback = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        cpf: "",
-        crf: "",
-        senha: "",
-        cep: "",
-        endereco: "",
-        numero: "",
-        complemento: "",
-        bairro: "",
-        cidade: "",
-      };
-      setProfile(fallback);
-      setDraft(fallback);
-      setProfileError(
-        error?.name === "TimeoutError"
-          ? "O servidor demorou para responder. Tente novamente."
-          : error instanceof TypeError
-            ? "Não foi possível conectar ao servidor. Verifique se o back-end está disponível em localhost:3000."
-          : error instanceof Error
-          ? error.message
-          : "Não foi possível carregar o perfil do gerente.",
-      );
-    } finally {
-      setLoadingProfile(false);
-    }
-  }
-
-  async function openProfile() {
-    setProfileOpen(true);
-    setEditingField(null);
-    if (!loadingProfile) await loadProfile();
-  }
-
-  async function saveProfile(event) {
-    event?.preventDefault?.();
-    if (!draft || !profile) return;
-
-    const payload = {
-      nomeGerente: draft.name,
-      emailGerente: draft.email,
-      cpfGerente: draft.cpf,
-      crfGerente: draft.crf,
-      senhaGerente: draft.senha,
-      cepGerente: draft.cep,
-      enderecoGerente: draft.endereco,
-      numeroGerente: draft.numero,
-      complementoGerente: draft.complemento || null,
-      bairroGerente: draft.bairro,
-      cidadeGerente: draft.cidade,
-    };
-
-    try {
-      const response = await fetch(
-        `${API_URL}/gerente/${encodeURIComponent(profile.id)}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          result.message ||
-          result.error?.message ||
-          result.error?.errstr ||
-          "Não foi possível salvar o perfil do gerente.";
-        throw new Error(message);
-      }
-
-      setProfile({ ...draft, id: profile.id });
-      setDraft({ ...draft, id: profile.id });
-      setEditingField(null);
-      setProfileOpen(false);
-    } catch (error) {
-      setProfileError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível salvar o perfil do gerente.",
-      );
-    }
-  }
-
-  function cancelProfileEdit() {
-    setDraft(profile);
-    setEditingField(null);
-    setProfileError("");
-  }
+  // trocou a foto no perfil: atualiza o avatar do topo
+  useAoAlterarDados((evento) => {
+    if (evento?.tipo === "gerente" && String(evento.id) === String(idGerente)) setVersao((v) => v + 1);
+  });
 
   async function logout() {
     setPending(true);
     setError("");
     try {
+      await sairDaConta();
       await sairGerente();
       navigate("/login?perfil=gerente", { replace: true });
     } catch {
@@ -285,116 +119,25 @@ export function AccountControls({ user }) {
   }
 
   return (
-    <>
-      <div className="mgr-account">
-        <button
-          type="button"
-          className="mgr-account-button"
-          onClick={openProfile}
-          aria-label="Abrir perfil do gerente"
-        >
-          <PersonaAvatar className="mgr-account-avatar" role="gerente" photo={user.fotoPerfilGerente ?? user.photo} />
-          <span className="mgr-account-person" title={user.email}>
-            <strong>{primeiroNome(user.name, "Gerente")}</strong>
-            <small>Gerente da unidade</small>
-          </span>
-        </button>
-        <button type="button" className="account-action account-exit" disabled={pending} onClick={logout}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
-          {pending ? "Saindo…" : "Sair"}
-        </button>
-        {error && <span role="alert">{error}</span>}
-      </div>
-
-      {profileOpen && (
-        <dialog
-          open
-          className="mgr-modal mgr-profile-modal"
-          aria-label="Perfil do gerente"
-        >
-          <div className="mgr-modal-head">
-            <h2>Perfil do gerente</h2>
-            <button
-              type="button"
-              aria-label="Fechar perfil"
-              onClick={() => setProfileOpen(false)}
-            >
-              ×
-            </button>
-          </div>
-          {loadingProfile && <p className="mgr-empty" role="status">Carregando perfil…</p>}
-          {profileError && (
-            <p className="mgr-empty" role="alert">
-              {profileError}
-            </p>
-          )}
-          {!loadingProfile && profile && draft && (
-            <form className="mgr-form mgr-profile-form" onSubmit={saveProfile}>
-              <div className="mgr-profile-fields">
-                {[
-                  ["name", "Nome completo"],
-                  ["email", "E-mail"],
-                  ["cpf", "CPF"],
-                  ["crf", "CRF"],
-                  ["cep", "CEP"],
-                  ["endereco", "Endereço"],
-                  ["numero", "Número"],
-                  ["complemento", "Complemento"],
-                  ["bairro", "Bairro"],
-                  ["cidade", "Cidade"],
-                ].map(([key, label]) => (
-                  <div className="mgr-profile-row" key={key}>
-                    <span className="mgr-profile-label">{label}</span>
-                    <div className="mgr-profile-value">
-                      {editingField === key ? (
-                        <input
-                          className="mgr-profile-input"
-                          value={draft[key] ?? ""}
-                          onChange={({ target }) =>
-                            setDraft({ ...draft, [key]: target.value })
-                          }
-                        />
-                      ) : (
-                        <span className="mgr-profile-readonly">
-                          {draft[key] || "Não informado"}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        className="mgr-profile-edit"
-                        aria-label={`Editar ${label}`}
-                        onClick={() => setEditingField(key)}
-                      >
-                        ✎
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mgr-modal-actions">
-                <button
-                  className="mgr-secondary"
-                  type="button"
-                  onClick={() => {
-                    cancelProfileEdit();
-                    setProfileOpen(false);
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="mgr-primary"
-                  type="button"
-                  onClick={saveProfile}
-                >
-                  Salvar
-                </button>
-              </div>
-            </form>
-          )}
-        </dialog>
-      )}
-    </>
+    <div className="mgr-account">
+      <button
+        type="button"
+        className="mgr-account-button"
+        disabled={!idGerente}
+        onClick={(event) => abrirPerfil("gerente", idGerente, event.currentTarget)}
+        aria-label="Abrir meu perfil"
+      >
+        <PersonaAvatar className="mgr-account-avatar" role="gerente" photo={foto} />
+        <span className="mgr-account-person" title={user.email}>
+          <strong>{primeiroNome(user.name, "Gerente")}</strong>
+          <small>Gerente da unidade</small>
+        </span>
+      </button>
+      <button type="button" className="account-action account-exit" disabled={pending} onClick={logout}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4" /></svg>
+        {pending ? "Saindo…" : "Sair"}
+      </button>
+      {error && <span role="alert">{error}</span>}
+    </div>
   );
 }
