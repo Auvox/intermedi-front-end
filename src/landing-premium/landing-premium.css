@@ -1,0 +1,736 @@
+/* ============================================================
+   INTERMEDI · Landing page premium
+   Tudo aqui vale só dentro de .lpx (a landing). As cores vêm de
+   src/styles/tokens.css; nada daqui alcança as plataformas.
+   Direção: capítulos de cor (Taste Skill, "Colour chapters").
+   ============================================================ */
+
+.lpx {
+  --ink: var(--color-text-primary);
+  --paper: var(--color-surface);
+  --gray: var(--color-background);
+  --graphite: color-mix(in srgb, var(--color-inverse) 90%, white);
+  --graphite-tile: color-mix(in srgb, var(--color-inverse) 74%, white);
+  --green: var(--color-primary);
+  --green-deep: var(--color-primary-active);
+  --mint: var(--color-primary-soft);
+  --blue: var(--role-funcionario);
+
+  --gutter: clamp(16px, 2.6vw, 32px);
+  --nav-h: 64px;
+  --r: 20px;
+  --gap: 8px;
+  --secao: clamp(72px, 8vw, 128px);
+
+  /* Cinco tamanhos de letra na página inteira */
+  --fs-display: clamp(52px, 9.4vw, 152px);
+  --fs-h2: clamp(38px, 5vw, 76px);
+  --fs-h3: clamp(20px, 1.75vw, 26px);
+  --fs-body: clamp(17px, 1.2vw, 19px);
+  --fs-small: 14px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  min-height: 100svh;
+  overflow-x: clip;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+html:has(.lpx) { scroll-padding-top: var(--nav-h); }
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.lpx:not(.a11y-motion)) { scroll-behavior: smooth; }
+}
+
+.lpx *, .lpx *::before, .lpx *::after { box-sizing: border-box; }
+/* Reset com :where() para não vencer as classes das seções */
+.lpx :where(h1, h2, h3, p, figure, ul, ol) { margin: 0; }
+.lpx :where(ul, ol) { padding: 0; list-style: none; }
+.lpx :where(img, video) { display: block; max-width: 100%; }
+.lpx :where(a) { color: inherit; }
+.lpx :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; border-radius: 4px; }
+.lpx ::selection { background: var(--green); color: var(--paper); }
+
+.lpx-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; /* taste-skill-ignore: texto só para leitor de tela */
+  clip-path: inset(50%); white-space: nowrap;
+}
+.lpx-skip {
+  position: fixed; left: var(--gutter); top: 12px; z-index: calc(var(--z-overlay) + 2);
+  padding: 12px 20px; border-radius: var(--radius-full);
+  background: var(--paper); color: var(--ink); font-weight: 600; text-decoration: none;
+  transform: translateY(-160%);
+}
+.lpx-skip:focus { transform: none; }
+
+/* O botão de acessibilidade fica no canto, sem cobrir o conteúdo */
+.lpx .accessibility-trigger {
+  top: auto; bottom: 20px; right: 20px; transform: none;
+  width: 52px; height: 52px; background: var(--green); box-shadow: none; /* taste-skill-ignore: remove a sombra do botão compartilhado */
+}
+.lpx .accessibility-trigger:hover { background: var(--green-deep); }
+
+/* ---------- Campos de cor ---------- */
+.lpx-fundo-ink { background: var(--ink); color: var(--paper); }
+.lpx-fundo-paper { background: var(--paper); color: var(--ink); }
+.lpx-fundo-gray { background: var(--gray); color: var(--ink); }
+.lpx-fundo-green { background: var(--green); color: var(--paper); }
+.lpx-fundo-mint { background: var(--mint); color: var(--ink); }
+.lpx-fundo-graphite { background: var(--graphite); color: var(--paper); }
+
+/* ---------- Tipos comuns ---------- */
+.lpx-h2 {
+  font-size: var(--fs-h2);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-wrap: balance;
+}
+.lpx-corpo { font-size: var(--fs-body); line-height: 1.55; max-width: 52ch; }
+
+/* ---------- Botões: pílula chapada, decidido uma vez ---------- */
+.lpx-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 26px;
+  border-radius: var(--radius-full);
+  font-size: 16px; font-weight: var(--weight-semibold); letter-spacing: -0.01em;
+  text-decoration: none; white-space: nowrap;
+  transition: transform 220ms var(--ease-out), background-color 220ms, color 220ms;
+}
+.lpx-btn:hover { transform: translateY(-2px); }
+.lpx-btn:active { transform: scale(0.97); }
+.lpx-btn-ink { background: var(--ink); color: var(--paper); }
+.lpx-btn-ink:hover { background: black; }
+.lpx-btn-paper { background: var(--paper); color: var(--ink); }
+.lpx-btn-grande { min-height: 58px; padding: 0 34px; font-size: 17px; }
+
+/* ---------- Navegação ---------- */
+.lpx-nav {
+  position: fixed; inset: 0 0 auto; z-index: var(--z-overlay);
+  display: flex; align-items: center; gap: 32px;
+  height: var(--nav-h); padding: 0 var(--gutter);
+  transition: background-color 380ms var(--ease-out), color 380ms var(--ease-out);
+}
+.lpx-nav-marca { display: block; margin-right: auto; }
+.lpx-nav-marca img { width: auto; height: 46px; }
+.lpx-nav-links ul { display: flex; gap: 28px; }
+.lpx-nav-links a {
+  font-size: 16px; font-weight: var(--weight-medium); text-decoration: none;
+  opacity: 0.72; transition: opacity 200ms;
+}
+.lpx-nav-links a:hover, .lpx-nav-links a[aria-current] { opacity: 1; }
+.lpx-nav-links a[aria-current] { font-weight: var(--weight-semibold); }
+.lpx-btn-nav { min-height: 40px; padding: 0 20px; font-size: 16px; background: var(--ink); color: var(--paper); }
+.lpx-nav[data-escuro="true"] .lpx-btn-nav { background: var(--paper); color: var(--ink); }
+.lpx-nav-menu {
+  display: none; min-height: 40px; padding: 0 18px;
+  border: 0; border-radius: var(--radius-full);
+  background: var(--color-fill); color: inherit; font: inherit; font-size: 16px; font-weight: 600;
+}
+.lpx-nav[data-escuro="true"] .lpx-nav-menu { background: rgb(255 255 255 / 0.14); }
+.lpx-menu {
+  position: fixed; inset: var(--nav-h) 0 0; padding: 32px var(--gutter);
+  background: var(--ink); color: var(--paper);
+  display: flex; flex-direction: column; gap: 32px;
+}
+.lpx-menu[hidden] { display: none; }
+.lpx-menu ul { display: grid; gap: 8px; }
+.lpx-menu a:not(.lpx-btn) { display: block; padding: 6px 0; font-size: 34px; font-weight: 700; letter-spacing: -0.03em; text-decoration: none; }
+.lpx-menu .lpx-btn { align-self: flex-start; }
+
+/* ---------- Entrada das partes (só com movimento) ---------- */
+.lpx [data-reveal] {
+  transition: opacity 700ms var(--ease-out), transform 800ms var(--ease-out);
+  transition-delay: calc(var(--d, 0) * 80ms);
+}
+.lpx-anima [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(28px); }
+
+.lpx-linha { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.lpx-linha > span { display: block; }
+
+/* ============================================================
+   1. Hero · título e pilha de pastas em 3D
+   ============================================================ */
+.lpx-hero {
+  position: relative;
+  min-height: max(100svh, 680px);
+  padding: calc(var(--nav-h) + clamp(32px, 7svh, 88px)) var(--gutter) 0;
+  overflow: hidden;
+}
+.lpx-hero-texto { position: relative; z-index: 2; text-align: center; }
+.lpx-hero-titulo {
+  font-size: var(--fs-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+}
+.lpx-hero-titulo .lpx-linha > span { animation: lpx-sobe 1100ms var(--ease-out) both; }
+.lpx-hero-titulo .lpx-linha:nth-child(2) > span { animation-delay: 110ms; }
+.lpx-hero-sub {
+  max-width: 58ch; margin: clamp(20px, 3svh, 32px) auto 0;
+  font-size: var(--fs-h3); line-height: 1.4; letter-spacing: -0.01em;
+  animation: lpx-aparece 900ms 300ms var(--ease-out) both;
+}
+@keyframes lpx-sobe { from { transform: translateY(105%); } }
+@keyframes lpx-aparece { from { opacity: 0; transform: translateY(16px); } }
+
+.lpx-pastas {
+  position: absolute; inset: auto 0 0; height: 42%;
+  perspective: 2200px; perspective-origin: 50% -20%;
+}
+.lpx-pastas-pilha {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+  transform:
+    rotateX(calc(24deg - var(--p, 0) * 20deg + var(--ty, 0) * -5deg))
+    rotateY(calc(var(--tx, 0) * 7deg));
+  transition: transform 500ms var(--ease-out);
+}
+.lpx-pasta {
+  --passo: clamp(36px, 5svh, 56px);
+  position: absolute;
+  left: 7%; right: 7%;
+  top: calc(var(--i) * var(--passo));
+  bottom: -2px;
+  border-radius: 0 var(--r) 0 0;
+  transform:
+    translateZ(calc(var(--i) * 26px))
+    translateY(calc(var(--p, 0) * (var(--n) - 1 - var(--i)) * -34px));
+  animation: lpx-pasta-entra 1000ms calc(380ms + var(--i) * 70ms) var(--ease-out) both;
+}
+.lpx-pasta.is-frente {
+  left: calc(7% * (1 - var(--p, 0)));
+  right: calc(7% * (1 - var(--p, 0)));
+  border-radius: 0 calc(var(--r) * (1 - var(--p, 0))) 0 0;
+}
+@keyframes lpx-pasta-entra { from { opacity: 0; translate: 0 90px; } }
+.lpx-pasta-aba {
+  position: absolute; bottom: calc(100% - 1px);
+  left: calc(4% + var(--i) * 18%);
+  display: flex; align-items: center;
+  height: 42px; padding: 0 30px;
+  background: inherit; color: inherit;
+  clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
+  font-size: 16px; font-weight: var(--weight-semibold); text-decoration: none; white-space: nowrap;
+  transition: height 220ms var(--ease-out);
+}
+.lpx-pasta-aba:hover { height: 50px; }
+.lpx-pasta-aba:focus-visible { outline-offset: -6px; }
+.lpx-pasta.is-frente .lpx-pasta-aba { left: auto; right: 6%; }
+.lpx-pasta-conteudo {
+  display: grid; gap: 20px;
+  padding: 24px clamp(20px, 3vw, 40px);
+}
+.lpx-pasta-acoes { display: flex; align-items: center; flex-wrap: wrap; gap: 16px 28px; }
+.lpx-pasta-convite { font-size: var(--fs-body); font-weight: 500; text-underline-offset: 4px; }
+/* Ficha de chamado: um pedaço de interface (data-ui), no estilo da lista do gerente */
+.lpx-ficha {
+  display: grid; grid-template-columns: auto minmax(0, 1.6fr) repeat(3, auto); gap: 8px 40px;
+  align-items: end;
+  margin: 0; padding: 20px 24px;
+  border-radius: 14px; background: var(--paper);
+}
+.lpx-ficha dt { font-size: var(--fs-small); color: var(--color-text-secondary); }
+.lpx-ficha dd { margin: 4px 0 0; font-size: 16px; font-weight: var(--weight-semibold); white-space: nowrap; }
+.lpx-ficha-titulo dd { white-space: normal; }
+
+/* ============================================================
+   2. O problema · mural e texto que acende
+   ============================================================ */
+.lpx-problema { padding: var(--secao) var(--gutter) calc(var(--secao) * 0.75); }
+.lpx-mural {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(220px, 30svh));
+  gap: var(--gap);
+}
+.lpx-mural > * { border-radius: var(--r); overflow: hidden; }
+.lpx-mural-a {
+  grid-column: 1 / 9; grid-row: 1 / 3;
+  display: flex; align-items: flex-end;
+  padding: clamp(20px, 2.6vw, 36px);
+  background: var(--ink); color: var(--paper);
+}
+.lpx-mural-frase {
+  font-size: var(--fs-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.05em;
+  line-height: 0.88;
+}
+.lpx-mural-frase span { display: block; }
+.lpx-mural-b {
+  grid-column: 9 / 13; grid-row: 1;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 10px;
+  padding: clamp(20px, 2vw, 28px);
+  background: var(--paper);
+}
+.lpx-mural-palavra {
+  font-size: var(--fs-h2); font-weight: var(--weight-bold);
+  letter-spacing: -0.045em; line-height: 0.9; white-space: nowrap;
+}
+.lpx-mural-legenda { font-size: var(--fs-small); }
+.lpx-mural-c { grid-column: 9 / 13; grid-row: 2; background: var(--color-surface-sunken); }
+.lpx-mural-c img {
+  width: 100%; height: 124%; object-fit: cover;
+  transform: translateY(calc((var(--p, 0.5) - 0.5) * -18%));
+  will-change: transform;
+}
+.lpx-problema-texto {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap);
+  padding-top: clamp(56px, 7vw, 104px);
+}
+.lpx-acende {
+  grid-column: 6 / 13;
+  font-size: var(--fs-h3); line-height: 1.4; letter-spacing: -0.012em;
+  font-weight: var(--weight-medium);
+}
+.lpx-anima .lpx-acende span {
+  --w: clamp(0, (var(--p) * 2.9 - 0.72) * var(--n) - var(--i), 1);
+  opacity: calc(0.16 + 0.84 * var(--w));
+}
+
+/* ============================================================
+   3. A solução · rede em 3D
+   ============================================================ */
+.lpx-solucao {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap);
+  align-items: center;
+  padding: var(--secao) var(--gutter);
+}
+.lpx-solucao-texto { grid-column: 1 / 7; display: grid; gap: 32px; align-content: center; }
+.lpx-sim { border: 0; padding: 0; margin: 8px 0 0; min-width: 0; }
+.lpx-sim legend { padding: 0; margin-bottom: 14px; font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.lpx-sim-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.lpx-sim-opcoes button {
+  min-height: 44px; padding: 0 20px;
+  border: 0; border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 0.14); color: inherit;
+  font: inherit; font-size: 16px; font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color 200ms, color 200ms, transform 200ms var(--ease-out);
+}
+.lpx-sim-opcoes button:hover { background: rgb(255 255 255 / 0.24); }
+.lpx-sim-opcoes button:active { transform: scale(0.96); }
+.lpx-sim-opcoes button[aria-pressed="true"] { background: var(--paper); color: var(--green-deep); }
+.lpx-sim-resultado { margin-top: 16px; font-size: var(--fs-small); line-height: 1.5; max-width: 52ch; }
+
+.lpx-rede {
+  grid-column: 7 / 13;
+  position: relative;
+  width: 100%; max-width: 80svh; justify-self: end;
+  aspect-ratio: 1;
+  perspective: 1500px;
+}
+.lpx-rede-plano {
+  --giro: calc(-36deg + var(--p, 0.6) * 18deg);
+  position: absolute; inset: 18% 16% 10%;
+  transform-style: preserve-3d;
+  transform: rotateX(56deg) rotateZ(var(--giro));
+  background: color-mix(in srgb, var(--green) 84%, black);
+  border-radius: 32px;
+}
+.lpx-rede-linhas { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.lpx-rede-linhas line {
+  stroke: rgb(255 255 255 / 0.32); stroke-width: 0.45;
+  stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: calc(1 - clamp(0, (var(--p, 0.6) - 0.12) * 3.4, 1));
+}
+.lpx-rede-linhas .lpx-rede-rota {
+  stroke: var(--paper); stroke-width: 1.1; stroke-dashoffset: 0;
+  animation: lpx-traca 900ms var(--ease-out) both;
+}
+@keyframes lpx-traca { from { stroke-dashoffset: 1; } }
+
+.lpx-no {
+  position: absolute; width: 50px; height: 50px; margin: -25px 0 0 -25px;
+  transform-style: preserve-3d;
+}
+.lpx-no-bloco { position: absolute; inset: 0; transform-style: preserve-3d; }
+.lpx-no-bloco i { position: absolute; display: block; }
+.lpx-no-bloco i:nth-child(1) { inset: 0; background: var(--paper); transform: translateZ(30px); border-radius: 4px; transition: background-color 300ms; }
+.lpx-no-bloco i:nth-child(2) {
+  left: 0; right: 0; top: 100%; height: 30px;
+  background: color-mix(in srgb, var(--paper) 78%, var(--green));
+  transform-origin: top; transform: rotateX(90deg);
+}
+.lpx-no-bloco i:nth-child(3) {
+  top: 0; bottom: 0; left: 100%; width: 30px;
+  background: color-mix(in srgb, var(--paper) 62%, var(--green));
+  transform-origin: left; transform: rotateY(-90deg);
+}
+.lpx-no.is-falta .lpx-no-bloco i:nth-child(1) { background: var(--color-danger-soft); }
+.lpx-no.is-tem .lpx-no-bloco i:nth-child(1) { background: var(--mint); }
+.lpx-no-rotulo {
+  position: absolute; left: 50%; top: 50%;
+  transform-origin: 0 0;
+  transform: translateZ(64px) rotateZ(calc(var(--giro) * -1)) rotateX(-56deg) translate(-50%, -100%);
+  display: grid; gap: 2px; justify-items: center;
+  padding: 7px 12px; border-radius: 12px;
+  background: var(--paper); color: var(--ink);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); line-height: 1.25;
+  white-space: nowrap;
+}
+.lpx-no-rotulo em { font-style: normal; font-weight: var(--weight-bold); }
+.lpx-no.is-falta .lpx-no-rotulo em { color: var(--color-danger); }
+.lpx-no.is-tem .lpx-no-rotulo em { color: var(--green); }
+.lpx-rede-caixa {
+  position: absolute; left: 0; top: 0; width: 20px; height: 20px; margin: -10px 0 0 -10px;
+  transform-style: preserve-3d;
+}
+.lpx-rede-caixa::before {
+  content: ""; position: absolute; inset: 0; border-radius: 4px;
+  background: var(--color-brand); transform: translateZ(18px);
+}
+
+/* ============================================================
+   4. Como funciona · sanfona das cinco etapas
+   ============================================================ */
+.lpx-como { padding: var(--secao) var(--gutter); }
+.lpx-como-intro {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap);
+  align-items: end;
+}
+.lpx-como-intro .lpx-h2 { grid-column: 1 / 7; }
+.lpx-como-intro .lpx-corpo { grid-column: 8 / 13; }
+.lpx-sanfona {
+  display: flex;
+  height: clamp(480px, 62svh, 600px);
+  margin-top: 64px;
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.lpx-etapa {
+  position: relative;
+  flex: 0 0 clamp(64px, 6vw, 88px);
+  display: flex; flex-direction: column;
+  min-width: 0;
+  transition: flex-grow 450ms var(--ease-out), flex-basis 450ms var(--ease-out);
+}
+.lpx-etapa.is-aberta { flex: 1 1 0; }
+.lpx-etapa-0 { background: color-mix(in srgb, var(--green-deep) 70%, black); color: var(--paper); }
+.lpx-etapa-1 { background: var(--green-deep); color: var(--paper); }
+.lpx-etapa-2 { background: var(--green); color: var(--paper); }
+.lpx-etapa-3 { background: color-mix(in srgb, var(--green) 46%, white); color: var(--ink); }
+.lpx-etapa-4 { background: var(--color-primary-border); color: var(--ink); }
+.lpx-etapa-cabeca { font: inherit; }
+.lpx-etapa-cabeca button {
+  display: flex; align-items: flex-end;
+  width: 100%; height: 100%;
+  padding: 24px;
+  border: 0; background: transparent; color: inherit;
+  font: inherit; font-size: var(--fs-h3); font-weight: var(--weight-bold); letter-spacing: -0.02em;
+  text-align: left; cursor: pointer;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  transition: opacity 200ms;
+}
+.lpx-etapa:not(.is-aberta) .lpx-etapa-cabeca { position: absolute; inset: 0; }
+.lpx-etapa:not(.is-aberta) .lpx-etapa-cabeca button:hover { opacity: 0.75; }
+.lpx-etapa.is-aberta .lpx-etapa-cabeca button {
+  writing-mode: horizontal-tb; transform: none;
+  height: auto; padding: clamp(24px, 3vw, 40px) clamp(24px, 3vw, 40px) 0;
+  font-size: var(--fs-h2); line-height: 1; letter-spacing: -0.04em; text-wrap: balance;
+  cursor: default;
+}
+.lpx-etapa-painel {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(20px, 3vw, 40px);
+  padding: clamp(24px, 3vw, 40px);
+  animation: lpx-aparece 500ms 160ms var(--ease-out) both;
+}
+.lpx-etapa-painel[hidden] { display: none; }
+.lpx-etapa-texto { display: flex; flex-direction: column; justify-content: flex-end; gap: 16px; }
+.lpx-etapa-quem { font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.lpx-etapa-desc { font-size: var(--fs-body); line-height: 1.5; max-width: 36ch; }
+.lpx-etapa-status { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: var(--fs-small); }
+.lpx-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px 4px 10px; border-radius: var(--radius-full);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold);
+}
+.lpx-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.lpx-badge-yellow { background: var(--color-warning-soft); color: var(--color-warning); }
+.lpx-badge-green { background: var(--color-success-soft); color: var(--color-success); }
+.lpx-badge-blue { background: var(--color-info-soft); color: var(--color-info); }
+.lpx-etapa-tela { align-self: stretch; min-height: 0; border-radius: 14px; overflow: hidden; background: var(--paper); }
+.lpx-etapa-tela img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 0; }
+
+/* ============================================================
+   5. Recursos · mural de blocos, entrada em diagonal
+   ============================================================ */
+.lpx-recursos { padding: var(--secao) var(--gutter); }
+.lpx-blocos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+.lpx-bloco {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex; flex-direction: column;
+  padding: clamp(20px, 2vw, 28px);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.lpx-bloco-titulo {
+  grid-column: span 2; aspect-ratio: auto;
+  justify-content: space-between; gap: 24px;
+  background: var(--ink); color: var(--paper);
+}
+.lpx-bloco-titulo h2 {
+  font-size: var(--fs-h2); font-weight: var(--weight-bold);
+  letter-spacing: -0.04em; line-height: 1; text-wrap: balance;
+}
+.lpx-bloco-titulo p { font-size: var(--fs-body); max-width: 40ch; }
+.lpx-bloco-palavra {
+  margin: auto 0;
+  font-size: var(--fs-h2); font-weight: var(--weight-bold);
+  letter-spacing: -0.05em; line-height: 0.9;
+}
+.lpx-bloco-palavra small { margin-left: 0.12em; font-size: 0.42em; letter-spacing: -0.02em; }
+.lpx-bloco-nome { font-size: var(--fs-body); font-weight: var(--weight-bold); letter-spacing: -0.01em; }
+.lpx-bloco-texto { margin-top: 4px; font-size: var(--fs-small); line-height: 1.45; }
+.lpx-bloco-papel { margin-top: 14px; font-size: var(--fs-small); font-weight: var(--weight-semibold); opacity: 0.85; }
+.lpx-cor-blue { background: var(--blue); color: var(--paper); }
+.lpx-cor-green { background: var(--green); color: var(--paper); }
+.lpx-cor-graphite { background: var(--graphite-tile); color: var(--paper); }
+.lpx-anima .lpx-bloco {
+  --t: clamp(0, (var(--p) - 0.08) * 4.5 - var(--k) * 0.18, 1);
+  opacity: var(--t);
+  transform:
+    translate3d(calc((1 - var(--t)) * -80px), calc((1 - var(--t)) * 140px), 0)
+    rotate(calc((1 - var(--t)) * -6deg));
+}
+
+/* ============================================================
+   6. Demonstração · a tela que cresce
+   ============================================================ */
+.lpx-demo-intro {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap);
+  align-items: end;
+  padding: var(--secao) var(--gutter) 56px;
+}
+.lpx-demo-intro .lpx-h2 { grid-column: 1 / 8; }
+.lpx-demo-intro .lpx-corpo { grid-column: 8 / 13; }
+.lpx-demo-fixa { padding: 0 var(--gutter) var(--secao); }
+.lpx-demo-palco { display: grid; gap: 16px; }
+.lpx-demo-janela {
+  position: relative; aspect-ratio: 16 / 10;
+  border-radius: var(--r); overflow: hidden;
+  background: var(--ink);
+}
+.lpx-demo-midia {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 0;
+  opacity: 0; transition: opacity 260ms ease;
+}
+.lpx-demo-midia.is-atual { opacity: 1; }
+.lpx-demo-abas { display: flex; flex-wrap: wrap; gap: 8px; }
+.lpx-demo-abas button {
+  flex: 1 1 auto;
+  display: grid; justify-items: start; gap: 2px;
+  padding: 12px 20px; border: 0; border-radius: 16px;
+  background: var(--gray); color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: var(--weight-semibold); text-align: left;
+  cursor: pointer;
+  transition: background-color 220ms, color 220ms, transform 220ms var(--ease-out);
+}
+.lpx-demo-abas button small { font-size: var(--fs-small); font-weight: var(--weight-medium); opacity: 0.75; }
+.lpx-demo-abas button:hover { background: var(--color-surface-sunken); }
+.lpx-demo-abas button:active { transform: scale(0.97); }
+.lpx-demo-abas button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* Com a cena: a seção fica alta, o palco fica preso na tela e a janela cresce */
+.lpx-demo-fixa.is-cena { height: 380vh; padding: 0; }
+.lpx-demo-fixa.is-cena .lpx-demo-palco {
+  --e: calc(1 - clamp(0, var(--p, 1) / 0.3, 1));
+  position: sticky; top: 0;
+  height: 100svh;
+  display: block;
+}
+.lpx-demo-fixa.is-cena .lpx-demo-janela {
+  position: absolute; inset: var(--nav-h) 0 96px; aspect-ratio: auto;
+  border-radius: calc(var(--e) * 28px);
+  transform: scale(calc(1 - var(--e) * 0.32));
+  transform-origin: 50% 40%;
+  will-change: transform;
+}
+.lpx-demo-fixa.is-cena .lpx-demo-abas {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 96px; align-items: center; justify-content: center;
+  padding: 0 var(--gutter);
+}
+.lpx-demo-fixa.is-cena .lpx-demo-abas button { flex: 0 0 auto; }
+
+/* ============================================================
+   7. Chamada final
+   ============================================================ */
+.lpx-final {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 64px;
+  min-height: min(88svh, 760px);
+  padding: var(--secao) var(--gutter) 48px;
+}
+.lpx-final-titulo {
+  font-size: var(--fs-display); font-weight: var(--weight-bold);
+  letter-spacing: -0.05em; line-height: 0.92;
+}
+.lpx-anima .lpx-final-titulo .lpx-linha > span {
+  transform: translateY(calc((1 - clamp(0, (var(--p, 0.5) - 0.05) * 6, 1)) * 105%));
+}
+.lpx-anima .lpx-final-titulo .lpx-linha:nth-child(2) > span {
+  transform: translateY(calc((1 - clamp(0, (var(--p, 0.5) - 0.09) * 6, 1)) * 105%));
+}
+.lpx-final-base { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+
+/* ============================================================
+   Rodapé em blocos
+   ============================================================ */
+.lpx-rodape { padding: var(--gap) var(--gutter) var(--gutter); }
+.lpx-rodape-grade {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: minmax(240px, auto) clamp(240px, 26vw, 340px);
+  gap: var(--gap);
+}
+.lpx-tile {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: clamp(20px, 2vw, 28px);
+  border-radius: var(--r);
+  background: var(--gray); color: var(--ink);
+  text-decoration: none;
+}
+.lpx-tile ul { display: grid; gap: 6px; }
+.lpx-tile li a { font-size: 16px; text-decoration: none; text-underline-offset: 4px; }
+.lpx-tile li a:hover { text-decoration: underline; }
+.lpx-tile-titulo { font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.lpx-tile-frase { grid-column: 1 / 5; justify-content: space-between; }
+.lpx-rodape-grade > :nth-child(2) { grid-column: 5 / 8; }
+.lpx-rodape-grade > :nth-child(3) { grid-column: 8 / 10; }
+.lpx-rodape-grade > :nth-child(4) { grid-column: 10 / 13; }
+.lpx-tile-destaque { font-size: var(--fs-h3); font-weight: var(--weight-semibold); letter-spacing: -0.02em; line-height: 1.3; }
+.lpx-tile-miudo { font-size: var(--fs-small); line-height: 1.5; color: var(--color-text-secondary); }
+.lpx-tile-marca {
+  grid-column: 1 / 9; align-items: center; justify-content: center;
+  background: var(--ink); overflow: hidden;
+}
+.lpx-tile-marca img { width: min(52%, 460px); height: auto; transition: transform 600ms var(--ease-out); }
+.lpx-tile-marca:hover img { transform: scale(1.03); }
+.lpx-tile-acesso {
+  grid-column: 9 / 13; justify-content: space-between;
+  background: var(--green); color: var(--paper);
+  transition: background-color 220ms;
+}
+.lpx-tile-acesso span { font-size: var(--fs-h3); font-weight: var(--weight-bold); letter-spacing: -0.02em; }
+.lpx-tile-acesso svg {
+  align-self: flex-end; width: 64px; height: 64px;
+  fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform 300ms var(--ease-out);
+}
+.lpx-tile-acesso:hover { background: var(--green-deep); }
+.lpx-tile-acesso:hover svg { transform: translate(6px, -6px); }
+
+/* ============================================================
+   Tablet
+   ============================================================ */
+@media (max-width: 1100px) {
+  .lpx-nav-links ul { gap: 18px; }
+  .lpx-rede-plano { inset: 16% 6% 6%; }
+}
+
+@media (max-width: 900px) {
+  .lpx-nav { gap: 12px; }
+  .lpx-nav-links, .lpx-btn-nav { display: none; }
+  .lpx-nav-menu { display: inline-flex; align-items: center; }
+
+  .lpx-pasta-aba { left: calc(2% + var(--i) * 15%); height: 36px; padding: 0 20px; }
+  .lpx-ficha { grid-template-columns: minmax(0, 1fr) auto; gap: 12px 24px; }
+  .lpx-ficha > :nth-child(1), .lpx-ficha > :nth-child(4) { display: none; }
+
+  .lpx-mural { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(260px, 34svh) auto; }
+  .lpx-mural-a { grid-column: 1 / 3; grid-row: 1; }
+  .lpx-mural-b { grid-column: 1; grid-row: 2; aspect-ratio: 1; }
+  .lpx-mural-c { grid-column: 2; grid-row: 2; aspect-ratio: 1; }
+  .lpx-mural-frase { font-size: var(--fs-display); }
+  .lpx-mural-palavra { font-size: var(--fs-h2); }
+  .lpx-acende { grid-column: 1 / -1; }
+
+  .lpx-solucao { grid-template-columns: 1fr; gap: 48px; }
+  .lpx-solucao-texto, .lpx-rede { grid-column: 1; }
+  .lpx-rede { justify-self: center; max-width: 560px; }
+
+  .lpx-como-intro, .lpx-demo-intro { grid-template-columns: 1fr; gap: 24px; }
+  .lpx-como-intro .lpx-h2, .lpx-como-intro .lpx-corpo,
+  .lpx-demo-intro .lpx-h2, .lpx-demo-intro .lpx-corpo { grid-column: 1; }
+
+  .lpx-sanfona { flex-direction: column; height: auto; margin-top: 40px; }
+  .lpx-etapa { flex: none; }
+  .lpx-etapa.is-aberta { flex: none; }
+  .lpx-etapa:not(.is-aberta) .lpx-etapa-cabeca { position: static; }
+  .lpx-etapa-cabeca button,
+  .lpx-etapa.is-aberta .lpx-etapa-cabeca button {
+    writing-mode: horizontal-tb; transform: none;
+    min-height: 64px; height: auto; align-items: center;
+    padding: 16px 20px; font-size: var(--fs-h3); letter-spacing: -0.01em;
+  }
+  .lpx-etapa.is-aberta .lpx-etapa-cabeca button { padding-top: 24px; font-size: var(--fs-h2); }
+  .lpx-etapa-painel { grid-template-columns: 1fr; padding: 4px 20px 24px; }
+  .lpx-etapa-tela { aspect-ratio: 16 / 10; }
+
+  .lpx-blocos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lpx-bloco-titulo { grid-column: 1 / -1; }
+
+  .lpx-rodape-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; }
+  .lpx-rodape-grade > * { grid-column: auto !important; }
+  .lpx-tile-marca { grid-column: 1 / -1 !important; order: -2; min-height: 180px; }
+  .lpx-tile-acesso { grid-column: 1 / -1 !important; order: -1; min-height: 180px; }
+  .lpx-tile-frase { grid-column: 1 / -1 !important; order: 2; }
+  .lpx-rodape-grade > :nth-child(4) { grid-column: 1 / -1 !important; }
+}
+
+/* ============================================================
+   Celular
+   ============================================================ */
+@media (max-width: 560px) {
+  .lpx { --gap: 6px; --r: 16px; }
+  .lpx-hero { padding-top: calc(var(--nav-h) + 48px); min-height: max(100svh, 620px); }
+  .lpx-hero-titulo { font-size: clamp(44px, 13.4vw, 80px); }
+  .lpx-pastas { height: 50%; }
+  .lpx-pasta { left: 0; right: 0; --passo: 46px; }
+  .lpx-pasta.is-frente { left: 0; right: 0; }
+  .lpx-pasta-aba { left: calc(var(--i) * 14%); padding: 0 16px; font-size: 14px; height: 34px; }
+  .lpx-pasta.is-frente .lpx-pasta-aba { right: 4%; }
+  .lpx-pasta-conteudo { padding: 24px 20px; }
+  .lpx-pasta-conteudo .lpx-btn { width: 100%; }
+  .lpx-ficha > :nth-child(3) { display: none; }
+
+  .lpx-rede-plano { inset: 22% 18% 12%; }
+  .lpx-no:not(.is-falta, .is-tem) .lpx-no-rotulo { display: none; }
+  .lpx-no { width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+
+  .lpx-blocos { grid-template-columns: 1fr 1fr; }
+  .lpx-bloco { padding: 16px; }
+  .lpx-bloco-palavra { font-size: clamp(34px, 11vw, 52px); }
+  .lpx-bloco-texto { display: none; }
+  .lpx-bloco-papel { margin-top: 6px; }
+
+  .lpx-final { min-height: 80svh; }
+  .lpx-final-titulo { font-size: clamp(44px, 13.4vw, 80px); }
+  .lpx-final-base .lpx-btn { width: 100%; }
+}
+
+/* ============================================================
+   Movimento reduzido e acessibilidade
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .lpx-hero-titulo .lpx-linha > span, .lpx-hero-sub, .lpx-pasta,
+  .lpx-etapa-painel, .lpx-rede-linhas .lpx-rede-rota { animation: none; }
+  .lpx-pastas-pilha, .lpx-etapa { transition: none; }
+}
+.lpx.a11y-motion .lpx-hero-titulo .lpx-linha > span,
+.lpx.a11y-motion .lpx-hero-sub,
+.lpx.a11y-motion .lpx-pasta,
+.lpx.a11y-motion .lpx-etapa-painel,
+.lpx.a11y-motion .lpx-rede-rota { animation: none !important; }
+
+.lpx.a11y-contrast { --green: #0b5a31; --blue: #0058b0; --graphite-tile: #3a3a3c; }
+.lpx.a11y-contrast .lpx-tile-miudo, .lpx.a11y-contrast .lpx-bloco-papel { color: inherit; opacity: 1; }
+.lpx.a11y-text .lpx-nav, .lpx.a11y-spacing .lpx-nav { height: auto; min-height: var(--nav-h); }
