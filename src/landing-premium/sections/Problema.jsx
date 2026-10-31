@@ -1,17 +1,13 @@
 import { useRef } from "react";
 import foto from "../assets/photos/farmacia-prateleiras.jpg";
-import { problemaTexto } from "../content";
 import { useMotion, useScrollProgress } from "../hooks";
 
-// O problema: um mural de blocos (frase, palavra, foto) e um texto que se
-// acende palavra por palavra conforme a leitura avança.
+// O problema: um mural de blocos (frase, palavra, foto) e duas frases curtas
+// que explicam o que acontece hoje sem uma ligação entre as farmácias.
 export default function Problema() {
   const mural = useRef(null);
-  const texto = useRef(null);
   const movimento = useMotion();
   useScrollProgress(mural, { ativo: movimento, repouso: 0.5 });
-  useScrollProgress(texto, { ativo: movimento, repouso: 1 });
-  const palavras = problemaTexto.split(" ");
 
   return (
     <section id="problema" className="lpx-problema lpx-fundo-gray" data-fundo="gray" aria-labelledby="problema-titulo">
@@ -38,10 +34,12 @@ export default function Problema() {
       </div>
 
       <div className="lpx-problema-texto">
-        <p ref={texto} className="lpx-acende" style={{ "--n": palavras.length }}>
-          {palavras.map((palavra, i) => (
-            <span key={i} style={{ "--i": i }}>{palavra} </span>
-          ))}
+        <p className="lpx-problema-frase" data-reveal>
+          Uma farmácia fica sem o remédio enquanto outra unidade da mesma rede tem caixas paradas.
+        </p>
+        <p className="lpx-corpo" data-reveal style={{ "--d": 1 }}>
+          Sem um caminho entre as duas, o pedido vira telefonema e planilha, ninguém sabe quem tem nem quando chega, e o
+          paciente volta para casa sem o medicamento.
         </p>
       </div>
     </section>

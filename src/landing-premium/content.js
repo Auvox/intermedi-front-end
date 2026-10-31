@@ -1,107 +1,87 @@
-// Textos e dados da landing premium. Tudo aqui vem do próprio Intermedi:
+// Textos e dados da landing premium. Tudo vem do próprio Intermedi:
 // etapas de services/relatorio.js (etapasDoProcesso), status de
-// services/chamados.js, regras de preparo do MANAGER.md e telas capturadas
-// da plataforma. Nada de números de negócio inventados.
-import telaGerente from "./assets/screens/gerente.jpg";
-import telaRelatorio from "./assets/screens/gerente-chamado-detalhe.jpg";
-import telaSolicitar from "./assets/screens/funcionario-solicitar.jpg";
-import telaPedidos from "./assets/screens/gerente-pedidos.jpg";
-import telaChamados from "./assets/screens/gerente-chamados.jpg";
-import telaOperacao from "./assets/screens/gerente-operacao.jpg";
-import telaDesempenho from "./assets/screens/admin-desempenho.jpg";
-import videoOperacao from "./assets/media/operacao-3d.mp4";
-import posterOperacao from "./assets/media/operacao-3d-poster.jpg";
+// services/chamados.js, regras de preparo do MANAGER.md e os números da base
+// de demonstração do back-end (database/seed.sql): farmácias, estoques,
+// funcionários e o chamado CH-2026-000001.
 
-// Capítulos: cada seção tem o seu fundo e a sua tinta. A navegação e as
-// pastas do hero usam as mesmas cores.
+// Capítulos: cada seção tem o seu fundo. A barra e as pastas usam as mesmas cores.
 export const capitulos = [
-  { id: "problema", nome: "O problema", fundo: "gray", tinta: "ink" },
-  { id: "solucao", nome: "A solução", fundo: "green", tinta: "paper" },
-  { id: "como-funciona", nome: "Como funciona", fundo: "mint", tinta: "ink" },
-  { id: "recursos", nome: "Recursos", fundo: "graphite", tinta: "paper" },
-  { id: "plataforma", nome: "Plataforma", fundo: "paper", tinta: "ink" },
+  { id: "problema", nome: "O problema", fundo: "gray" },
+  { id: "solucao", nome: "A solução", fundo: "green" },
+  { id: "como-funciona", nome: "Como funciona", fundo: "mint" },
+  { id: "recursos", nome: "Recursos", fundo: "graphite" },
+  { id: "plataforma", nome: "Plataforma", fundo: "paper" },
 ];
 
-export const problemaTexto =
-  "Todo dia, alguma farmácia descobre que um remédio acabou. Muitas vezes, a poucos quilômetros dali, outra unidade da mesma rede tem caixas paradas na prateleira. Sem um caminho entre as duas, o pedido vira telefonema, planilha e mensagem perdida: ninguém sabe quem tem, quem aprovou nem quando chega. O paciente volta para casa sem o medicamento, e o estoque que sobrava continua parado. O problema não é falta de remédio na rede. É falta de ligação entre quem tem e quem precisa.";
+// Farmácias da base de demonstração, com o bairro cadastrado
+export const farmacias = {
+  pjn: { nome: "Farmácia Pedro João Neto", bairro: "Guaianases" },
+  vida: { nome: "Farmácia Vida", bairro: "Itaquera" },
+  leste: { nome: "Farmácia Saúde Leste", bairro: "Consolação" },
+  bem: { nome: "Drogaria Bem Estar", bairro: "Bela Vista" },
+};
 
-// Farmácias da base de demonstração do back-end (database/seed.sql).
-// Coordenadas no plano da cena, de 0 a 100.
-export const farmacias = [
-  { id: "pjn", nome: "Farmácia Pedro João Neto", x: 22, y: 30 },
-  { id: "vida", nome: "Farmácia Vida", x: 74, y: 22 },
-  { id: "leste", nome: "Farmácia Saúde Leste", x: 80, y: 72 },
-  { id: "bem", nome: "Drogaria Bem Estar", x: 30, y: 78 },
-  { id: "central", nome: "Farmácia Central", x: 52, y: 50 },
-];
-
-export const ligacoes = [
-  ["pjn", "vida"], ["pjn", "central"], ["pjn", "bem"], ["vida", "central"],
-  ["vida", "leste"], ["leste", "central"], ["leste", "bem"], ["bem", "central"],
-];
-
-// Simulação: qual farmácia sente a falta e qual tem o remédio em estoque.
+// Faltas reais do estoque de demonstração (quantidade no mínimo ou abaixo)
+// e a farmácia com mais sobra acima do mínimo para atender.
 export const simulacoes = [
-  { remedio: "Paracetamol", falta: "pjn", tem: "vida", quantidade: 50 },
-  { remedio: "Vitamina C", falta: "leste", tem: "bem", quantidade: 50 },
-  { remedio: "Amoxicilina", falta: "bem", tem: "pjn", quantidade: 40 },
+  { remedio: "Paracetamol 750mg", pede: 50, falta: { id: "pjn", tem: 40, minimo: 50 }, envia: { id: "leste", tem: 180, minimo: 50 } },
+  { remedio: "Dipirona 500mg", pede: 30, falta: { id: "vida", tem: 15, minimo: 30 }, envia: { id: "leste", tem: 300, minimo: 50 } },
+  { remedio: "Amoxicilina 500mg", pede: 20, falta: { id: "leste", tem: 8, minimo: 20 }, envia: { id: "vida", tem: 90, minimo: 20 } },
+  { remedio: "Losartana 50mg", pede: 30, falta: { id: "bem", tem: 12, minimo: 30 }, envia: { id: "pjn", tem: 200, minimo: 40 } },
 ];
 
-// As cinco etapas do relatório de cada chamado (etapasDoProcesso).
+export const passosSimulacao = ["Chamado aberto", "Gerente aceita", "Fornecedora prepara", "Entregue"];
+
+// As cinco etapas do relatório de cada chamado (etapasDoProcesso)
 export const etapas = [
   {
     id: "aberto",
     nome: "Aberto",
+    papel: "funcionario",
     quem: "Funcionário",
     status: "Pendente",
     tom: "yellow",
     texto: "O funcionário abre um chamado de reposição: escolhe os remédios, a quantidade de cada um e a prioridade, de baixa a urgente.",
-    tela: telaSolicitar,
-    alt: "Formulário Solicitar reposição da plataforma do funcionário, com remédio, quantidade e prioridade",
   },
   {
     id: "gerente",
     nome: "Aguardando o gerente",
+    papel: "gerente",
     quem: "Gerente da unidade",
     status: "Em andamento",
     tom: "green",
     texto: "O gerente vê, para cada remédio, quais farmácias da rede podem atender. Aceita e pede à rede, ou recusa com o motivo por escrito.",
-    tela: telaRelatorio,
-    alt: "Relatório do chamado CH-2026-000001, Falta de paracetamol, aguardando o gerente",
   },
   {
     id: "rede",
     nome: "Pedido à rede",
-    quem: "Farmácia fornecedora",
+    papel: "gerente",
+    quem: "Gerente da farmácia fornecedora",
     status: "Aguardando preparo",
     tom: "blue",
     texto: "Cada remédio vai para uma farmácia fornecedora. O gerente dela aceita o pedido, e a quantidade sai do estoque dela na hora.",
-    tela: telaPedidos,
-    alt: "Tela Pedidos da rede do gerente, com pedidos recebidos e enviados entre farmácias",
   },
   {
     id: "transito",
     nome: "Em trânsito",
+    papel: "funcionario",
     quem: "Equipe da fornecedora",
     status: "A caminho",
     tom: "blue",
     texto: "Toda a equipe recebe o aviso de preparo, e quem aperta Começar primeiro assume. Pronto o preparo, o envio sai com horário previsto de chegada.",
-    tela: telaOperacao,
-    alt: "Operação 3D da unidade, com gôndolas, equipe, balcões e a doca de recebimento",
   },
   {
     id: "resolvido",
     nome: "Resolvido",
+    papel: "gerente",
     quem: "Quem pediu",
     status: "Resolvido",
     tom: "green",
     texto: "Quando todos os remédios chegam, o chamado se encerra. O relatório guarda cada etapa com data, hora e responsável.",
-    tela: telaChamados,
-    alt: "Lista de chamados do gerente com status pendente, recusado e cancelado",
   },
 ];
 
-// Cada recurso tem a cor da plataforma onde ele vive.
+// Cada recurso tem a cor e o ícone da plataforma onde ele vive
 export const papeis = {
   funcionario: { nome: "Funcionário", cor: "blue" },
   gerente: { nome: "Gerente", cor: "green" },
@@ -117,12 +97,13 @@ export const recursos = [
   { palavra: "Calor", nome: "Desempenho", papel: "admin", texto: "Mapa de calor, rotas, saúde do sistema e alertas." },
 ];
 
+// Telas da demonstração: recriadas em HTML a partir da plataforma
 export const telas = [
-  { id: "gerente", nome: "Painel do gerente", papel: "Gerente", src: telaGerente, alt: "Visão geral do gerente: ferramentas, chamados pendentes, pedidos da rede e itens com atenção" },
-  { id: "relatorio", nome: "Relatório do chamado", papel: "Gerente", src: telaRelatorio, alt: "Relatório do chamado com protocolo, solicitante, unidade e linha do tempo das etapas" },
-  { id: "solicitar", nome: "Solicitar reposição", papel: "Funcionário", src: telaSolicitar, posicao: "50% 62%", alt: "Formulário de solicitação de reposição da plataforma do funcionário" },
-  { id: "operacao", nome: "Operação 3D", papel: "Gerente", src: posterOperacao, video: videoOperacao, alt: "Gravação da Operação 3D percorrendo estoque, doca, gerência e atendimento" },
-  { id: "desempenho", nome: "Desempenho", papel: "Admin", src: telaDesempenho, alt: "Aba Desempenho do admin: usuários ativos, cliques, taxa de erro, tempo de resposta e um alerta de rota falhando" },
+  { id: "painel", nome: "Painel do gerente", papel: "gerente", titulo: "Tudo o que precisa de você, numa tela.", frase: "Chamados pendentes, pedidos da rede e o estoque que pede atenção." },
+  { id: "relatorio", nome: "Relatório do chamado", papel: "gerente", titulo: "Cada chamado tem a sua história.", frase: "Quem pediu, quem respondeu e em que etapa ele está, com data e hora." },
+  { id: "solicitar", nome: "Solicitar reposição", papel: "funcionario", titulo: "Faltou? Peça na hora.", frase: "O funcionário escolhe o remédio, a quantidade e a prioridade." },
+  { id: "operacao", nome: "Operação 3D", papel: "gerente", titulo: "A unidade inteira, em 3D.", frase: "Gôndolas, equipe, balcões e doca com os mesmos dados das outras telas." },
+  { id: "desempenho", nome: "Desempenho", papel: "admin", titulo: "A rede inteira sob controle.", frase: "Uso, erros, tempo de resposta e alertas para o administrador." },
 ];
 
 export const parceiros = [

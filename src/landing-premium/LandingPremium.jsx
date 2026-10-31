@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
 import AccessibilityMenu from "../components/layout/AccessibilityMenu";
 import useAccessibility from "../hooks/useAccessibility";
 import { MotionContext, usePrefersReducedMotion, useReveal } from "./hooks";
@@ -11,7 +13,7 @@ import Recursos from "./sections/Recursos";
 import Demonstracao from "./sections/Demonstracao";
 import ChamadaFinal from "./sections/ChamadaFinal";
 import Rodape from "./sections/Rodape";
-import "./landing-premium.css";
+import "./estilos.css";
 
 // Landing page premium: uma história em capítulos de cor. Cada seção tem o
 // seu fundo (data-fundo) e a barra de navegação veste o capítulo atual.
@@ -27,6 +29,30 @@ export default function LandingPremium() {
   useEffect(() => {
     document.title = "Intermedi | Interligando medicamentos";
   }, []);
+
+  // Rolagem suave (Lenis) só com movimento permitido; os links de âncora e o
+  // pedido "lpx:rolar" (abas da demonstração) passam por ela.
+  useEffect(() => {
+    if (!movimento) {
+      const rolar = (event) => window.scrollTo({ top: event.detail });
+      window.addEventListener("lpx:rolar", rolar);
+      return () => window.removeEventListener("lpx:rolar", rolar);
+    }
+    const lenis = new Lenis({
+      autoRaf: true,
+      lerp: 0.09,
+      anchors: { offset: -64 },
+      allowNestedScroll: true,
+      // o menu de acessibilidade rola por conta própria
+      prevent: (node) => Boolean(node.closest?.(".accessibility-panel")),
+    });
+    const rolar = (event) => lenis.scrollTo(event.detail, { duration: 1.2 });
+    window.addEventListener("lpx:rolar", rolar);
+    return () => {
+      window.removeEventListener("lpx:rolar", rolar);
+      lenis.destroy();
+    };
+  }, [movimento]);
 
   // Capítulo atual = a seção que cruza a faixa logo abaixo da barra
   useEffect(() => {
