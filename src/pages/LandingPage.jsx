@@ -12,6 +12,7 @@ import HowSection from "../components/layout/HowSection";
 import PartnersSection from "../components/layout/PartnersSection";
 import Footer from "../components/layout/Footer";
 import MapSection from "../components/sections/MapSection.jsx";
+import SecoesRede from "../landing-premium/SecoesRede";
 
 export default function LandingPage() {
   const rootRef = useRef(null);
@@ -67,6 +68,9 @@ export default function LandingPage() {
       {/* ══════════ HERO ══════════ */}
       <HeroSection paused={preferences.motion} />
       <KeywordRibbon />
+
+      {/* ══════════ PROBLEMA + JORNADA DA ENTREGA ══════════ */}
+      <SecoesRede paused={preferences.motion} />
 
       {/* ══════════ WHY ══════════ */}
       <WhySection />
