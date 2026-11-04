@@ -8,7 +8,7 @@ import { MotionContext, usePrefersReducedMotion, useReveal } from "./hooks";
 import PremiumNav from "./components/PremiumNav";
 import Hero from "./sections/Hero";
 import Problema from "./sections/Problema";
-import RemanejamentoStory from "./story/RemanejamentoStory";
+import JornadaEntrega from "./jornada/JornadaEntrega";
 import ComoFunciona from "./sections/ComoFunciona";
 import Recursos from "./sections/Recursos";
 import Demonstracao from "./sections/Demonstracao";
@@ -80,7 +80,7 @@ export default function LandingPremium() {
         <main id="conteudo">
           <Hero />
           <Problema />
-          <RemanejamentoStory />
+          <JornadaEntrega />
           <ComoFunciona />
           <Recursos />
           <Demonstracao />
