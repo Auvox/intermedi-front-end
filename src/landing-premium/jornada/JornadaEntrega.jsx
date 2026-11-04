@@ -4,52 +4,55 @@ import Mundo from "./Mundo";
 import { useCameraVirtual } from "./useCameraVirtual";
 import "./jornada.css";
 
-// Textos de cada cena, na ordem da jornada
+// Textos de cada cena, na ordem da jornada (o primeiro é o título da seção)
 const CENAS_TEXTO = [
-  { titulo: "Da disponibilidade nasce uma conexão.", frase: "Uma farmácia possui medicamentos que podem atender à necessidade de outra." },
-  { titulo: "Tudo pronto para o transporte.", frase: "Os medicamentos são preparados para seguir até a farmácia solicitante." },
-  { titulo: "Uma jornada que conecta farmácias.", frase: "O Intermedi facilita o remanejamento de medicamentos entre estabelecimentos." },
-  { titulo: "O destino está próximo.", frase: "Os medicamentos chegam à farmácia que precisa deles." },
-  { titulo: "Uma necessidade atendida.", frase: "Com o Intermedi, medicamentos disponíveis podem ajudar outras farmácias." },
+  { titulo: "Uma rede, não uma ilha.", frase: "Uma farmácia possui medicamentos que podem atender à necessidade de outra." },
+  { titulo: "A conexão começa aqui.", frase: "Os medicamentos estão prontos para seguir até quem precisa." },
+  { titulo: "Conectando necessidades e soluções.", frase: "O Intermedi facilita o remanejamento de medicamentos entre farmácias." },
+  { titulo: "Cada entrega faz a diferença.", frase: "O transporte se aproxima da farmácia solicitante." },
+  { titulo: "Uma necessidade atendida.", frase: "Medicamentos disponíveis chegam à farmácia que precisa deles." },
 ];
 
-// "Uma rede, não uma ilha.": a jornada de uma entrega entre duas farmácias,
-// em um mundo 2D maior que a tela. A janela fica presa (sticky) enquanto a
-// seção rola, e a câmera virtual acompanha o carrinho. Sem movimento, o mundo
-// aparece inteiro com a entrega feita e os textos em sequência.
+// "Uma rede, não uma ilha.": a página vira uma cidade e o visitante desce
+// junto com um caminhão que leva medicamentos de uma farmácia para outra.
+// O cenário ocupa a tela inteira (sticky) enquanto a seção rola; a câmera
+// virtual acompanha o caminhão. Sem movimento, o mapa aparece inteiro com a
+// entrega feita e os textos em sequência.
 export default function JornadaEntrega() {
   const rolagem = useRef(null);
-  const janela = useRef(null);
+  const palco = useRef(null);
   const mundo = useRef(null);
   const textos = useRef(null);
-  const barra = useRef(null);
+  const indicador = useRef(null);
   const movimento = useMotion();
   const [cena, setCena] = useState(0);
 
-  useCameraVirtual({ rolagem, janela, mundo, textos, barra, ativo: movimento, aoMudarCena: setCena });
+  useCameraVirtual({ rolagem, palco, mundo, textos, indicador, ativo: movimento, aoMudarCena: setCena });
 
   return (
-    <section id="solucao" className="jx lpx-fundo-green" data-fundo="green" aria-labelledby="solucao-titulo">
+    <section id="solucao" className="jx lpx-fundo-nevoa" data-fundo="nevoa" aria-labelledby="solucao-titulo">
       <div ref={rolagem} className={`jx-rolagem ${movimento ? "is-animado" : "is-estatico"}`}>
-        <div className="jx-palco">
-          <div className="jx-texto">
-            <h2 id="solucao-titulo" className="lpx-h2 jx-titulo">Uma rede, não uma ilha.</h2>
-            <ol ref={textos} className="jx-cenas" aria-label="A jornada de uma entrega">
-              {CENAS_TEXTO.map((c) => (
-                <li key={c.titulo} className="jx-cena" data-j="texto">
-                  <h3 className="jx-cena-titulo">{c.titulo}</h3>
-                  <p className="jx-cena-frase">{c.frase}</p>
-                </li>
-              ))}
-            </ol>
-            <p className="lpx-sr" aria-live="polite">
-              {movimento ? `${CENAS_TEXTO[cena].titulo} ${CENAS_TEXTO[cena].frase}` : ""}
-            </p>
-            <span className="jx-progresso" aria-hidden="true"><i ref={barra} /></span>
-          </div>
-          <div ref={janela} className="jx-janela">
-            <Mundo ref={mundo} />
-          </div>
+        <div ref={palco} className="jx-palco">
+          <Mundo ref={mundo} />
+
+          <ol ref={textos} className="jx-narrativa" aria-label="A jornada de uma entrega">
+            {CENAS_TEXTO.map((c, i) => (
+              <li key={c.titulo} className="jx-cena" data-j="texto">
+                {i === 0
+                  ? <h2 id="solucao-titulo" className="jx-cena-titulo">{c.titulo}</h2>
+                  : <h3 className="jx-cena-titulo">{c.titulo}</h3>}
+                <p className="jx-cena-frase">{c.frase}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="lpx-sr" aria-live="polite">
+            {movimento && cena > 0 ? `${CENAS_TEXTO[cena].titulo} ${CENAS_TEXTO[cena].frase}` : ""}
+          </p>
+
+          <p ref={indicador} className="jx-convite" aria-hidden="true">
+            <span>Role para acompanhar a jornada</span>
+            <svg viewBox="0 0 24 24"><path d="M12 5v14m-6-6 6 6 6-6" /></svg>
+          </p>
         </div>
       </div>
     </section>

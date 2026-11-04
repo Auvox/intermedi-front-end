@@ -1,17 +1,21 @@
 import { forwardRef } from "react";
-import { ARVORES, FIM, FORNECEDORA, MUNDO, PLACAS, PREDIOS, ROTA, RUAS, SOLICITANTE, VAGAS } from "./geometria";
+import { ARVORES, FIM, FORNECEDORA, MUNDO, PLACAS, PRACAS, PREDIOS, ROTA, RUAS, SOLICITANTE, VAGAS } from "./geometria";
 
+// Uma farmácia vista de cima: telhado verde com a cruz, toldo e porta na
+// parede voltada para a estrada, e a etiqueta com o papel e o nome.
 function Farmacia({ f, prefixo }) {
   const { x, y, largura: w, altura: h, porta } = f;
   const etiqueta = f.nome.length * 12.5 + 48;
+  const cx = x + w / 2 + 12;
+  const cy = y + h / 2;
   return (
     <g className="jx-farmacia">
-      <rect className="jx-sombra" x={x + 10} y={y + 12} width={w} height={h} rx="16" />
-      <rect className="jx-farmacia-base" x={x} y={y} width={w} height={h} rx="16" />
-      <rect className="jx-farmacia-telhado" x={x + 18} y={y + 18} width={w - 36} height={h - 70} rx="10" />
-      <path className="jx-cruz" d={`M ${x + w / 2 - 12} ${y + 40} h 24 v 22 h 22 v 24 h -22 v 22 h -24 v -22 h -22 v -24 h 22 Z`} />
-      <rect className="jx-toldo" x={x + 18} y={y + h - 40} width={w - 36} height="22" rx="6" />
-      <rect className="jx-porta" x={porta.x - 22} y={y + h - 14} width="44" height="14" rx="4" />
+      <rect className="jx-sombra" x={x + 10} y={y + 12} width={w} height={h} rx="18" />
+      <rect className="jx-farmacia-base" x={x} y={y} width={w} height={h} rx="18" />
+      <rect className="jx-farmacia-telhado" x={x + 44} y={y + 18} width={w - 62} height={h - 36} rx="12" />
+      <path className="jx-cruz" d={`M ${cx - 13} ${cy - 39} h 26 v 26 h 26 v 26 h -26 v 26 h -26 v -26 h -26 v -26 h 26 Z`} />
+      <rect className="jx-toldo" x={x + 16} y={y + 18} width="18" height={h - 36} rx="6" />
+      <rect className="jx-porta" x={porta.x - 4} y={porta.y - 24} width="12" height="48" rx="4" />
       <g className="jx-etiqueta" transform={`translate(${x + w / 2} ${y - 46})`} data-j={`${prefixo}-etiqueta`}>
         <rect x={-etiqueta / 2} y="-26" width={etiqueta} height="52" rx="26" />
         <text className="jx-etiqueta-papel" y="-5" textAnchor="middle">{f.papel}</text>
@@ -23,7 +27,7 @@ function Farmacia({ f, prefixo }) {
 
 // O mundo inteiro, em unidades do mundo. A câmera é o viewBox do <svg>, que
 // useCameraVirtual muda a cada quadro; sem animação, o mundo aparece inteiro
-// e o carrinho já entregou (estado final).
+// e o caminhão já entregou (estado final).
 const Mundo = forwardRef(function Mundo(_props, ref) {
   return (
     <svg
@@ -32,10 +36,12 @@ const Mundo = forwardRef(function Mundo(_props, ref) {
       viewBox={`0 0 ${MUNDO.largura} ${MUNDO.altura}`}
       preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label="Ilustração: um carrinho sai da Farmácia Pedro João Neto com caixas de medicamentos, percorre as ruas do bairro e entrega na Drogaria Bem Estar."
+      aria-label="Ilustração: um caminhão sai da Farmácia Pedro João Neto com caixas de medicamentos, desce pelas ruas do bairro e entrega na Drogaria Bem Estar."
     >
-      <rect className="jx-chao" x={-2000} y={-2000} width={MUNDO.largura + 4000} height={MUNDO.altura + 4000} />
-      <rect className="jx-praca" x="1460" y="1080" width="240" height="320" rx="40" />
+      <rect className="jx-chao" x={-3000} y={-3000} width={MUNDO.largura + 6000} height={MUNDO.altura + 6000} />
+      {PRACAS.map(([x, y, w, h]) => (
+        <rect key={`${x}-${y}`} className="jx-praca" x={x} y={y} width={w} height={h} rx="40" />
+      ))}
 
       <g className="jx-ruas">
         {RUAS.map((d) => <path key={d} className="jx-rua-meiofio is-secundaria" d={d} />)}
@@ -76,33 +82,39 @@ const Mundo = forwardRef(function Mundo(_props, ref) {
       <Farmacia f={FORNECEDORA} prefixo="forn" />
       <Farmacia f={SOLICITANTE} prefixo="sol" />
 
-      {/* rota percorrida: revelada até onde o carrinho chegou */}
+      {/* rota percorrida: revelada até onde o caminhão chegou */}
       <path className="jx-rota" d={ROTA} pathLength="1" data-j="rota" />
       <path className="jx-rota-medida" d={ROTA} data-j="rota-medida" />
 
-      {/* entrega concluída */}
-      <g className="jx-entregue" data-j="entregue" transform={`translate(${SOLICITANTE.porta.x} ${SOLICITANTE.y + 70})`}>
-        <circle r="34" />
-        <path d="M -14 0 L -4 10 L 15 -11" />
+      {/* entrega concluída, sobre o telhado da solicitante */}
+      <g
+        className="jx-entregue"
+        data-j="entregue"
+        transform={`translate(${SOLICITANTE.x + SOLICITANTE.largura / 2 + 12} ${SOLICITANTE.y + SOLICITANTE.altura / 2})`}
+      >
+        <circle r="46" />
+        <path d="M -19 0 L -6 13 L 20 -14" />
       </g>
 
-      {/* o carrinho, visto de cima, de frente para +x */}
+      {/* o caminhão, visto de cima, de frente para +x */}
       <g data-j="carrinho" transform={`translate(${FIM.x} ${FIM.y})`}>
-        <g data-j="carrinho-giro">
-          <rect className="jx-sombra" x="-36" y="-14" width="84" height="44" rx="10" />
-          <rect className="jx-roda" x="-30" y="-27" width="16" height="9" rx="3" />
-          <rect className="jx-roda" x="16" y="-27" width="16" height="9" rx="3" />
-          <rect className="jx-roda" x="-30" y="18" width="16" height="9" rx="3" />
-          <rect className="jx-roda" x="16" y="18" width="16" height="9" rx="3" />
-          <rect className="jx-carro" x="-42" y="-22" width="84" height="44" rx="10" />
-          <rect className="jx-cabine" x="18" y="-22" width="24" height="44" rx="9" />
-          <rect className="jx-parabrisa" x="24" y="-15" width="9" height="30" rx="3" />
-          <rect className="jx-cacamba" x="-36" y="-16" width="52" height="32" rx="5" />
+        <g data-j="carrinho-giro" transform="rotate(90)">
+          <rect className="jx-sombra" x="-56" y="-20" width="118" height="56" rx="10" />
+          <rect className="jx-roda" x="-50" y="-33" width="18" height="9" rx="3" />
+          <rect className="jx-roda" x="-28" y="-33" width="18" height="9" rx="3" />
+          <rect className="jx-roda" x="30" y="-31" width="18" height="9" rx="3" />
+          <rect className="jx-roda" x="-50" y="24" width="18" height="9" rx="3" />
+          <rect className="jx-roda" x="-28" y="24" width="18" height="9" rx="3" />
+          <rect className="jx-roda" x="30" y="22" width="18" height="9" rx="3" />
+          <rect className="jx-carro" x="-62" y="-28" width="82" height="56" rx="8" />
+          <rect className="jx-cacamba" x="-56" y="-22" width="70" height="44" rx="5" />
+          <rect className="jx-cabine" x="22" y="-25" width="34" height="50" rx="11" />
+          <rect className="jx-parabrisa" x="42" y="-17" width="9" height="34" rx="3" />
           {VAGAS.map(([vx, vy], i) => (
             <g key={vx} transform={`translate(${vx} ${vy})`}>
               <g className="jx-caixa" data-j="caixa" data-i={i}>
-                <rect width="14" height="14" rx="2.5" />
-                <path d="M 7 3 V 11 M 3 7 H 11" />
+                <rect width="16" height="16" rx="3" />
+                <path d="M 8 3.5 V 12.5 M 3.5 8 H 12.5" />
               </g>
             </g>
           ))}

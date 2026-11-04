@@ -1,55 +1,56 @@
 /* ============================================================
-   "Uma rede, não uma ilha." · jornada 2D com câmera virtual
-   O CSS descreve o estado FINAL (entrega feita, mundo inteiro);
-   useCameraVirtual troca o viewBox e anima a partir da rolagem.
+   "Uma rede, não uma ilha." · jornada vertical em tela cheia
+   O cenário ocupa a tela inteira e o fundo da seção é o próprio chão
+   da cidade. O CSS descreve o estado FINAL (entrega feita, mapa
+   inteiro); useCameraVirtual troca o viewBox e anima pela rolagem.
    ============================================================ */
 
-.jx { position: relative; }
-.jx-rolagem.is-animado { height: 620svh; }
+.jx { position: relative; background: var(--nevoa); }
+.jx-rolagem.is-animado { height: 720svh; }
 
-.jx-palco {
+.jx-palco { position: relative; }
+.jx-rolagem.is-animado .jx-palco { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.jx-rolagem.is-animado .jx-mundo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.jx-mundo { font-family: var(--font-sans); }
+
+/* ---------- Narrativa sobre o cenário ---------- */
+.jx-narrativa { margin: 0; padding: 0; list-style: none; }
+.jx-rolagem.is-animado .jx-narrativa {
+  position: absolute; z-index: 2;
+  left: var(--gutter); top: 50%;
+  width: min(40vw, 600px);
   display: grid;
-  grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
-  gap: clamp(28px, 4vw, 64px);
-  padding: calc(var(--nav-h) + clamp(16px, 3svh, 36px)) var(--gutter) clamp(16px, 3svh, 32px);
+  transform: translateY(-50%);
+  pointer-events: none;
 }
-.jx-rolagem.is-animado .jx-palco { position: sticky; top: 0; height: 100svh; min-height: 560px; }
-.jx-rolagem.is-estatico .jx-palco { padding-top: var(--secao); padding-bottom: var(--secao); }
-
-/* ---------- Texto narrativo (fora do mundo, não se move com a câmera) ---------- */
-.jx-texto { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 28px; min-height: 0; }
-.jx-titulo { max-width: 11ch; }
-.jx-cenas { display: grid; align-items: center; min-height: 0; }
 .jx-rolagem.is-animado .jx-cena { grid-area: 1 / 1; }
-.jx-cena { display: grid; gap: 14px; align-content: center; }
-.jx-cena-titulo { font-size: var(--fs-h3); font-weight: var(--weight-bold); letter-spacing: -0.02em; line-height: 1.2; max-width: 20ch; }
-.jx-cena-frase { font-size: var(--fs-body); line-height: 1.5; max-width: 34ch; }
-.jx-rolagem.is-estatico .jx-cenas { gap: 26px; }
-.jx-progresso { position: relative; display: block; height: 3px; border-radius: 2px; background: rgb(255 255 255 / 0.25); overflow: hidden; }
-.jx-progresso i { position: absolute; inset: 0; background: var(--paper); transform-origin: left; transform: scaleX(1); }
-.jx-rolagem.is-estatico .jx-progresso { display: none; }
+.jx-cena { display: grid; gap: 16px; color: var(--ink); }
+.jx-cena-titulo { font-size: clamp(30px, 3vw, 48px); font-weight: var(--weight-bold); letter-spacing: -0.04em; line-height: 1; text-wrap: balance; }
+.jx-cena-frase { font-size: var(--fs-body); line-height: 1.5; max-width: 34ch; color: var(--ink); }
 
-/* ---------- Janela da simulação ---------- */
-.jx-janela {
-  position: relative;
-  min-height: 0;
-  border-radius: 28px;
-  overflow: hidden;
-  background: var(--mint);
+/* Convite para rolar, discreto, no pé da tela */
+.jx-convite {
+  position: absolute; z-index: 2; left: 50%; bottom: clamp(16px, 4svh, 36px);
+  display: grid; justify-items: center; gap: 6px;
+  translate: -50% 0;
+  color: var(--ink);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap;
+  pointer-events: none;
 }
-.jx-rolagem.is-estatico .jx-janela { aspect-ratio: 3400 / 1500; align-self: start; position: sticky; top: calc(var(--nav-h) + 24px); }
-.jx-mundo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; font-family: var(--font-sans); }
+.jx-convite svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; animation: jx-desce 1.8s var(--ease-out) infinite; }
+@keyframes jx-desce { 0%, 100% { transform: translateY(0); opacity: 1; } 60% { transform: translateY(6px); opacity: 0.55; } }
+.jx-rolagem.is-estatico .jx-convite { display: none; }
 
 /* ---------- O mundo ---------- */
-.jx-chao { fill: var(--mint); }
-.jx-praca { fill: color-mix(in srgb, var(--mint) 70%, var(--green)); }
-.jx-rua-meiofio { fill: none; stroke: color-mix(in srgb, var(--mint) 80%, var(--green-deep)); stroke-width: 78; stroke-linecap: round; stroke-linejoin: round; }
-.jx-rua { fill: none; stroke: var(--paper); stroke-width: 64; stroke-linecap: round; stroke-linejoin: round; }
+.jx-chao { fill: var(--nevoa); }
+.jx-praca { fill: color-mix(in srgb, var(--mint) 65%, var(--green)); opacity: 0.55; }
+.jx-rua-meiofio { fill: none; stroke: color-mix(in srgb, var(--mint) 78%, var(--green-deep)); stroke-width: 84; stroke-linecap: round; stroke-linejoin: round; }
+.jx-rua { fill: none; stroke: var(--paper); stroke-width: 70; stroke-linecap: round; stroke-linejoin: round; }
 .jx-rua-meiofio.is-secundaria { stroke-width: 54; }
 .jx-rua.is-secundaria { stroke-width: 42; }
-.jx-sombra { fill: var(--green-deep); opacity: 0.08; }
+.jx-sombra { fill: var(--green-deep); opacity: 0.07; }
 .jx-predio { fill: var(--paper); }
-.jx-predio-telhado { fill: color-mix(in srgb, var(--mint) 55%, white); }
+.jx-predio-telhado { fill: color-mix(in srgb, var(--mint) 70%, white); }
 .jx-arvore { fill: color-mix(in srgb, var(--green) 40%, white); }
 .jx-arvore-miolo { fill: color-mix(in srgb, var(--green) 22%, white); }
 .jx-placa-poste { fill: var(--color-text-secondary); }
@@ -65,12 +66,12 @@
 .jx-etiqueta-papel { font-size: 14px; font-weight: 600; opacity: 0.75; }
 .jx-etiqueta-nome { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
 
-.jx-rota { fill: none; stroke: var(--green-deep); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.jx-rota { fill: none; stroke: var(--green-deep); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
 .jx-rolagem.is-animado .jx-rota { stroke-dasharray: 1 1; stroke-dashoffset: 1; }
 .jx-rota-medida { fill: none; stroke: none; }
 
-.jx-entregue circle { fill: var(--green); stroke: var(--paper); stroke-width: 6; }
-.jx-entregue path { fill: none; stroke: var(--paper); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.jx-entregue circle { fill: var(--green); stroke: var(--paper); stroke-width: 7; }
+.jx-entregue path { fill: none; stroke: var(--paper); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
 
 .jx-roda { fill: var(--ink); }
 .jx-carro { fill: var(--paper); stroke: var(--ink); stroke-width: 3; }
@@ -81,28 +82,36 @@
 .jx-caixa path { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; }
 .jx-rolagem.is-estatico .jx-caixa { display: none; }
 
-/* ---------- Celular e tablet: janela em cima, texto embaixo ---------- */
+/* ---------- Sem movimento: textos em sequência e o mapa inteiro ---------- */
+.jx-rolagem.is-estatico .jx-palco {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 4vw, 72px);
+  padding: var(--secao) var(--gutter);
+}
+.jx-rolagem.is-estatico .jx-narrativa {
+  display: grid; gap: 40px; align-content: start; align-self: start; grid-column: 1; grid-row: 1;
+  position: sticky; top: calc(var(--nav-h) + 24px);
+}
+.jx-rolagem.is-estatico .jx-mundo { grid-column: 2; grid-row: 1; width: 100%; height: auto; max-height: none; }
+
+/* ---------- Celular e tablet: texto numa faixa no topo, caminhão abaixo ---------- */
 @media (max-width: 899.98px) {
-  .jx-rolagem.is-animado { height: 540svh; }
-  .jx-palco {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 14px;
-    padding-top: calc(var(--nav-h) + 10px);
-    padding-bottom: 14px;
+  .jx-rolagem.is-animado { height: 680svh; }
+  .jx-rolagem.is-animado .jx-narrativa {
+    left: 0; right: 0; top: var(--nav-h); width: auto;
+    padding: 14px var(--gutter) 18px;
+    transform: none;
+    background: color-mix(in srgb, var(--nevoa) 92%, transparent);
   }
-  .jx-rolagem.is-animado .jx-palco { min-height: 0; }
-  .jx-janela { grid-row: 1; border-radius: 22px; }
-  .jx-texto { grid-row: 2; gap: 12px; grid-template-rows: auto auto auto; }
-  .jx .jx-titulo { max-width: none; font-size: clamp(22px, 6.4vw, 36px); }
-  .jx-rolagem.is-animado .jx-cenas { min-height: 7.4em; align-items: start; }
-  .jx-cena { gap: 6px; }
-  .jx-cena-titulo { font-size: 20px; max-width: none; }
-  .jx-cena-frase { font-size: 16px; max-width: none; }
-  .jx-rolagem.is-estatico .jx-palco { grid-template-rows: auto auto; }
-  .jx-rolagem.is-estatico .jx-janela { position: relative; top: auto; }
+  .jx-cena { gap: 8px; }
+  .jx-cena-titulo { font-size: clamp(26px, 7.4vw, 40px); }
+  .jx-cena-frase { font-size: 16px; max-width: 40ch; }
+  .jx-rolagem.is-estatico .jx-palco { grid-template-columns: 1fr; }
+  .jx-rolagem.is-estatico .jx-narrativa { position: static; }
+  .jx-rolagem.is-estatico .jx-mundo { grid-column: 1; grid-row: 2; max-width: 520px; justify-self: center; }
 }
-@media (max-width: 899.98px) and (max-height: 700px) {
-  .jx-rolagem.is-animado .jx-titulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } /* taste-skill-ignore: título só para leitor de tela em telas baixas */
-  .jx-rolagem.is-animado .jx-cenas { min-height: 6.4em; }
+
+/* Movimento reduzido: o convite não pulsa */
+@media (prefers-reduced-motion: reduce) {
+  .jx-convite svg { animation: none; }
 }
+.lpx.a11y-motion .jx-convite svg { animation: none !important; }

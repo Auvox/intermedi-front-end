@@ -7,7 +7,7 @@
 // Capítulos: cada seção tem o seu fundo. A barra e as pastas usam as mesmas cores.
 export const capitulos = [
   { id: "problema", nome: "O problema", fundo: "gray" },
-  { id: "solucao", nome: "A solução", fundo: "green" },
+  { id: "solucao", nome: "A solução", fundo: "nevoa" },
   { id: "como-funciona", nome: "Como funciona", fundo: "mint" },
   { id: "recursos", nome: "Recursos", fundo: "graphite" },
   { id: "plataforma", nome: "Plataforma", fundo: "paper" },

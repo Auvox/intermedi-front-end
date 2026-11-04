@@ -14,6 +14,7 @@
   --green: var(--color-primary);
   --green-deep: var(--color-primary-active);
   --mint: var(--color-primary-soft);
+  --nevoa: color-mix(in srgb, var(--color-primary-soft) 55%, white);
   --blue: var(--role-funcionario);
 
   --gutter: clamp(16px, 2.6vw, 32px);
@@ -82,6 +83,7 @@ html.lenis, html.lenis:has(.lpx) { scroll-behavior: auto !important; }
 .lpx-fundo-gray { --campo: var(--gray); --tinta: var(--ink); --capa: color-mix(in srgb, var(--gray) 90%, black); }
 .lpx-fundo-green { --campo: var(--green); --tinta: var(--paper); --capa: color-mix(in srgb, var(--green) 85%, white); }
 .lpx-fundo-mint { --campo: var(--mint); --tinta: var(--ink); --capa: color-mix(in srgb, var(--mint) 88%, var(--green)); }
+.lpx-fundo-nevoa { --campo: var(--nevoa); --tinta: var(--ink); --capa: color-mix(in srgb, var(--nevoa) 86%, var(--green)); }
 .lpx-fundo-graphite { --campo: var(--graphite); --tinta: var(--paper); --capa: color-mix(in srgb, var(--graphite) 82%, white); }
 [class*="lpx-fundo-"] { background: var(--campo); color: var(--tinta); }
 

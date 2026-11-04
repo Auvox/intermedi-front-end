@@ -26,12 +26,16 @@ dashboards, chamados, autenticação, rotas internas, API ou CSS compartilhado f
    mostrando o resumo). A da frente é o chamado CH-2026-000001: ao rolar, a capa tomba e a ficha
    sobe para fora da pasta.
 2. **O problema**: mural (frase, palavra, foto com parallax) e duas frases curtas.
-3. **A solução**: a jornada de uma entrega num mundo 2D maior que a tela (3400 × 1500 unidades).
-   A janela fica presa (sticky) e uma câmera virtual (o `viewBox` do SVG: tela = mundo − câmera)
-   segue o carrinho pela rota Bézier: enquadramento fixo na fornecedora com as caixas entrando na
-   caçamba (0–15%), arrancada (15–30%), acompanhamento olhando à frente (30–72%), desaceleração
-   até o enquadramento da solicitante (72–93%) e entrega com selo de concluído (90–100%). Tudo
-   deriva do progresso da rolagem (scrub, sem timers), nos dois sentidos. Cinco cenas de texto ao lado.
+3. **A solução**: a jornada de uma entrega em tela cheia, numa cidade vertical (2000 × 5200
+   unidades) cujo chão é o próprio fundo da seção (névoa verde-clara). O palco fica preso
+   (sticky, 100svh) e uma câmera virtual (o `viewBox` do SVG: tela = mundo − câmera) desce junto
+   com o caminhão pela estrada Bézier: enquadramento fixo na fornecedora com as caixas entrando na
+   caçamba (0–15%), arrancada (15–30%), acompanhamento (30–74%), desaceleração até o
+   enquadramento da solicitante (74–93%) e entrega com selo de concluído (90–100%). A posição da
+   câmera sai da posição real do caminhão no mundo, com limites para ele nunca sair da tela nem
+   passar por baixo do texto. Os cinco textos ficam sobre o cenário (à esquerda no computador,
+   numa faixa no topo no celular) e um convite "Role para acompanhar a jornada" some ao começar a
+   rolar. Tudo deriva do progresso da rolagem (scrub, sem timers), nos dois sentidos.
 4. **Como funciona**: as cinco etapas de `etapasDoProcesso`, cada uma com o cartão da tela daquela
    etapa recriado em HTML.
 5. **Recursos**: blocos com a cor e a silhueta da plataforma de cada recurso; legenda com os três papéis.
@@ -45,7 +49,7 @@ dashboards, chamados, autenticação, rotas internas, API ou CSS compartilhado f
   3.15.0 (ScrollTrigger da jornada, sincronizado com a Lenis).
 - Animações com `transform` e `opacity`; o vídeo só baixa quando a aba Operação 3D é escolhida.
 - `prefers-reduced-motion` e "Parar animações" do menu desligam a Lenis, as cenas fixas e as
-  entradas; a jornada mostra o mundo inteiro com a entrega feita e as cinco cenas em sequência;
+  entradas; a jornada mostra o mapa inteiro com a entrega feita ao lado das cinco cenas em sequência;
   todo o conteúdo fica visível sem script.
 - Link "Pular para o conteúdo", foco visível, sanfona com `aria-expanded` e setas, abas com
   `aria-pressed`, cena atual da jornada com `aria-live`. As telas recriadas são `aria-hidden`
