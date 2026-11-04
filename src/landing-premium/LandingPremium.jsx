@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import AccessibilityMenu from "../components/layout/AccessibilityMenu";
 import useAccessibility from "../hooks/useAccessibility";
 import { MotionContext, usePrefersReducedMotion, useReveal } from "./hooks";
 import PremiumNav from "./components/PremiumNav";
 import Hero from "./sections/Hero";
 import Problema from "./sections/Problema";
-import Solucao from "./sections/Solucao";
+import RemanejamentoStory from "./story/RemanejamentoStory";
 import ComoFunciona from "./sections/ComoFunciona";
 import Recursos from "./sections/Recursos";
 import Demonstracao from "./sections/Demonstracao";
@@ -46,10 +47,13 @@ export default function LandingPremium() {
       // o menu de acessibilidade rola por conta própria
       prevent: (node) => Boolean(node.closest?.(".accessibility-panel")),
     });
+    // a narrativa do remanejamento (GSAP ScrollTrigger) acompanha cada passo da Lenis
+    lenis.on("scroll", ScrollTrigger.update);
     const rolar = (event) => lenis.scrollTo(event.detail, { duration: 1.2 });
     window.addEventListener("lpx:rolar", rolar);
     return () => {
       window.removeEventListener("lpx:rolar", rolar);
+      lenis.off("scroll", ScrollTrigger.update);
       lenis.destroy();
     };
   }, [movimento]);
@@ -76,7 +80,7 @@ export default function LandingPremium() {
         <main id="conteudo">
           <Hero />
           <Problema />
-          <Solucao />
+          <RemanejamentoStory />
           <ComoFunciona />
           <Recursos />
           <Demonstracao />

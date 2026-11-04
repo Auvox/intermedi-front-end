@@ -350,106 +350,6 @@ html.lenis, html.lenis:has(.lpx) { scroll-behavior: auto !important; }
 .lpx-problema-texto .lpx-corpo { grid-column: 8 / 13; }
 
 /* ============================================================
-   3. A solução · simulação com faltas reais
-   ============================================================ */
-.lpx-solucao {
-  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gap);
-  align-items: center;
-  padding: var(--secao) var(--gutter);
-}
-.lpx-solucao-texto { grid-column: 1 / 6; display: grid; gap: 28px; align-content: center; }
-.lpx-sim-escolha { border: 0; padding: 0; margin: 0; min-width: 0; }
-.lpx-sim-escolha legend { padding: 0; margin-bottom: 14px; font-size: var(--fs-small); font-weight: var(--weight-semibold); }
-.lpx-sim-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
-.lpx-sim-opcoes button {
-  min-height: 44px; padding: 0 20px;
-  border: 0; border-radius: var(--radius-full);
-  background: rgb(255 255 255 / 0.16); color: inherit;
-  font: inherit; font-size: 16px; font-weight: var(--weight-semibold);
-  cursor: pointer;
-  transition: background-color 200ms, color 200ms, transform 200ms var(--ease-out);
-}
-.lpx-sim-opcoes button:hover { background: rgb(255 255 255 / 0.26); }
-.lpx-sim-opcoes button:active { transform: scale(0.96); }
-.lpx-sim-opcoes button[aria-pressed="true"] { background: var(--paper); color: var(--green-deep); }
-
-.lpx-sim {
-  grid-column: 6 / 13;
-  display: grid; gap: 22px;
-  padding: clamp(18px, 2vw, 28px);
-  border-radius: 24px;
-  background: var(--paper); color: var(--ink);
-}
-.lpx-sim-quadro { display: grid; grid-template-columns: minmax(0, 1fr) clamp(80px, 9vw, 140px) minmax(0, 1fr); align-items: center; }
-.lpx-simf {
-  display: grid; gap: 4px;
-  padding: 20px;
-  border-radius: 16px;
-  background: var(--gray);
-  transition: background-color 500ms;
-}
-.lpx-simf-precisa.is-critico { background: var(--color-danger-soft); }
-.lpx-simf-precisa.is-ok { background: var(--color-success-soft); }
-.lpx-simf-papel { font-size: var(--fs-small); font-weight: var(--weight-semibold); color: var(--color-text-secondary); }
-.lpx-simf-nome { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 16px; font-weight: var(--weight-bold); line-height: 1.25; }
-.lpx-simf-nome svg { flex: none; color: var(--green); }
-.lpx-simf-bairro { font-size: var(--fs-small); color: var(--color-text-secondary); }
-
-.lpx-simf-qtd { margin-top: 10px; font-size: var(--fs-small); font-weight: var(--weight-semibold); }
-.lpx-simf-qtd strong { display: block; font-size: var(--fs-h2); font-weight: var(--weight-bold); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.lpx-simf-barra { position: relative; height: 8px; margin-top: 6px; border-radius: 4px; background: rgb(0 0 0 / 0.08); }
-.lpx-simf-barra i { position: absolute; inset: 0; border-radius: 4px; background: var(--green); transform-origin: left; transition: transform 900ms var(--ease-out), background-color 500ms; }
-.lpx-simf.is-critico .lpx-simf-barra i { background: var(--color-danger); }
-.lpx-simf-barra b { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1px; border-radius: 2px; background: var(--ink); }
-.lpx-simf-rodape { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: var(--fs-small); color: var(--color-text-secondary); }
-.lpx-simf-selo { padding: 3px 10px; border-radius: var(--radius-full); font-weight: var(--weight-semibold); white-space: nowrap; }
-.lpx-simf-selo.is-critico { background: var(--paper); color: var(--color-danger); }
-.lpx-simf-selo.is-ok { background: var(--paper); color: var(--color-success); }
-
-.lpx-sim-trilho { position: relative; height: 64px; container-type: inline-size; }
-.lpx-sim-linha { position: absolute; left: 6px; right: 6px; top: 50%; height: 3px; margin-top: -1px; border-radius: 2px; background: var(--color-border-subtle); }
-.lpx-sim-viajante {
-  position: absolute; left: 0; top: 50%;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border-radius: var(--radius-full);
-  background: var(--ink); color: var(--paper);
-  font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap;
-  transform: translate(0, -50%);
-  opacity: 0;
-}
-.lpx-sim-viajante.is-ida { opacity: 1; animation: lpx-ida 1200ms var(--ease-out) both; }
-.lpx-sim-viajante.is-volta { opacity: 1; background: var(--green); animation: lpx-volta 1300ms 200ms var(--ease-out) both; }
-@keyframes lpx-ida { from { transform: translate(0, -50%); } to { transform: translate(calc(100cqw - 100%), -50%); } }
-@keyframes lpx-volta { from { transform: translate(calc(100cqw - 100%), -50%); } to { transform: translate(0, -50%); } }
-@keyframes lpx-ida-v { from { transform: translate(-50%, 0); } to { transform: translate(-50%, 44px); } }
-@keyframes lpx-volta-v { from { transform: translate(-50%, 44px); } to { transform: translate(-50%, 0); } }
-.lpx:not(.lpx-anima) .lpx-sim-viajante.is-volta { animation: none; transform: translate(0, -50%); }
-
-.lpx-sim-passos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.lpx-sim-passos li {
-  position: relative; padding-top: 22px;
-  font-size: var(--fs-small); font-weight: var(--weight-semibold); color: var(--color-text-muted);
-  transition: color 300ms;
-}
-.lpx-sim-passos li::before {
-  content: ""; position: absolute; left: 0; top: 0; z-index: 1;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--paper); box-shadow: inset 0 0 0 2px var(--color-border); /* taste-skill-ignore: anel do marcador, não é sombra */
-  transition: background-color 300ms, box-shadow 300ms;
-}
-.lpx-sim-passos li::after { content: ""; position: absolute; left: 14px; right: 0; top: 6px; height: 2px; background: var(--color-border-subtle); }
-.lpx-sim-passos li:last-child::after { display: none; }
-.lpx-sim-passos li.is-feito, .lpx-sim-passos li.is-atual { color: var(--ink); }
-.lpx-sim-passos li.is-feito::before { background: var(--green); box-shadow: none; } /* taste-skill-ignore: remove o anel, não é sombra */
-.lpx-sim-passos li.is-feito::after { background: var(--green); }
-.lpx-sim-passos li.is-atual::before { box-shadow: inset 0 0 0 4px var(--green); } /* taste-skill-ignore: anel do marcador */
-.lpx-sim-resultado { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; font-size: var(--fs-small); color: var(--color-text-secondary); }
-.lpx-sim-repetir {
-  padding: 0; border: 0; background: none; color: var(--green-deep);
-  font: inherit; font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 4px; cursor: pointer;
-}
-
-/* ============================================================
    4. Como funciona · sanfona das cinco etapas
    ============================================================ */
 .lpx-como { padding: var(--secao) var(--gutter); }
@@ -710,8 +610,6 @@ html.lenis, html.lenis:has(.lpx) { scroll-behavior: auto !important; }
    ============================================================ */
 @media (max-width: 1100px) {
   .lpx-nav-links ul { gap: 18px; }
-  .lpx-solucao-texto { grid-column: 1 / -1; }
-  .lpx-sim { grid-column: 1 / -1; }
 }
 
 @media (max-width: 900px) {
@@ -773,16 +671,6 @@ html.lenis, html.lenis:has(.lpx) { scroll-behavior: auto !important; }
   .lpx-ficha .pui-linha { display: none; }
   .lpx-pasta-chamado .lpx-pasta-capa { padding: 20px; }
 
-  /* No celular as fichas empilham e o pedido viaja na vertical */
-  .lpx-sim-quadro { grid-template-columns: 1fr; }
-  .lpx-simf { padding: 16px; }
-  .lpx-sim-trilho { height: 76px; container-type: normal; }
-  .lpx-sim-linha { left: 50%; right: auto; top: 6px; bottom: 6px; width: 3px; height: auto; margin: 0 0 0 -1px; }
-  .lpx-sim-viajante { left: 50%; top: 0; transform: translate(-50%, 0); }
-  .lpx-sim-viajante.is-ida { animation-name: lpx-ida-v; }
-  .lpx-sim-viajante.is-volta { animation-name: lpx-volta-v; }
-  .lpx:not(.lpx-anima) .lpx-sim-viajante.is-volta { transform: translate(-50%, 0); }
-  .lpx-sim-passos li { font-size: 12px; }
 
   .lpx-bloco { padding: 16px; }
   .lpx-bloco-titulo { margin-bottom: 18px; }
@@ -800,7 +688,7 @@ html.lenis, html.lenis:has(.lpx) { scroll-behavior: auto !important; }
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .lpx-hero-titulo .lpx-linha > span, .lpx-hero-sub, .lpx-hero-acoes, .lpx-pasta,
-  .lpx-etapa-painel, .lpx-etapa-tela > .pui, .lpx-demo-legenda, .lpx-sim-viajante,
+  .lpx-etapa-painel, .lpx-etapa-tela > .pui, .lpx-demo-legenda,
   .lpx-etapa.is-aberta .lpx-etapa-cabeca button { animation: none !important; }
   .lpx-etapa, .lpx-pasta, .lpx-pasta-papel, .lpx-pasta-capa, .lpx-demo-tela { transition: none !important; }
 }
@@ -811,7 +699,6 @@ html.lenis, html.lenis:has(.lpx) { scroll-behavior: auto !important; }
 .lpx.a11y-motion .lpx-etapa-painel,
 .lpx.a11y-motion .lpx-etapa-tela > .pui,
 .lpx.a11y-motion .lpx-demo-legenda,
-.lpx.a11y-motion .lpx-sim-viajante,
 .lpx.a11y-motion .lpx-etapa.is-aberta .lpx-etapa-cabeca button { animation: none !important; }
 
 .lpx.a11y-contrast { --green: #0b5a31; --blue: #0058b0; --graphite-tile: #3a3a3c; }

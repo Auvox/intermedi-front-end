@@ -23,14 +23,14 @@ export const farmacias = {
 
 // Faltas reais do estoque de demonstração (quantidade no mínimo ou abaixo)
 // e a farmácia com mais sobra acima do mínimo para atender.
+// A quantidade pedida da Losartana e das outras é ilustrativa; a do Paracetamol
+// é a do chamado CH-2026-000001. O primeiro caso é o da narrativa padrão.
 export const simulacoes = [
-  { remedio: "Paracetamol 750mg", pede: 50, falta: { id: "pjn", tem: 40, minimo: 50 }, envia: { id: "leste", tem: 180, minimo: 50 } },
-  { remedio: "Dipirona 500mg", pede: 30, falta: { id: "vida", tem: 15, minimo: 30 }, envia: { id: "leste", tem: 300, minimo: 50 } },
-  { remedio: "Amoxicilina 500mg", pede: 20, falta: { id: "leste", tem: 8, minimo: 20 }, envia: { id: "vida", tem: 90, minimo: 20 } },
-  { remedio: "Losartana 50mg", pede: 30, falta: { id: "bem", tem: 12, minimo: 30 }, envia: { id: "pjn", tem: 200, minimo: 40 } },
+  { id: "losartana", remedio: "Losartana 50mg", pede: 30, falta: { id: "bem", tem: 12, minimo: 30 }, envia: { id: "pjn", tem: 200, minimo: 40 } },
+  { id: "paracetamol", remedio: "Paracetamol 750mg", pede: 50, falta: { id: "pjn", tem: 40, minimo: 50 }, envia: { id: "leste", tem: 180, minimo: 50 } },
+  { id: "dipirona", remedio: "Dipirona 500mg", pede: 30, falta: { id: "vida", tem: 15, minimo: 30 }, envia: { id: "leste", tem: 300, minimo: 50 } },
+  { id: "amoxicilina", remedio: "Amoxicilina 500mg", pede: 20, falta: { id: "leste", tem: 8, minimo: 20 }, envia: { id: "vida", tem: 90, minimo: 20 } },
 ];
-
-export const passosSimulacao = ["Chamado aberto", "Gerente aceita", "Fornecedora prepara", "Entregue"];
 
 // As cinco etapas do relatório de cada chamado (etapasDoProcesso)
 export const etapas = [

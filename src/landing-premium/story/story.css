@@ -1,0 +1,285 @@
+/* ============================================================
+   "Uma rede, não uma ilha." · narrativa do remanejamento
+   O CSS descreve o estado FINAL (é o que aparece sem animação);
+   a timeline GSAP recoloca o estado inicial e anima pela rolagem.
+   ============================================================ */
+
+.rms { position: relative; }
+.rms-rolagem.is-animado { height: 620svh; }
+
+.rms-palco {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 28px clamp(32px, 4vw, 72px);
+  padding: calc(var(--nav-h) + clamp(20px, 4svh, 48px)) var(--gutter) clamp(20px, 3svh, 36px);
+}
+.rms-rolagem.is-animado .rms-palco { position: sticky; top: 0; height: 100svh; min-height: 640px; overflow: hidden; }
+.rms-rolagem.is-estatico .rms-palco { padding-top: var(--secao); padding-bottom: var(--secao); }
+
+/* ---------- Texto narrativo ---------- */
+.rms-texto { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 28px; min-height: 0; }
+.rms-titulo { max-width: 11ch; }
+.rms-narrativa { display: grid; align-items: center; min-height: 0; }
+.rms-rolagem.is-animado .rms-passo { grid-area: 1 / 1; }
+.rms-passo { display: grid; gap: 14px; align-content: center; }
+.rms-micro { font-size: var(--fs-h3); font-weight: var(--weight-bold); letter-spacing: -0.02em; line-height: 1.2; max-width: 22ch; }
+.rms-passo-nome {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); letter-spacing: 0; line-height: 1;
+}
+.rms-passo-nome::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--paper); }
+.rms-micro .rms-passo-nome { display: flex; }
+.rms-detalhe { font-size: var(--fs-body); line-height: 1.5; max-width: 44ch; }
+.rms-cta { justify-self: start; margin-top: 6px; }
+.rms-rolagem.is-estatico .rms-narrativa { gap: 28px; }
+
+.rms-casos { border: 0; padding: 0; margin: 0; min-width: 0; }
+.rms-casos legend { padding: 0; margin-bottom: 10px; font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.rms-casos div { display: flex; flex-wrap: wrap; gap: 8px; }
+.rms-casos button {
+  min-height: 40px; padding: 0 18px;
+  border: 0; border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 0.16); color: inherit;
+  font: inherit; font-size: 15px; font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color 200ms, color 200ms, transform 200ms var(--ease-out);
+}
+.rms-casos button:hover { background: rgb(255 255 255 / 0.26); }
+.rms-casos button:active { transform: scale(0.96); }
+.rms-casos button[aria-pressed="true"] { background: var(--paper); color: var(--green-deep); }
+
+/* ---------- Palco ---------- */
+.rms-cena {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(170px, 17vw, 270px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 0;
+}
+
+/* A rede inteira, que recua quando o caso começa */
+.rms-rede { position: absolute; inset: 0 0 56px; pointer-events: none; }
+.rms-rede-linhas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rms-rede-linhas path { fill: none; stroke: rgb(255 255 255 / 0.35); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.rms-no {
+  position: absolute; translate: -50% -50%;
+  padding: 8px 14px; border-radius: var(--radius-full);
+  background: var(--green-deep); color: var(--paper);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap;
+}
+.rms-no-sol { left: 18%; top: 50%; }
+.rms-no-forn { left: 82%; top: 50%; }
+.rms-no-outra-0 { left: 50%; top: 20%; }
+.rms-no-outra-1 { left: 50%; top: 80%; }
+.rms-rolagem.is-estatico .rms-rede { display: none; }
+
+/* Cartões das farmácias */
+.rms-card {
+  position: relative; z-index: 1;
+  display: grid; gap: 4px;
+  padding: clamp(18px, 1.8vw, 26px);
+  border-radius: 22px;
+  background: var(--paper); color: var(--ink);
+  transform-origin: 50% 60%;
+}
+.rms-card-papel { font-size: var(--fs-small); font-weight: var(--weight-semibold); color: var(--color-text-secondary); }
+.rms-card-nome { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 17px; font-weight: var(--weight-bold); letter-spacing: -0.01em; line-height: 1.25; }
+.rms-card-nome svg { flex: none; color: var(--green); }
+.rms-card-bairro { font-size: var(--fs-small); color: var(--color-text-secondary); }
+.rms-card-qtd { display: grid; margin-top: 12px; font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.rms-card-qtd strong { font-size: clamp(44px, 4.4vw, 68px); font-weight: var(--weight-bold); letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.rms-barra { position: relative; height: 8px; margin-top: 10px; border-radius: 4px; background: rgb(0 0 0 / 0.08); }
+.rms-barra i { position: absolute; inset: 0; border-radius: 4px; background: var(--green); transform-origin: left; transition: background-color 400ms; }
+.rms-card.is-critico .rms-barra i { background: var(--color-danger); }
+.rms-barra b { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1px; border-radius: 2px; background: var(--ink); }
+.rms-card-rodape { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: var(--fs-small); color: var(--color-text-secondary); }
+.rms-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px 4px 8px; border-radius: var(--radius-full);
+  font-weight: var(--weight-semibold); white-space: nowrap;
+  animation: rms-status 400ms var(--ease-out) both;
+}
+.rms-status i { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: currentColor; color: var(--paper); font-style: normal; font-size: 11px; line-height: 1; }
+.rms-status.is-critico { background: var(--color-danger-soft); color: var(--color-danger); }
+.rms-status.is-info { background: var(--color-info-soft); color: var(--color-info); }
+.rms-status.is-ok { background: var(--color-success-soft); color: var(--color-success); }
+.rms-status i { color: var(--paper); }
+.rms-status.is-critico i { background: var(--color-danger); }
+.rms-status.is-info i { background: var(--color-info); }
+.rms-status.is-ok i { background: var(--color-success); }
+@keyframes rms-status { from { opacity: 0; transform: translateY(6px); } }
+
+.rms-avisos { display: grid; margin-top: 12px; }
+.rms-aviso { grid-area: 1 / 1; padding: 9px 12px; border-radius: 10px; font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.rms-aviso.is-critico { background: var(--color-danger-soft); color: var(--color-danger); }
+.rms-aviso.is-ok { background: var(--color-success-soft); color: var(--color-success); }
+.rms-rolagem.is-estatico .rms-aviso.is-critico { visibility: hidden; }
+
+.rms-preparo { display: grid; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--mint); color: var(--color-primary-ink); font-size: var(--fs-small); font-weight: var(--weight-semibold); }
+.rms-preparo-trilho { position: relative; height: 6px; border-radius: 3px; background: rgb(0 0 0 / 0.08); overflow: hidden; }
+.rms-preparo-trilho i { position: absolute; inset: 0; background: var(--green); transform-origin: left; }
+.rms-rolagem.is-estatico .rms-preparo { display: none; }
+
+.rms-card-selo {
+  position: absolute; top: 16px; right: 16px;
+  padding: 5px 12px; border-radius: var(--radius-full);
+  background: var(--green); color: var(--paper);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold);
+}
+
+/* A ligação entre as farmácias */
+.rms-conexao { position: relative; z-index: 2; align-self: stretch; display: grid; align-items: center; padding: 0 10px; }
+.rms-trilho { position: relative; width: 100%; height: 4px; }
+.rms-trilho > i { position: absolute; inset: 0; border-radius: 2px; }
+.rms-trilho-base { background: rgb(255 255 255 / 0.2); }
+.rms-trilho-pedido { background: rgb(255 255 255 / 0.55); transform-origin: left center; }
+.rms-trilho-envio { background: var(--paper); transform-origin: right center; }
+.rms-gerente {
+  position: absolute; left: 50%; bottom: calc(100% + 26px); translate: -50% 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px 6px 8px; border-radius: var(--radius-full);
+  background: var(--ink); color: var(--paper);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap;
+}
+.rms-gerente svg { height: 18px; width: auto; color: var(--paper); }
+.rms-gerente b { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--color-brand); font-size: 11px; }
+.rms-viajante {
+  position: absolute; top: 50%; translate: 0 -50%;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: var(--radius-full);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap;
+}
+.rms-chamado { left: 0; background: var(--paper); color: var(--ink); }
+.rms-chamado svg { color: var(--color-info); }
+.rms-chamado-texto { display: grid; }
+.rms-chamado-texto > span { grid-area: 1 / 1; }
+.rms-caixa { right: 0; background: var(--ink); color: var(--paper); }
+.rms-rotulo { position: absolute; font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap; }
+.rms-rotulo b { display: inline-block; }
+.rms-rotulo-pedido { left: 10px; top: calc(50% + 22px); }
+.rms-rotulo-envio { right: 10px; top: calc(50% + 22px); }
+.rms-rolagem.is-estatico :is(.rms-chamado, .rms-caixa, .rms-rotulo) { display: none; }
+
+.rms-resultado {
+  grid-column: 1 / -1; justify-self: center;
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-top: 22px; padding: 10px 18px 10px 12px;
+  border-radius: var(--radius-full);
+  background: var(--paper); color: var(--green-deep);
+  font-size: 16px; font-weight: var(--weight-semibold);
+}
+.rms-resultado b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: var(--paper); font-size: 13px; }
+
+/* ---------- Progresso ---------- */
+.rms-progresso { grid-column: 1 / -1; position: relative; }
+.rms-progresso ol { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+.rms-progresso li { position: relative; display: grid; justify-items: start; gap: 8px; font-size: var(--fs-small); }
+.rms-marca {
+  position: relative; z-index: 1;
+  display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 0.55);
+  background: var(--green); color: var(--green-deep);
+  font-size: 12px; font-weight: var(--weight-bold);
+  transition: background-color 300ms, border-color 300ms, transform 300ms var(--ease-out);
+}
+.rms-progresso li.is-feito .rms-marca { background: var(--paper); border-color: var(--paper); }
+.rms-progresso li.is-atual .rms-marca { border: 6px solid var(--paper); transform: scale(1.12); }
+.rms-progresso-nome { opacity: 0.72; transition: opacity 300ms; }
+.rms-progresso li.is-feito .rms-progresso-nome { opacity: 0.92; }
+.rms-progresso li.is-atual .rms-progresso-nome { opacity: 1; font-weight: var(--weight-bold); }
+.rms-progresso-trilho { position: absolute; left: 11px; right: calc(12.5% - 11px); top: 10px; height: 2px; background: rgb(255 255 255 / 0.25); }
+.rms-progresso-trilho i { position: absolute; inset: 0; background: var(--paper); transform-origin: left; }
+.rms-progresso-atual { display: none; }
+
+/* ---------- Telas médias: mais espaço para os cartões ---------- */
+@media (min-width: 900px) and (max-width: 1180px) {
+  .rms-palco { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+  .rms-cena { grid-template-columns: minmax(0, 1fr) clamp(150px, 15vw, 200px) minmax(0, 1fr); }
+  .rms-card-qtd strong { font-size: 44px; }
+}
+
+/* ---------- Celular e tablet: cartões empilhados, ligação vertical ---------- */
+@media (max-width: 899.98px) {
+  .rms-rolagem.is-animado { height: 560svh; }
+  .rms-palco {
+    display: flex; flex-direction: column; justify-content: safe center; gap: 12px;
+    padding-top: calc(var(--nav-h) + 12px); padding-bottom: 16px;
+  }
+  .rms-rolagem.is-animado .rms-palco { min-height: 0; }
+  .rms-palco > * { flex-shrink: 0; }
+  .rms-texto { display: flex; flex-direction: column; gap: 10px; }
+  .rms .rms-titulo { max-width: none; font-size: clamp(24px, 6.8vw, 40px); }
+  .rms-titulo .lpx-linha { display: inline-block; vertical-align: top; }
+  .rms-rolagem.is-animado .rms-narrativa { min-height: 10.6em; align-items: start; }
+  .rms-micro { font-size: 19px; max-width: none; }
+  .rms-passo-nome { margin-bottom: 6px; }
+  .rms-detalhe { font-size: 15px; line-height: 1.45; }
+  .rms-passo { gap: 6px; }
+  .rms-casos legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } /* taste-skill-ignore: rótulo só para leitor de tela */
+  .rms-casos button { min-height: 34px; padding: 0 10px; font-size: 13px; }
+  .rms-casos div { gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); }
+  .rms-casos button { flex: none; }
+
+  .rms-cena { grid-template-columns: 1fr; grid-template-rows: auto 72px auto; flex: none; align-content: start; }
+  .rms-rede { inset: 0; }
+  .rms-no-sol { left: 50%; top: 14%; }
+  .rms-no-forn { left: 50%; top: 86%; }
+  .rms-no-outra-0 { left: 22%; top: 50%; }
+  .rms-no-outra-1 { left: 78%; top: 50%; }
+  .rms-card { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; padding: 14px 16px; border-radius: 18px; }
+  .rms-card > * { grid-column: 1 / -1; }
+  .rms-card-papel { grid-column: 2; grid-row: 1; align-self: center; }
+  .rms-card-nome { grid-column: 1; grid-row: 1; min-width: 0; font-size: 15px; }
+  .rms-card-nome span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .rms-card-bairro, .rms-avisos, .rms-card-selo { display: none; }
+  .rms-card-qtd { margin-top: 6px; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 8px; }
+  .rms-card-qtd strong { font-size: 34px; }
+  .rms-barra { margin-top: 6px; }
+  .rms-card-rodape { margin-top: 6px; }
+  .rms-preparo { margin-top: 8px; padding: 8px 10px; }
+
+  .rms-conexao { justify-items: center; }
+  .rms-trilho { width: 4px; height: 100%; }
+  .rms-trilho-pedido { transform-origin: center top; }
+  .rms-trilho-envio { transform-origin: center bottom; }
+  .rms-gerente { left: calc(50% + 60px); bottom: auto; top: 50%; translate: 0 -50%; }
+  .rms-viajante { left: 50%; right: auto; top: 0; translate: -50% 0; }
+  .rms-caixa { top: auto; bottom: 0; }
+  .rms-rotulo b { transform: rotate(90deg); }
+  .rms-rotulo-pedido { left: auto; right: calc(50% + 60px); bottom: auto; top: 6px; }
+  .rms-rotulo-envio { left: auto; right: calc(50% + 60px); top: auto; bottom: 6px; }
+  .rms-resultado { display: none; }
+
+  .rms-progresso ol { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .rms-progresso li { justify-items: center; }
+  .rms-progresso-nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } /* taste-skill-ignore: o nome vai no "Agora:" */
+  .rms-progresso-trilho { left: calc(6.25% ); right: calc(6.25%); }
+  .rms-progresso-atual { display: block; margin-top: 8px; font-size: var(--fs-small); text-align: center; }
+
+  /* Sem cena: tudo em sequência, sem esconder nada */
+  .rms-rolagem.is-estatico .rms-cena { grid-template-rows: auto 72px auto; }
+  .rms-rolagem.is-estatico .rms-avisos { display: grid; }
+}
+@media (max-width: 899.98px) and (max-height: 760px) {
+  .rms-rolagem.is-animado :is(.rms-detalhe, .rms-passo-nome) { display: none; }
+  .rms-rolagem.is-animado .rms-cena { grid-template-rows: auto 56px auto; }
+  .rms-rolagem.is-animado .rms-card { padding: 10px 14px; }
+  .rms-rolagem.is-animado .rms-card-qtd strong { font-size: 28px; }
+  .rms-rolagem.is-animado .rms-preparo { padding: 6px 10px; gap: 6px; }
+  .rms-rolagem.is-animado .rms-narrativa { min-height: 7em; }
+}
+@media (max-width: 899.98px) and (max-height: 690px) {
+  .rms-rolagem.is-animado .rms-titulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } /* taste-skill-ignore: título só para leitor de tela em telas baixas */
+}
+
+/* Movimento reduzido: sem cena presa, sem transições */
+@media (prefers-reduced-motion: reduce) {
+  .rms-status { animation: none; }
+  .rms-marca, .rms-progresso-nome, .rms-barra i { transition: none; }
+}
+.lpx.a11y-motion .rms-status { animation: none !important; }
