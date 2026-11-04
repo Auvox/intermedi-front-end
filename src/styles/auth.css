@@ -211,9 +211,9 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-story { margin: 24px 24px 24px 0; padding: clamp(42px, 5vw, 76px) clamp(28px, 4vw, 64px) 30px; border-radius: 34px; background: #e8fbf2; }
 .auth-story::before, .auth-story::after { display: block; content: ""; position: absolute; z-index: 1; width: 60%; aspect-ratio: 1; border: 2px solid rgb(255 255 255 / .24); border-radius: 50%; left: 12%; bottom: 8%; pointer-events: none; }
 .auth-story::after { left: 36%; bottom: -18%; }
-.auth-story-theme-gerente { background: url('../assets/login-fundo-gerente.png') center / cover no-repeat, #00a652; }
-.auth-story-theme-funcionario { background: url('../assets/login-fundo-funcionario.png') center / cover no-repeat, #0756bd; }
-.auth-story-theme-admin { background: url('../assets/login-fundo-admin.png') center / cover no-repeat, #080808; }
+.auth-story-theme-gerente { background: url('../assets/fundoLoginGerente.png') center / cover no-repeat, #00a652; }
+.auth-story-theme-funcionario { background: url('../assets/fundoLoginFunc.png') center / cover no-repeat, #0756bd; }
+.auth-story-theme-admin { background: url('../assets/fundoLoginAdmin.png') center / cover no-repeat, #080808; }
 .auth-theme-welcome .auth-story-theme { background: linear-gradient(135deg, #f5fffa, #8be2bb); }
 .auth-story-copy { position: relative; z-index: 2; }
 .auth-story-copy h2 { max-width: 460px; font-size: clamp(36px, 3.6vw, 56px); line-height: 1.02; }

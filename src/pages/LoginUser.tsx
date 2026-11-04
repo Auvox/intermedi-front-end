@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
-import phoneMockup from "../assets/intermedi-phones.png";
-import adminPortrait from "../assets/login-admin.png";
-import managerPortrait from "../assets/login-gerente.png";
-import employeePortrait from "../assets/login-funcionario.png";
+import phoneMockup from "../assets/mockupNote.png";
+import adminPortrait from "../assets/adminFoto.png";
+import managerPortrait from "../assets/gerenteFoto.png";
+import employeePortrait from "../assets/funcFoto.png";
 import { entrarComoGerente } from "../services/sessaoGerente";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
@@ -509,9 +509,9 @@ export default function LoginUser() {
             <img
               className="auth-phone-mockup"
               src={phoneMockup}
-              alt="A plataforma Intermedi em dois celulares."
-              width="1312"
-              height="1199"
+              alt="A plataforma Intermedi em dois notebooks."
+              width="1254"
+              height="1254"
             />
           </div>
         )}
