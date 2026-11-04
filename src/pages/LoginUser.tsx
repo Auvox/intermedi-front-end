@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
-import phoneMockup from "../assets/intermedi-phones.png";
-import adminPortrait from "../assets/login-admin.png";
-import managerPortrait from "../assets/login-gerente.png";
-import employeePortrait from "../assets/login-funcionario.png";
+import notebookMockup from "../assets/mockupLogin.png";
+import adminPortrait from "../assets/adminFoto.png";
+import managerPortrait from "../assets/gerenteFoto.png";
+import employeePortrait from "../assets/funcFoto.png";
 import { entrarComoGerente } from "../services/sessaoGerente";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
@@ -18,6 +18,8 @@ type Role = "gerente" | "funcionario" | "admin";
 const MATRICULA_GERENTE = /^G\d{6}$/i;
 const MATRICULA_FUNCIONARIO = /^\d{6}$/;
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Duração da folha virando ao voltar para o site (igual ao CSS)
+const LEAVE_MS = 420;
 const profiles = [
   {
     id: "gerente" as Role,
@@ -38,6 +40,7 @@ const profiles = [
 function Icon({ name, className = "" }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
     back: <path d="m10 6-6 6 6 6M4 12h16" />,
+    chevron: <path d="m9 5 7 7-7 7" />,
     shield: (
       <>
         <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
@@ -92,6 +95,9 @@ export default function LoginUser() {
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  // Voltar ao site: a página encolhe ao apertar a aba e se fecha da esquerda para a direita
+  const [pressing, setPressing] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const dragStartX = useRef<number | null>(null);
   const selected = profiles.find((profile) => profile.id === role);
@@ -102,21 +108,42 @@ export default function LoginUser() {
     };
   }, []);
   useEffect(() => {
+    // Os retratos são grandes: carrega já na escolha para não aparecerem atrasados
+    [adminPortrait, managerPortrait, employeePortrait].forEach((src) => {
+      const image = new Image();
+      image.src = src;
+      image.decode().catch(() => {});
+    });
+  }, []);
+  useEffect(() => {
     if (role) heading.current?.focus();
   }, [role]);
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = window.setTimeout(() => navigate("/"), LEAVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving, navigate]);
   function resetRequest() {
     setMessage("");
     setVisible(false);
   }
+  function goHome() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      navigate("/");
+      return;
+    }
+    setLeaving(true);
+  }
   function handleHomePointerDown(event: PointerEvent<HTMLButtonElement>) {
     dragStartX.current = event.clientX;
     event.currentTarget.setPointerCapture(event.pointerId);
+    setPressing(true);
   }
   function handleHomePointerUp(event: PointerEvent<HTMLButtonElement>) {
     if (dragStartX.current === null) return;
     const distance = event.clientX - dragStartX.current;
     dragStartX.current = null;
-    if (distance > 42) navigate("/");
+    if (distance > 42) goHome();
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -312,7 +339,7 @@ export default function LoginUser() {
     }
   }
   return (
-    <main className={`auth-page auth-theme-${role ?? "welcome"}`}>
+    <main className={`auth-page auth-theme-${role ?? "welcome"}${pressing ? " is-pressing" : ""}${leaving ? " is-leaving" : ""}`}>
       <section className="auth-main" aria-label="Acesso ao Intermedi">
         <header className="auth-header">
           <Link to="/" aria-label="Intermedi — página inicial">
@@ -325,12 +352,12 @@ export default function LoginUser() {
             type="button"
             aria-label="Voltar à página inicial; arraste para a direita"
             title="Voltar à página inicial — clique ou puxe para a direita"
-            onClick={() => navigate("/")}
+            onClick={goHome}
             onPointerDown={handleHomePointerDown}
             onPointerUp={handleHomePointerUp}
-            onPointerCancel={() => { dragStartX.current = null; }}
+            onPointerCancel={() => { dragStartX.current = null; setPressing(false); }}
           >
-            <Icon name="back" />
+            <Icon name="chevron" />
           </button>
         )}
         <div
@@ -345,7 +372,7 @@ export default function LoginUser() {
                 <em>Escolha seu perfil.</em>
               </h1>
               <p className="auth-intro">
-                Para continuar, selecione o perfil que corresponde
+                Para continuar, selecione o perfil que corresponde{" "}
                 <br />
                 ao seu acesso na plataforma.
               </p>
@@ -373,6 +400,16 @@ export default function LoginUser() {
             </>
           ) : (
             <>
+              <button
+                type="button"
+                className="auth-home auth-home-form"
+                aria-label="Voltar à escolha de perfil"
+                disabled={submitting}
+                onClick={() => { resetRequest(); setRole(null); }}
+              >
+                <Icon name="back" />
+                Voltar
+              </button>
               <div className="auth-persona-heading">
                 <span className={`auth-selected profile-${role}`}><PersonaIcon role={selected.id} /></span>
                 <div>
@@ -484,35 +521,31 @@ export default function LoginUser() {
             />
           ))}
         </div>
-        <div className="auth-story-copy">
-          {selected ? (
-            <>
-              <h2>{role === "admin" ? <>Cuidando<br />da gestão,<br />garantindo<br />o acesso à<br /><em>saúde.</em></> : role === "gerente" ? <>Uma unidade<br />mais conectada,<br />com cuidado<br /><em>em cada detalhe.</em></> : <>Atendimento<br />mais simples,<br />cuidado mais<br /><em>próximo.</em></>}</h2>
-              <p>{role === "admin" ? "Administre usuários e a plataforma com segurança." : role === "gerente" ? "Gerencie sua equipe e acompanhe sua unidade." : "A rotina da farmácia, organizada em um só lugar."}</p>
-            </>
-          ) : (
-            <>
-              <h2>Mais conexões.<br />Mais saúde.<br /><em>Todos os dias.</em></h2>
-              <p>A tecnologia aproxima. O cuidado transforma.<br />Sua farmácia e sua equipe, juntas em um só lugar.</p>
-            </>
-          )}
-        </div>
         {selected ? (
-          <div className={`auth-person-art auth-person-art-${role}`}>
-            <img
-              src={role === "admin" ? adminPortrait : role === "gerente" ? managerPortrait : employeePortrait}
-              alt={role === "admin" ? "Administrador da plataforma" : role === "gerente" ? "Farmacêutico gerente" : "Profissional de farmácia"}
-            />
-          </div>
+          <>
+            <div className="auth-story-copy">
+              <svg className="auth-quote" viewBox="0 0 54 40" aria-hidden="true">
+                <path d="M1 27C1 13.5 9 4.5 21 1l2.2 4.6C16.3 8.6 13 12.6 12.6 16.1A11.5 11.5 0 1 1 1 27Zm28 0C29 13.5 37 4.5 49 1l2.2 4.6c-6.9 3-10.2 7-10.6 10.5A11.5 11.5 0 1 1 29 27Z" />
+              </svg>
+              <h2>{role === "admin" ? <>Cuidando<br />da gestão,<br />garantindo<br />o acesso à<br /><em>saúde.</em></> : role === "gerente" ? <>Uma unidade<br />mais conectada,<br />com cuidado<br /><em>em cada detalhe.</em></> : <>Atendimento<br />mais simples,<br />cuidado mais<br /><em>próximo.</em></>}</h2>
+            </div>
+            <div className={`auth-person-art auth-person-art-${role}`}>
+              <img
+                src={role === "admin" ? adminPortrait : role === "gerente" ? managerPortrait : employeePortrait}
+                alt={role === "admin" ? "Administrador da plataforma" : role === "gerente" ? "Farmacêutico gerente" : "Profissional de farmácia"}
+              />
+            </div>
+          </>
         ) : (
-          <div className="auth-art-stage">
+          <div className="auth-mockup">
             <img
-              className="auth-phone-mockup"
-              src={phoneMockup}
-              alt="A plataforma Intermedi em dois celulares."
-              width="1312"
-              height="1199"
+              src={notebookMockup}
+              alt="O painel do Intermedi aberto num notebook."
+              width="544"
+              height="596"
             />
+            <p className="auth-bubble auth-bubble-left">Peça medicamentos a outra farmácia</p>
+            <p className="auth-bubble auth-bubble-right">Acompanhe cada chamado</p>
           </div>
         )}
       </aside>

@@ -1,0 +1,119 @@
+/* ============================================================
+   INTERMEDI · O problema e a jornada da entrega na landing
+   As duas seções vieram da landing premium (feature/landing-page-premium).
+   Tudo aqui vale só dentro de .lpx; as cores vêm de src/styles/tokens.css.
+   ============================================================ */
+
+.lpx {
+  --ink: var(--color-text-primary);
+  --paper: var(--color-surface);
+  --gray: var(--color-background);
+  --green: var(--color-primary);
+  --green-deep: var(--color-primary-active);
+  --mint: var(--color-primary-soft);
+  --nevoa: color-mix(in srgb, var(--color-primary-soft) 55%, white);
+
+  --gutter: clamp(16px, 2.6vw, 32px);
+  --nav-h: 52px; /* altura da .lp-nav */
+  --r: 20px;
+  --gap: 8px;
+  --secao: clamp(72px, 8vw, 128px);
+
+  --fs-display: clamp(52px, 9.4vw, 152px);
+  --fs-h2: clamp(38px, 5vw, 76px);
+  --fs-h3: clamp(22px, 2vw, 30px);
+  --fs-body: clamp(18px, 1.25vw, 19px);
+  --fs-small: 14px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  overflow-x: clip;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+/* Reset com :where() para não vencer as classes das seções */
+.lpx :where(*, *::before, *::after) { box-sizing: border-box; }
+.lpx :where(h1, h2, h3, p, figure, ul, ol) { margin: 0; }
+.lpx :where(ul, ol) { padding: 0; list-style: none; }
+.lpx :where(img) { display: block; max-width: 100%; }
+.lpx :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; border-radius: 4px; }
+
+.lpx-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ---------- Campos de cor ---------- */
+.lpx-fundo-gray { --campo: var(--gray); --tinta: var(--ink); }
+.lpx-fundo-nevoa { --campo: var(--nevoa); --tinta: var(--ink); }
+[class*="lpx-fundo-"] { background: var(--campo); color: var(--tinta); }
+
+.lpx-corpo { font-size: var(--fs-body); line-height: 1.55; max-width: 52ch; }
+
+/* ---------- Entrada das partes (só com movimento) ---------- */
+.lpx [data-reveal] {
+  transition: opacity 700ms var(--ease-out), transform 800ms var(--ease-out);
+  transition-delay: calc(var(--d, 0) * 80ms);
+}
+.lpx-anima [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(28px); }
+
+/* ============================================================
+   O problema · mural e duas frases
+   ============================================================ */
+.lpx-problema { padding: var(--secao) var(--gutter); }
+.lpx-mural {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(220px, 30svh));
+  gap: var(--gap);
+}
+.lpx-mural > * { border-radius: var(--r); overflow: hidden; }
+.lpx-mural-a {
+  grid-column: 1 / 9; grid-row: 1 / 3;
+  display: flex; align-items: flex-end;
+  padding: clamp(20px, 2.6vw, 36px);
+  background: var(--ink); color: var(--paper);
+}
+.lpx-mural-frase { font-size: var(--fs-display); font-weight: var(--weight-bold); letter-spacing: -0.05em; line-height: 0.88; }
+.lpx-mural-frase span { display: block; }
+.lpx-mural-b {
+  grid-column: 9 / 13; grid-row: 1;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 10px;
+  padding: clamp(20px, 2vw, 28px);
+  background: var(--paper);
+}
+.lpx-mural-palavra { font-size: var(--fs-h2); font-weight: var(--weight-bold); letter-spacing: -0.045em; line-height: 0.9; white-space: nowrap; }
+.lpx-mural-legenda { font-size: var(--fs-small); }
+.lpx-mural-c { grid-column: 9 / 13; grid-row: 2; background: var(--color-surface-sunken); }
+.lpx-mural-c img {
+  width: 100%; height: 124%; object-fit: cover;
+  transform: translateY(calc((var(--p, 0.5) - 0.5) * -18%));
+  will-change: transform;
+}
+.lpx-problema-texto {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px var(--gap);
+  align-items: start;
+  padding-top: clamp(40px, 5vw, 72px);
+}
+.lpx-problema-frase {
+  grid-column: 1 / 7;
+  font-size: var(--fs-h3); font-weight: var(--weight-semibold); letter-spacing: -0.02em; line-height: 1.25;
+  max-width: 26ch;
+}
+.lpx-problema-texto .lpx-corpo { grid-column: 8 / 13; }
+
+@media (max-width: 900px) {
+  .lpx-mural { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(260px, 34svh) auto; }
+  .lpx-mural-a { grid-column: 1 / 3; grid-row: 1; }
+  .lpx-mural-b { grid-column: 1; grid-row: 2; aspect-ratio: 1; }
+  .lpx-mural-c { grid-column: 2; grid-row: 2; aspect-ratio: 1; }
+  .lpx-problema-frase, .lpx-problema-texto .lpx-corpo { grid-column: 1 / -1; }
+}
+
+@media (max-width: 560px) {
+  .lpx { --gap: 6px; --r: 16px; }
+}

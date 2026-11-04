@@ -1,0 +1,117 @@
+/* ============================================================
+   "Uma rede, não uma ilha." · jornada vertical em tela cheia
+   O cenário ocupa a tela inteira e o fundo da seção é o próprio chão
+   da cidade. O CSS descreve o estado FINAL (entrega feita, mapa
+   inteiro); useCameraVirtual troca o viewBox e anima pela rolagem.
+   ============================================================ */
+
+.jx { position: relative; background: var(--nevoa); }
+.jx-rolagem.is-animado { height: 720svh; }
+
+.jx-palco { position: relative; }
+.jx-rolagem.is-animado .jx-palco { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.jx-rolagem.is-animado .jx-mundo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.jx-mundo { font-family: var(--font-sans); }
+
+/* ---------- Narrativa sobre o cenário ---------- */
+.jx-narrativa { margin: 0; padding: 0; list-style: none; }
+.jx-rolagem.is-animado .jx-narrativa {
+  position: absolute; z-index: 2;
+  left: var(--gutter); top: 50%;
+  width: min(40vw, 600px);
+  display: grid;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.jx-rolagem.is-animado .jx-cena { grid-area: 1 / 1; }
+.jx-cena { display: grid; gap: 16px; color: var(--ink); }
+.jx-cena-titulo { font-size: clamp(30px, 3vw, 48px); font-weight: var(--weight-bold); letter-spacing: -0.04em; line-height: 1; text-wrap: balance; }
+.jx-cena-frase { font-size: var(--fs-body); line-height: 1.5; max-width: 34ch; color: var(--ink); }
+
+/* Convite para rolar, discreto, no pé da tela */
+.jx-convite {
+  position: absolute; z-index: 2; left: 50%; bottom: clamp(16px, 4svh, 36px);
+  display: grid; justify-items: center; gap: 6px;
+  translate: -50% 0;
+  color: var(--ink);
+  font-size: var(--fs-small); font-weight: var(--weight-semibold); white-space: nowrap;
+  pointer-events: none;
+}
+.jx-convite svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; animation: jx-desce 1.8s var(--ease-out) infinite; }
+@keyframes jx-desce { 0%, 100% { transform: translateY(0); opacity: 1; } 60% { transform: translateY(6px); opacity: 0.55; } }
+.jx-rolagem.is-estatico .jx-convite { display: none; }
+
+/* ---------- O mundo ---------- */
+.jx-chao { fill: var(--nevoa); }
+.jx-praca { fill: color-mix(in srgb, var(--mint) 65%, var(--green)); opacity: 0.55; }
+.jx-rua-meiofio { fill: none; stroke: color-mix(in srgb, var(--mint) 78%, var(--green-deep)); stroke-width: 84; stroke-linecap: round; stroke-linejoin: round; }
+.jx-rua { fill: none; stroke: var(--paper); stroke-width: 70; stroke-linecap: round; stroke-linejoin: round; }
+.jx-rua-meiofio.is-secundaria { stroke-width: 54; }
+.jx-rua.is-secundaria { stroke-width: 42; }
+.jx-sombra { fill: var(--green-deep); opacity: 0.07; }
+.jx-predio { fill: var(--paper); }
+.jx-predio-telhado { fill: color-mix(in srgb, var(--mint) 70%, white); }
+.jx-arvore { fill: color-mix(in srgb, var(--green) 40%, white); }
+.jx-arvore-miolo { fill: color-mix(in srgb, var(--green) 22%, white); }
+.jx-placa-poste { fill: var(--color-text-secondary); }
+.jx-placa { fill: var(--green); }
+
+.jx-farmacia-base { fill: var(--paper); }
+.jx-farmacia-telhado { fill: var(--green); }
+.jx-cruz { fill: var(--paper); }
+.jx-toldo { fill: var(--green-deep); }
+.jx-porta { fill: var(--ink); }
+.jx-etiqueta rect { fill: var(--ink); }
+.jx-etiqueta text { fill: var(--paper); }
+.jx-etiqueta-papel { font-size: 14px; font-weight: 600; opacity: 0.75; }
+.jx-etiqueta-nome { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+
+.jx-rota { fill: none; stroke: var(--green-deep); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.jx-rolagem.is-animado .jx-rota { stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.jx-rota-medida { fill: none; stroke: none; }
+
+.jx-entregue circle { fill: var(--green); stroke: var(--paper); stroke-width: 7; }
+.jx-entregue path { fill: none; stroke: var(--paper); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+
+.jx-roda { fill: var(--ink); }
+.jx-carro { fill: var(--paper); stroke: var(--ink); stroke-width: 3; }
+.jx-cabine { fill: var(--green-deep); }
+.jx-parabrisa { fill: var(--mint); }
+.jx-cacamba { fill: var(--gray); }
+.jx-caixa rect { fill: var(--paper); stroke: var(--green-deep); stroke-width: 2; }
+.jx-caixa path { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; }
+.jx-rolagem.is-estatico .jx-caixa { display: none; }
+
+/* ---------- Sem movimento: textos em sequência e o mapa inteiro ---------- */
+.jx-rolagem.is-estatico .jx-palco {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 4vw, 72px);
+  padding: var(--secao) var(--gutter);
+}
+.jx-rolagem.is-estatico .jx-narrativa {
+  display: grid; gap: 40px; align-content: start; align-self: start; grid-column: 1; grid-row: 1;
+  position: sticky; top: calc(var(--nav-h) + 24px);
+}
+.jx-rolagem.is-estatico .jx-mundo { grid-column: 2; grid-row: 1; width: 100%; height: auto; max-height: none; }
+
+/* ---------- Celular e tablet: texto numa faixa no topo, caminhão abaixo ---------- */
+@media (max-width: 899.98px) {
+  .jx-rolagem.is-animado { height: 680svh; }
+  .jx-rolagem.is-animado .jx-narrativa {
+    left: 0; right: 0; top: var(--nav-h); width: auto;
+    padding: 14px var(--gutter) 18px;
+    transform: none;
+    background: color-mix(in srgb, var(--nevoa) 92%, transparent);
+  }
+  .jx-cena { gap: 8px; }
+  .jx-cena-titulo { font-size: clamp(26px, 7.4vw, 40px); }
+  .jx-cena-frase { font-size: 16px; max-width: 40ch; }
+  .jx-rolagem.is-estatico .jx-palco { grid-template-columns: 1fr; }
+  .jx-rolagem.is-estatico .jx-narrativa { position: static; }
+  .jx-rolagem.is-estatico .jx-mundo { grid-column: 1; grid-row: 2; max-width: 520px; justify-self: center; }
+}
+
+/* Movimento reduzido: o convite não pulsa */
+@media (prefers-reduced-motion: reduce) {
+  .jx-convite svg { animation: none; }
+}
+.lpx.a11y-motion .jx-convite svg { animation: none !important; }
