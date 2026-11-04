@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/logoIntermedi.png";
 import phoneMockup from "../assets/intermedi-phones.png";
+import adminPortrait from "../assets/login-admin.png";
+import managerPortrait from "../assets/login-gerente.png";
+import employeePortrait from "../assets/login-funcionario.png";
 import { entrarComoGerente } from "../services/sessaoGerente";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
@@ -19,7 +22,7 @@ const profiles = [
   {
     id: "gerente" as Role,
     name: "Gerente",
-    description: "Acompanhe relatórios e gestão da equipe.",
+    description: "Gerencie sua unidade local.",
   },
   {
     id: "funcionario" as Role,
@@ -90,6 +93,7 @@ export default function LoginUser() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
+  const dragStartX = useRef<number | null>(null);
   const selected = profiles.find((profile) => profile.id === role);
   useEffect(() => {
     document.title = "Acesse sua conta | Intermedi";
@@ -103,6 +107,16 @@ export default function LoginUser() {
   function resetRequest() {
     setMessage("");
     setVisible(false);
+  }
+  function handleHomePointerDown(event: PointerEvent<HTMLButtonElement>) {
+    dragStartX.current = event.clientX;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function handleHomePointerUp(event: PointerEvent<HTMLButtonElement>) {
+    if (dragStartX.current === null) return;
+    const distance = event.clientX - dragStartX.current;
+    dragStartX.current = null;
+    if (distance > 42) navigate("/");
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -306,12 +320,18 @@ export default function LoginUser() {
           </Link>
         </header>
         {!selected && (
-          <nav className="auth-return" aria-label="Voltar à página inicial">
-            <Link className="auth-home" to="/">
-              <Icon name="back" />
-              Voltar ao site
-            </Link>
-          </nav>
+          <button
+            className="auth-home-tab"
+            type="button"
+            aria-label="Voltar à página inicial; arraste para a direita"
+            title="Voltar à página inicial — clique ou puxe para a direita"
+            onClick={() => navigate("/")}
+            onPointerDown={handleHomePointerDown}
+            onPointerUp={handleHomePointerUp}
+            onPointerCancel={() => { dragStartX.current = null; }}
+          >
+            <Icon name="back" />
+          </button>
         )}
         <div
           key={role ?? "welcome"}
@@ -334,6 +354,7 @@ export default function LoginUser() {
                   <button
                     key={profile.id}
                     className={`auth-profile profile-${profile.id}`}
+                    aria-label={`Entrar como ${profile.name}`}
                     onClick={() => {
                       setRole(profile.id);
                       setMessage("");
@@ -464,28 +485,36 @@ export default function LoginUser() {
           ))}
         </div>
         <div className="auth-story-copy">
-          <h2>
-            Mais conexões.
-            <br />
-            Mais saúde.
-            <br />
-            <em>Todos os dias.</em>
-          </h2>
-          <p>
-            A tecnologia aproxima. O cuidado transforma.
-            <br />
-            Sua farmácia e sua equipe, juntas em um só lugar.
-          </p>
+          {selected ? (
+            <>
+              <h2>{role === "admin" ? <>Cuidando<br />da gestão,<br />garantindo<br />o acesso à<br /><em>saúde.</em></> : role === "gerente" ? <>Uma unidade<br />mais conectada,<br />com cuidado<br /><em>em cada detalhe.</em></> : <>Atendimento<br />mais simples,<br />cuidado mais<br /><em>próximo.</em></>}</h2>
+              <p>{role === "admin" ? "Administre usuários e a plataforma com segurança." : role === "gerente" ? "Gerencie sua equipe e acompanhe sua unidade." : "A rotina da farmácia, organizada em um só lugar."}</p>
+            </>
+          ) : (
+            <>
+              <h2>Mais conexões.<br />Mais saúde.<br /><em>Todos os dias.</em></h2>
+              <p>A tecnologia aproxima. O cuidado transforma.<br />Sua farmácia e sua equipe, juntas em um só lugar.</p>
+            </>
+          )}
         </div>
-        <div className="auth-art-stage">
-          <img
-            className="auth-phone-mockup"
-            src={phoneMockup}
-            alt="Dois celulares com a marca Intermedi e a mensagem: Sua saúde, na palma da sua mão."
-            width="1312"
-            height="1199"
-          />
-        </div>
+        {selected ? (
+          <div className={`auth-person-art auth-person-art-${role}`}>
+            <img
+              src={role === "admin" ? adminPortrait : role === "gerente" ? managerPortrait : employeePortrait}
+              alt={role === "admin" ? "Administrador da plataforma" : role === "gerente" ? "Farmacêutico gerente" : "Profissional de farmácia"}
+            />
+          </div>
+        ) : (
+          <div className="auth-art-stage">
+            <img
+              className="auth-phone-mockup"
+              src={phoneMockup}
+              alt="A plataforma Intermedi em dois celulares."
+              width="1312"
+              height="1199"
+            />
+          </div>
+        )}
       </aside>
     </main>
   );

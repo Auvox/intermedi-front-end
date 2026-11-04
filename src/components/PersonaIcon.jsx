@@ -5,8 +5,11 @@ export default function PersonaIcon({ role, size = 32, className = "" }) {
       <circle cx="20" cy="11" r="10" />
       {role === "admin" ? (
         <>
-          <path d="M10 29 18 44l1-12h2l1 12 8-15a17 17 0 0 1 2 8v22a12 12 0 0 1-24 0V37a17 17 0 0 1 2-8Z" />
-          <path d="m20 25 3 2-1 4h-4l-1-4Z" />
+          <path d="M8 33a12 12 0 0 1 24 0v27a12 12 0 0 1-24 0V33Z" />
+          <path d="M12 34a8 8 0 0 1 16 0v13H12V34Z" fill="#fff" />
+          <path d="M7 13v10a7 7 0 0 0 7 7h2v-5h-2a2 2 0 0 1-2-2V13a2 2 0 0 1 2-2h1V6h-1A7 7 0 0 0 7 13Zm25-7h-1v5h1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2v5h2a7 7 0 0 0 7-7V13a7 7 0 0 0-7-7Z" transform="translate(-1 2) scale(.92)" />
+          <path d="M29 18a9 9 0 0 1-18 0" fill="none" stroke="currentColor" strokeWidth="2.5" />
+          <circle cx="20" cy="28" r="2" />
         </>
       ) : (
         <>
