@@ -252,5 +252,5 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
       giro.setAttribute("transform", "rotate(90)");
       rota.style.strokeDashoffset = "";
     };
-  }, [rolagem, palco, mundo, textos, indicador, ativo, aoMudarCena]);
+  }, [rolagem, palco, mundo, textos, indicador, saida, ativo, aoMudarCena]);
 }
