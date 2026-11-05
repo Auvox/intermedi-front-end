@@ -129,7 +129,6 @@ function HowSection() {
               <li className={`journey-step${selected === index ? " is-selected" : ""}`} key={step.icon}>
                 <button className="journey-step-button" type="button" onPointerEnter={event => { if (event.pointerType !== "touch") setSelected(index); }} onFocus={() => setSelected(index)} onClick={() => setSelected(index)} aria-pressed={selected === index} aria-label={`Etapa ${index + 1}: ${step.title}. ${step.description}`}>
                 <span className="journey-copy">
-                  <span className="journey-number">0{index + 1}</span>
                   <span className="journey-title">{step.title}</span>
                   <span className="journey-description">{step.description}</span>
                 </span>
