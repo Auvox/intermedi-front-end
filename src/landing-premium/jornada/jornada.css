@@ -17,10 +17,17 @@
 /* Saída: no fim da rolagem esta camada cobre o cenário com a cor da seção
    seguinte (--jx-saida, lida pelo useCameraVirtual), então o palco termina
    da mesma cor que vem depois e não sobra a linha onde a estrada é cortada. */
-.jx-saida { display: none; }
+.jx-saida, .jx-entrada { display: none; }
 .jx-rolagem.is-animado .jx-saida {
   display: block; position: absolute; inset: 0; z-index: 1;
   background: var(--jx-saida, var(--nevoa));
+  opacity: 0; pointer-events: none;
+}
+/* Entrada: o mesmo efeito ao contrário, na cor da seção anterior e acima
+   do texto, para cidade e título surgirem juntos */
+.jx-rolagem.is-animado .jx-entrada {
+  display: block; position: absolute; inset: 0; z-index: 3;
+  background: var(--jx-entrada, var(--nevoa));
   opacity: 0; pointer-events: none;
 }
 
