@@ -25,10 +25,11 @@ export default function JornadaEntrega() {
   const textos = useRef(null);
   const indicador = useRef(null);
   const saida = useRef(null);
+  const entrada = useRef(null);
   const movimento = useMotion();
   const [cena, setCena] = useState(0);
 
-  useCameraVirtual({ rolagem, palco, mundo, textos, indicador, saida, ativo: movimento, aoMudarCena: setCena });
+  useCameraVirtual({ rolagem, palco, mundo, textos, indicador, saida, entrada, ativo: movimento, aoMudarCena: setCena });
 
   return (
     <section id="solucao" className="jx lpx-fundo-nevoa" data-fundo="nevoa" aria-labelledby="solucao-titulo">
@@ -56,6 +57,8 @@ export default function JornadaEntrega() {
             <span>Role para acompanhar a jornada</span>
             <svg viewBox="0 0 24 24"><path d="M12 5v14m-6-6 6 6 6-6" /></svg>
           </p>
+          {/* entrada: começa na cor da seção anterior e some enquanto a seção chega ao topo */}
+          <div ref={entrada} className="jx-entrada" aria-hidden="true" />
         </div>
       </div>
     </section>

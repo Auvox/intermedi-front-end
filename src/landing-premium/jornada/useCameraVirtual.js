@@ -50,19 +50,21 @@ const paraOCaminhao = (dx, dy, ang) => ({
 //   naTela         onde o caminhão cai na tela (fração 0 a 1), usada para
 //                  garantir que ele nunca saia do enquadramento
 // A tela é o viewBox do SVG: tela = mundo - câmera. Nada de timers.
-// Cor de fundo da primeira seção depois da jornada (subindo até achar um
-// elemento seguinte e descendo pelos primeiros filhos até um fundo opaco)
-function corDaProximaSecao(secao) {
+// Cor de fundo da seção vizinha (antes ou depois da jornada): sobe até achar
+// um irmão e desce pelos filhos da ponta mais próxima até um fundo opaco
+function corDaSecaoVizinha(secao, lado) {
+  const irmao = lado === "antes" ? "previousElementSibling" : "nextElementSibling";
+  const filho = lado === "antes" ? "lastElementChild" : "firstElementChild";
   let el = secao;
-  while (el && !el.nextElementSibling) el = el.parentElement;
-  for (let alvo = el?.nextElementSibling; alvo; alvo = alvo.firstElementChild) {
+  while (el && !el[irmao]) el = el.parentElement;
+  for (let alvo = el?.[irmao]; alvo; alvo = alvo[filho]) {
     const cor = getComputedStyle(alvo).backgroundColor;
     if (cor && cor !== "transparent" && !/rgba\(.*,\s*0\)$/.test(cor)) return cor;
   }
   return null;
 }
 
-export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, saida, ativo, aoMudarCena }) {
+export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, saida, entrada, ativo, aoMudarCena }) {
   useLayoutEffect(() => {
     if (!ativo) return undefined;
     const svg = mundo.current;
@@ -172,8 +174,11 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
       const narrativa = textos.current.getBoundingClientRect();
       campo.margemEsquerda = largo ? Math.max(0.12, (narrativa.right - r.left + 70) / r.width) : 0.12;
       campo.margemTopo = largo ? 0.12 : 0.44;
-      const cor = corDaProximaSecao(rolagem.current.closest("section"));
-      if (cor) quadro.style.setProperty("--jx-saida", cor);
+      const secao = rolagem.current.closest("section");
+      const depois = corDaSecaoVizinha(secao, "depois");
+      const antes = corDaSecaoVizinha(secao, "antes");
+      if (depois) quadro.style.setProperty("--jx-saida", depois);
+      if (antes) quadro.style.setProperty("--jx-entrada", antes);
       desenhar();
     };
 
@@ -231,6 +236,16 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
       // duração total exatamente 1: o tempo da timeline é o progresso
       tl.set({}, {}, 1);
       tl.progress(tl.scrollTrigger.progress);
+
+      // Entrada: enquanto o topo da seção sobe do pé da tela até o topo, a
+      // camada na cor da seção anterior segura um pouco e depois some; a
+      // jornada começa (progresso 0) já com a cidade inteira à vista.
+      const tlEntrada = gsap.timeline({
+        scrollTrigger: { trigger: rolagem.current, start: "top bottom", end: "top top", scrub: 0.5, invalidateOnRefresh: true },
+      });
+      tlEntrada.fromTo(entrada.current, { opacity: 1 }, { opacity: 0, duration: 0.62, ease: "power1.inOut" }, 0.3)
+        .set({}, {}, 1);
+      tlEntrada.progress(tlEntrada.scrollTrigger.progress);
     });
 
     medir();
@@ -252,5 +267,5 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
       giro.setAttribute("transform", "rotate(90)");
       rota.style.strokeDashoffset = "";
     };
-  }, [rolagem, palco, mundo, textos, indicador, saida, ativo, aoMudarCena]);
+  }, [rolagem, palco, mundo, textos, indicador, saida, entrada, ativo, aoMudarCena]);
 }
