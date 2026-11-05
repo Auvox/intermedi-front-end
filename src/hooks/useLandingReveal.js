@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 // Entradas da landing: cada bloco aparece quando chega na tela, em cascata
 // dentro da sua seção. Títulos sobem de dentro de uma máscara; textos e
@@ -12,8 +12,16 @@ const BLOCOS = [
 ];
 const SECOES = ".lp-hero, .lp-section, .lp-footer";
 
+// Volta do login: o useLandingScrollMemory segura a landing invisível e avisa
+// com "lp:retomado" quando a rolagem já foi restaurada. Tudo que já está acima
+// da borda da tela entra direto, sem animação (o fade da página já faz a
+// transição); só o que ainda está abaixo anima quando for chegando.
+const MARGEM_INFERIOR = 0.12;
+
 export default function useLandingReveal(rootRef, ativo = true) {
-  useEffect(() => {
+  // layout effect: os blocos são escondidos antes da primeira pintura, senão o
+  // texto aparece por um quadro e some de novo (o "piscar" da home)
+  useLayoutEffect(() => {
     const raiz = rootRef.current;
     if (!raiz) return undefined;
     const reduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -35,6 +43,8 @@ export default function useLandingReveal(rootRef, ativo = true) {
     // atributo, não classe: o React reescreve a className da raiz
     raiz.dataset.lpAnima = "";
 
+    const aguardandoVolta = raiz.dataset.lpVolta === "espera";
+
     const observador = new IntersectionObserver((entradas) => {
       for (const entrada of entradas) {
         if (!entrada.isIntersecting) continue;
@@ -42,14 +52,31 @@ export default function useLandingReveal(rootRef, ativo = true) {
         entrada.target.dataset.lpVisto = "";
         observador.unobserve(entrada.target);
       }
-    }, { rootMargin: "0px 0px -12% 0px" });
-    marcados.forEach((el) => observador.observe(el));
+    }, { rootMargin: `0px 0px -${MARGEM_INFERIOR * 100}% 0px` });
+
+    const observar = () => marcados.forEach((el) => {
+      if (!("lpVisto" in el.dataset)) observador.observe(el);
+    });
+    const retomar = () => {
+      const limite = window.innerHeight * (1 - MARGEM_INFERIOR);
+      marcados.forEach((el) => {
+        if (el.getBoundingClientRect().top >= limite) return;
+        el.dataset.lpQuieto = "";
+        el.dataset.lpVisto = "";
+      });
+      observar();
+    };
+
+    if (aguardandoVolta) raiz.addEventListener("lp:retomado", retomar, { once: true });
+    else observar();
 
     return () => {
+      raiz.removeEventListener("lp:retomado", retomar);
       observador.disconnect();
       delete raiz.dataset.lpAnima;
       marcados.forEach((el) => {
         delete el.dataset.lpVisto;
+        delete el.dataset.lpQuieto;
         delete el.dataset.lpEntra;
         el.style.removeProperty("--lp-i");
       });

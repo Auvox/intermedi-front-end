@@ -1,5 +1,22 @@
-/** Persona silhouettes based on the supplied role references. */
-export default function PersonaIcon({ role, size = 32, className = "" }) {
+import adminIcon from "../assets/adminIcon.png";
+import gerenteIcon from "../assets/gerenteIcon.png";
+import funcIcon from "../assets/funcIcon.png";
+
+// Ícones oficiais (assets). Os PNGs são 1300x1080 com muita margem transparente:
+// o viewBox recorta só a figura para ela preencher o espaço do <svg>.
+const ICONES_ASSET = { admin: adminIcon, gerente: gerenteIcon, funcionario: funcIcon };
+
+/** Persona silhouettes based on the supplied role references.
+ *  Com `daAsset`, usa as imagens de src/assets (admin, gerente e funcionário). */
+export default function PersonaIcon({ role, size = 32, className = "", daAsset = false }) {
+  const imagem = daAsset ? ICONES_ASSET[role] : null;
+  if (imagem) {
+    return (
+      <svg className={className} width={size} height={size} viewBox="445 20 380 1040" aria-hidden="true" focusable="false">
+        <image href={imagem} x="0" y="0" width="1300" height="1080" />
+      </svg>
+    );
+  }
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 40 72" fill="currentColor" stroke="none" aria-hidden="true" focusable="false">
       <circle cx="20" cy="11" r="10" />

@@ -39,7 +39,6 @@ const profiles = [
 ];
 function Icon({ name, className = "" }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
-    back: <path d="m10 6-6 6 6 6M4 12h16" />,
     chevron: <path d="m9 5 7 7-7 7" />,
     shield: (
       <>
@@ -388,7 +387,7 @@ export default function LoginUser() {
                     }}
                   >
                     <span className="auth-profile-icon">
-                      <PersonaIcon role={profile.id} />
+                      <PersonaIcon role={profile.id} daAsset />
                     </span>
                     <span className="auth-profile-text">
                       <strong>{profile.name}</strong>
@@ -400,18 +399,8 @@ export default function LoginUser() {
             </>
           ) : (
             <>
-              <button
-                type="button"
-                className="auth-home auth-home-form"
-                aria-label="Voltar à escolha de perfil"
-                disabled={submitting}
-                onClick={() => { resetRequest(); setRole(null); }}
-              >
-                <Icon name="back" />
-                Voltar
-              </button>
               <div className="auth-persona-heading">
-                <span className={`auth-selected profile-${role}`}><PersonaIcon role={selected.id} /></span>
+                <span className={`auth-selected profile-${role}`}><PersonaIcon role={selected.id} daAsset /></span>
                 <div>
               <h1 ref={heading} tabIndex={-1} className="auth-form-title">
                 {selected.name}
@@ -541,8 +530,8 @@ export default function LoginUser() {
             <img
               src={notebookMockup}
               alt="O painel do Intermedi aberto num notebook."
-              width="544"
-              height="596"
+              width="1279"
+              height="1230"
             />
             <p className="auth-bubble auth-bubble-left">Peça medicamentos a outra farmácia</p>
             <p className="auth-bubble auth-bubble-right">Acompanhe cada chamado</p>

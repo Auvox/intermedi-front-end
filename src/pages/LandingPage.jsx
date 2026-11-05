@@ -19,8 +19,9 @@ import SecoesRede from "../landing-premium/SecoesRede";
 export default function LandingPage() {
   const rootRef = useRef(null);
   const { preferences, toggle, reset } = useAccessibility(rootRef);
+  // a memória de rolagem vem primeiro: ela marca a volta do login antes de o reveal ler
+  useLandingScrollMemory(rootRef);
   useLandingReveal(rootRef, !preferences.motion);
-  useLandingScrollMemory();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("#inicio");

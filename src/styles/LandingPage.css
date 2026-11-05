@@ -63,8 +63,19 @@ body { background: var(--white); color: var(--text); font-family: var(--font); o
   from { opacity: 0; translate: 0 .5em; clip-path: inset(0 -.2em 100% -.2em); }
   to { opacity: 1; translate: 0 0; clip-path: inset(-.3em -.2em -.4em -.2em); }
 }
+/* Volta do login: o que já está na tela entra pronto, sem animar de novo */
+[data-lp-anima] [data-lp-entra][data-lp-quieto] { animation: none !important; }
+
+/* Volta do login: a landing espera invisível a rolagem ser restaurada e então
+   aparece num fade só (só opacity: não cria bloco de contenção para o nav fixo). */
+body:has(.lp-root[data-lp-volta]) { background: #f3faf6; }
+.lp-root[data-lp-volta="espera"] { opacity: 0; }
+.lp-root[data-lp-volta="entra"] { animation: lp-volta-entra .5s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes lp-volta-entra { from { opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   [data-lp-anima] [data-lp-entra] { opacity: 1 !important; animation: none !important; }
+  .lp-root[data-lp-volta] { opacity: 1; animation: none; }
 }
 
 /* ══════════ NAV ══════════ */
