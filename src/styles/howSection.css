@@ -51,14 +51,33 @@
 }
 @media (prefers-reduced-motion: reduce) { .journey-stop, .journey-title { transition: none; } .journey-step:hover .journey-stop { transform: translate(-50%, -50%); } }
 
-/* Escolha do veículo: só ilustração, o escolhido percorre as etapas */
-.vehicle-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 640px; margin: -16px auto 40px; }
-.vehicle-option { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px 10px; border: 0; border-radius: 18px; background: #f3f6f4; color: #1d1d1f; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .2s, transform .2s; }
-.vehicle-option svg { width: 76px; height: 40px; }
+/* Veículos à esquerda, um abaixo do outro, e a estrada mais larga ao lado.
+   Só ilustração: o escolhido percorre as etapas. */
+/* a estrada ocupa quase toda a largura da tela; o seletor é uma coluna estreita */
+.lp-how .lp-section-inner { max-width: none; }
+.how-layout { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: clamp(24px, 3vw, 48px); align-items: center; }
+.how-layout .journey { max-width: none; width: 100%; margin: 0; }
+.how-controls { display: grid; gap: 12px; }
+.vehicle-picker { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.vehicle-option { display: grid; justify-items: center; gap: 2px; padding: 8px 6px 7px; border: 0; border-radius: 14px; background: #f3f6f4; color: #1d1d1f; font: inherit; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; transition: background-color .2s, transform .2s; }
+.vehicle-option svg { width: 52px; height: 28px; }
 .vehicle-option:hover { transform: translateY(-2px); background: #ebf1ed; }
-.vehicle-option.is-chosen { background: var(--vehicle-tint); outline: 2px solid var(--vehicle); outline-offset: -2px; color: #1d1d1f; }
+.vehicle-option.is-chosen { background: var(--vehicle-tint); outline: 2px solid var(--vehicle); outline-offset: -2px; }
 .vehicle-option:focus-visible { outline: 3px solid var(--vehicle); outline-offset: 3px; }
-@media (max-width: 760px) {
-  .vehicle-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: -8px auto 24px; max-width: 420px; }
+.how-hint { display: flex; gap: 6px; margin: 0; color: #4b5563; font-size: 13px; line-height: 1.4; }
+.how-hint::before { content: ""; flex: none; width: 7px; height: 7px; margin-top: 5px; border-radius: 50%; background: #16804a; animation: how-hint-pulse 1.8s ease-in-out infinite; }
+@keyframes how-hint-pulse { 50% { opacity: .35; } }
+.how-hint-toque { display: none; }
+@media (hover: none) { .how-hint-mouse { display: none; } .how-hint-toque { display: inline; } }
+
+/* Tablet e celular: veículos em cima, em linha (ou 2 x 2) */
+@media (max-width: 1000px) {
+  .how-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .how-controls { max-width: 640px; width: 100%; margin: 0 auto; }
+  .vehicle-picker { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .how-hint { justify-content: center; text-align: center; }
 }
-@media (prefers-reduced-motion: reduce) { .vehicle-option { transition: none; } .vehicle-option:hover { transform: none; } }
+@media (max-width: 560px) {
+  .vehicle-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .vehicle-option { transition: none; } .vehicle-option:hover { transform: none; } .how-hint::before { animation: none; } }

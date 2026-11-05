@@ -159,9 +159,9 @@ function HowSection() {
       const delta = Math.hypot(point.x - destination.x, point.y - destination.y);
       if (delta < nearest) { nearest = delta; target = distance; }
     }
-    // estaciona um pouco antes do marcador, para o veículo escolhido ficar à vista
-    target = Math.max(0, target - 58);
     const from = Math.min(progress.current, length);
+    // o maior veículo (66 de comprimento) cabe atrás do marcador em qualquer tela
+    const fit = Math.min(1, (stops.current[selected]?.offsetWidth ?? 72) / 66);
     const direction = target >= from ? 1 : -1;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("a11y-motion") || document.body.classList.contains("a11y-motion");
     const duration = reduced ? 0 : Math.max(550, Math.abs(target - from) * 2.4);
@@ -176,7 +176,7 @@ function HowSection() {
       const before = road.getPointAtLength(Math.max(0, distance - 2));
       const after = road.getPointAtLength(Math.min(length, distance + 2));
       const angle = Math.atan2(after.y - before.y, after.x - before.x) * 180 / Math.PI;
-      car.current.setAttribute("transform", `translate(${point.x} ${point.y}) rotate(${angle}) scale(${direction * 1.25} 1.25)`);
+      car.current.setAttribute("transform", `translate(${point.x} ${point.y}) rotate(${angle}) scale(${direction * fit} ${fit})`);
       if (fraction < 1) frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);
@@ -195,6 +195,8 @@ function HowSection() {
           <p className="lp-section-sub">Da primeira busca até a sua farmácia. Selecione uma etapa e percorra o caminho.</p>
         </div>
 
+        <div className="how-layout">
+        <div className="how-controls">
         <div className="vehicle-picker" role="radiogroup" aria-label="Escolha o veículo da entrega">
           {vehicles.map((v, index) => (
             <button
@@ -213,6 +215,11 @@ function HowSection() {
               <span>{v.name}</span>
             </button>
           ))}
+        </div>
+        <p className="how-hint">
+          <span className="how-hint-mouse">Passe o mouse sobre as etapas</span>
+          <span className="how-hint-toque">Toque nas etapas</span>
+        </p>
         </div>
 
         <div className="journey" ref={container}>
@@ -239,6 +246,7 @@ function HowSection() {
               </li>
             ))}
           </ol>
+        </div>
         </div>
       </div>
     </section>
