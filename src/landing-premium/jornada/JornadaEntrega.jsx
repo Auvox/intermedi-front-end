@@ -54,8 +54,8 @@ export default function JornadaEntrega() {
           </p>
 
           <p ref={indicador} className="jx-convite" aria-hidden="true">
-            <span>Role para acompanhar a jornada</span>
-            <svg viewBox="0 0 24 24"><path d="M12 5v14m-6-6 6 6 6-6" /></svg>
+            <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+            <span>Role para acompanhar</span>
           </p>
           {/* entrada: começa na cor da seção anterior e some enquanto a seção chega ao topo */}
           <div ref={entrada} className="jx-entrada" aria-hidden="true" />

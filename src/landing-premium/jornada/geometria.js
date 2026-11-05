@@ -42,16 +42,10 @@ export const ROTA = montarRota(PASSAGENS);
 export const INICIO = { x: PASSAGENS[0].x, y: PASSAGENS[0].y };
 export const FIM = { x: PASSAGENS.at(-1).x, y: PASSAGENS.at(-1).y };
 
-// Ruas: a estrada é a principal (com o trecho antes e depois dela); as
-// transversais e as paralelas dão a ideia de bairro e de cruzamentos
+// A estrada continua antes da fornecedora e depois da solicitante
 export const RUAS = [
   `M ${INICIO.x} -700 V ${INICIO.y}`,
   `M ${FIM.x} ${FIM.y} V ${MUNDO.altura}`,
-  "M 0 1650 H 2000",
-  "M 0 3100 H 2000",
-  "M 0 4300 H 2000",
-  "M 420 1650 V 3100",
-  "M 1620 3100 V 4300",
 ];
 
 // Quarteirões (x, y, largura, altura), nas colunas dos lados da estrada
@@ -75,22 +69,6 @@ export const PREDIOS = [
   [1400, 4000, 170, 240], [1680, 4020, 240, 220], [1560, 4380, 340, 240], [1560, 4700, 340, 260],
   [1240, 4820, 240, 200], [1240, 5040, 660, 120],
 ];
-
-// Praças (x, y, largura, altura)
-export const PRACAS = [[480, 2320, 170, 300], [1350, 2600, 260, 240]];
-
-// Árvores (x, y, raio): nas calçadas, longe da estrada, e nas praças
-export const ARVORES = [
-  [700, 820, 20], [700, 1000, 22], [700, 1240, 18], [700, 1460, 20], [700, 1900, 22],
-  [700, 2150, 18], [700, 3300, 22], [700, 3560, 18], [700, 3900, 22], [700, 4150, 20],
-  [700, 4450, 22], [1300, 1780, 20], [1300, 2000, 18], [1300, 2250, 22],
-  [1300, 2950, 20], [1300, 3250, 18], [1300, 3500, 22], [1300, 760, 18],
-  [530, 2380, 22], [600, 2470, 18], [540, 2560, 20], [1410, 2660, 22], [1500, 2720, 18],
-  [1560, 2790, 22], [1430, 2790, 18],
-];
-
-// Placas nos cruzamentos (x, y)
-export const PLACAS = [[1275, 1610], [730, 3060], [1268, 4262]];
 
 // As duas farmácias, à direita da estrada (a lateral esquerda fica livre
 // para os textos). `porta` é onde as caixas passam; `lado` é a parede da porta.
