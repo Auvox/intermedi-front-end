@@ -217,13 +217,6 @@ export default function MapSection({ paused = false }) {
       <div className="section-container">
         {/* Header da Seção integrado ao estilo do Hero */}
         <div className="section-header reveal">
-          <div className="map-badge">
-            <svg className="map-badge-signal" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" fill="currentColor" />
-              <path d="M7 7a7 7 0 0 0 0 10M17 7a7 7 0 0 1 0 10M4 4a11 11 0 0 0 0 16M20 4a11 11 0 0 1 0 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            AO VIVO
-          </div>
           <h2 className="map-section-title">
             Matches acontecendo <span className="green">agora</span> em{" "}
             <span className="map-title-region">São Paulo</span>
@@ -237,7 +230,7 @@ export default function MapSection({ paused = false }) {
           {/* COLUNA DA ESQUERDA: Agrupa o Mapa e a Legenda logo abaixo dele */}
           <div className="map-main-content">
             <div className="map-panel-heading">
-              <span><span className="map-region-mark" aria-hidden="true">+</span> Uma rede que aproxima</span>
+              <span>Uma rede que aproxima</span>
               <span className="map-region-label">São Paulo · SP</span>
             </div>
             <div className="map-svg-container">
@@ -331,10 +324,6 @@ export default function MapSection({ paused = false }) {
           <aside className="map-sidebar" aria-label="Indicadores da rede">
             {FEED_TYPES.map((activity) => (
               <div key={activity.id} className={`map-stat-pill map-network-stat map-network-stat--${activity.id}`}>
-                <div className="map-network-stat-top">
-                  <span className="map-network-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={activity.path} /></svg></span>
-                  <span className="map-network-category">{activity.label}</span>
-                </div>
                 <div className="map-stat-pill-value">{activityCounts[activity.id].toLocaleString("pt-BR")}</div>
                 <div className="map-stat-pill-label">{activity.id === "match" ? "Conexões entre farmácias" : activity.id === "shipping" ? "Envios registrados" : "Chamados resolvidos"}</div>
                 <p className="map-network-description">{activity.id === "match" ? "Disponibilidade e necessidade se encontram." : activity.id === "shipping" ? "Medicamentos a caminho de quem precisa." : "Mais uma necessidade atendida pela rede."}</p>

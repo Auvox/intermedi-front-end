@@ -1,22 +1,24 @@
-.lp-partners { background: #f7faf8; scroll-margin-top: 110px; }
+/* Parceiros: cartões brancos sobre um fundo um tom abaixo, sem bordas,
+   linhas nem sombras; o logo em cima e o texto embaixo. */
+.lp-partners { background: #eff5f1; scroll-margin-top: 110px; }
 .partner-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
-.partner-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #dfe9e3; border-radius: 24px; background: #fff; box-shadow: 0 6px 24px #173e2b04; text-align: left; transition: border-color .25s, box-shadow .25s; }
-.partner-card:hover { border-color: #b7d6c4; box-shadow: 0 12px 32px #173e2b0b; }
-.partner-brand-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 242px; padding: 28px; background: #f1f6fa; border-bottom: 1px solid #e5edf1; }
-.partner-card--popular .partner-brand-panel { background: #f5f8ef; border-bottom-color: #e8eddf; }
-.partner-category { align-self: flex-start; font-size: 10px; letter-spacing: .6px; color: #697c86; }
+.partner-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 24px; background: #fff; text-align: left; transition: transform .3s cubic-bezier(.22, 1, .36, 1); }
+.partner-card:hover { transform: translateY(-4px); }
+.partner-brand-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 242px; padding: 28px; background: #f1f6fa; }
+.partner-card--popular .partner-brand-panel { background: #f5f8ef; }
 .partner-brand { display: flex; justify-content: center; align-items: center; gap: 16px; flex: 1; min-height: 140px; width: 100%; }
 .partner-brand img { display: block; width: 172px; height: 100px; object-fit: contain; }
 .partner-card--popular .partner-brand img { width: 82px; height: 88px; }
 .partner-wordmark { color: #203d2e; font-size: 26px; font-weight: 400; line-height: 1.1; letter-spacing: -.8px; }
 .partner-wordmark strong { font-weight: 700; }
-.partner-brand-caption { font-size: 10px; color: #78898b; letter-spacing: .3px; }
-.partner-body { display: flex; flex-direction: column; flex: 1; padding: 30px 32px 24px; }
+.partner-body { display: flex; flex-direction: column; flex: 1; padding: 30px 32px 28px; }
 .partner-body h3 { font-size: clamp(24px, 2.4vw, 30px); font-weight: 500; letter-spacing: -.8px; line-height: 1.25; margin: 0 0 12px; color: #173e2b; }
-.partner-body > p { color: #677b70; font-size: 13px; line-height: 1.85; margin: 0; max-width: 380px; }
+.partner-body > p strong { color: #173e2b; font-weight: 600; }
+.partner-body > p { color: #46594e; font-size: 15px; line-height: 1.7; margin: 0; max-width: 400px; }
 .partner-tags { display: flex; flex-wrap: wrap; list-style: none; gap: 8px; padding: 0; margin: 22px 0 26px; }
-.partner-tags li { font-size: 10px; color: #547363; padding: 5px 10px; background: #f3f7f4; border-radius: 6px; }
-.partner-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 18px; border-top: 1px solid #e8efea; color: #007b50; font-size: 12px; font-weight: 600; text-decoration: none; min-height: 44px; }
+.partner-tags li { font-size: 13px; color: #3f5a4b; padding: 6px 12px; background: #eef4f0; border-radius: 8px; }
+.partner-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; color: #007b50; font-size: 15px; font-weight: 600; text-decoration: none; min-height: 44px; }
+.partner-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .partner-link:focus-visible { outline: 2px solid #009e67; outline-offset: 5px; border-radius: 4px; }
 @media (max-width: 700px) {
   .partner-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -24,4 +26,4 @@
   .partner-body { padding: 26px 24px 22px; }
   .partner-wordmark { font-size: 24px; }
 }
-@media (prefers-reduced-motion: reduce) { .partner-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .partner-card { transition: none; } .partner-card:hover { transform: none; } }
