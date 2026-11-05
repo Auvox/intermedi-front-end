@@ -55,12 +55,12 @@
    Só ilustração: o escolhido percorre as etapas. */
 /* a estrada ocupa quase toda a largura da tela; o seletor é uma coluna estreita */
 .lp-how .lp-section-inner { max-width: none; }
-.how-layout { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: clamp(24px, 3vw, 48px); align-items: center; }
+.how-layout { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: clamp(24px, 3vw, 48px); align-items: center; }
 .how-layout .journey { max-width: none; width: 100%; margin: 0; }
 .how-controls { display: grid; gap: 12px; }
 .vehicle-picker { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.vehicle-option { display: grid; justify-items: center; gap: 2px; padding: 8px 6px 7px; border: 0; border-radius: 14px; background: #f3f6f4; color: #1d1d1f; font: inherit; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; transition: background-color .2s, transform .2s; }
-.vehicle-option svg { width: 52px; height: 28px; }
+.vehicle-option { display: grid; place-items: center; min-height: 64px; padding: 10px 8px; border: 0; border-radius: 14px; background: #f3f6f4; color: #1d1d1f; font: inherit; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; transition: background-color .2s, transform .2s; }
+.vehicle-option svg { width: 84px; height: 44px; }
 .vehicle-option:hover { transform: translateY(-2px); background: #ebf1ed; }
 .vehicle-option.is-chosen { background: var(--vehicle-tint); outline: 2px solid var(--vehicle); outline-offset: -2px; }
 .vehicle-option:focus-visible { outline: 3px solid var(--vehicle); outline-offset: 3px; }
