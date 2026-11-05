@@ -120,7 +120,7 @@ export default function LoginUser() {
   }, [role]);
   useEffect(() => {
     if (!leaving) return;
-    const timer = window.setTimeout(() => navigate("/"), LEAVE_MS);
+    const timer = window.setTimeout(() => navigate("/", { state: { voltarDoLogin: true } }), LEAVE_MS);
     return () => window.clearTimeout(timer);
   }, [leaving, navigate]);
   function resetRequest() {
@@ -129,7 +129,7 @@ export default function LoginUser() {
   }
   function goHome() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      navigate("/");
+      navigate("/", { state: { voltarDoLogin: true } });
       return;
     }
     setLeaving(true);
