@@ -1,34 +1,27 @@
-/* Parceiros (SUS e Farmácia Popular): seção branca com cartões
-   contornados, como vitrines de produto. */
-.lp-partners { background: #fff; scroll-margin-top: 52px; }
-.lp-partners .lp-section-title { color: #1d1d1f; }
-.lp-partners .lp-section-title .green { color: var(--color-primary); }
-.lp-partners .lp-section-sub { color: #6e6e73; }
-.partner-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.partner-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #e8e8ed; border-radius: 28px; background: #fff; text-align: left; transition: transform .3s ease; }
-.partner-card:hover { transform: translateY(-4px); }
-.partner-brand-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 242px; padding: 28px; background: #f5f5f7; }
-.partner-category { align-self: flex-start; color: #6e6e73; font-size: 12px; font-weight: 600; letter-spacing: 0; }
+.lp-partners { background: #f7faf8; scroll-margin-top: 110px; }
+.partner-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.partner-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #dfe9e3; border-radius: 24px; background: #fff; box-shadow: 0 6px 24px #173e2b04; text-align: left; transition: border-color .25s, box-shadow .25s; }
+.partner-card:hover { border-color: #b7d6c4; box-shadow: 0 12px 32px #173e2b0b; }
+.partner-brand-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 242px; padding: 28px; background: #f1f6fa; border-bottom: 1px solid #e5edf1; }
+.partner-card--popular .partner-brand-panel { background: #f5f8ef; border-bottom-color: #e8eddf; }
+.partner-category { align-self: flex-start; font-size: 10px; letter-spacing: .6px; color: #697c86; }
 .partner-brand { display: flex; justify-content: center; align-items: center; gap: 16px; flex: 1; min-height: 140px; width: 100%; }
 .partner-brand img { display: block; width: 172px; height: 100px; object-fit: contain; }
 .partner-card--popular .partner-brand img { width: 82px; height: 88px; }
-.partner-wordmark { color: #1d1d1f; font-size: 26px; font-weight: 400; line-height: 1.1; letter-spacing: -.03em; }
+.partner-wordmark { color: #203d2e; font-size: 26px; font-weight: 400; line-height: 1.1; letter-spacing: -.8px; }
 .partner-wordmark strong { font-weight: 700; }
-.partner-brand-caption { color: #86868b; font-size: 12px; }
-.partner-body { display: flex; flex-direction: column; flex: 1; padding: 32px 36px 28px; }
-.partner-body h3 { color: #1d1d1f; font-size: clamp(28px, 2.6vw, 36px); font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; margin: 0 0 12px; }
-.partner-body > p { max-width: 400px; color: #6e6e73; font-size: 17px; line-height: 1.45; letter-spacing: -0.015em; margin: 0; }
+.partner-brand-caption { font-size: 10px; color: #78898b; letter-spacing: .3px; }
+.partner-body { display: flex; flex-direction: column; flex: 1; padding: 30px 32px 24px; }
+.partner-body h3 { font-size: clamp(24px, 2.4vw, 30px); font-weight: 500; letter-spacing: -.8px; line-height: 1.25; margin: 0 0 12px; color: #173e2b; }
+.partner-body > p { color: #677b70; font-size: 13px; line-height: 1.85; margin: 0; max-width: 380px; }
 .partner-tags { display: flex; flex-wrap: wrap; list-style: none; gap: 8px; padding: 0; margin: 22px 0 26px; }
-.partner-tags li { padding: 6px 12px; border-radius: 980px; background: #f5f5f7; color: #1d1d1f; font-size: 13px; }
-.partner-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; min-height: 48px; padding: 0 24px; border-radius: 980px; background: #1d1d1f; color: #fff; font-size: 15px; font-weight: 600; text-decoration: none; transition: background .2s; }
-.partner-link::after { content: "›"; font-size: 20px; line-height: 1; }
-.partner-link:hover { background: #16804a; }
-.partner-link:focus-visible { outline: 2px solid #16804a; outline-offset: 3px; }
+.partner-tags li { font-size: 10px; color: #547363; padding: 5px 10px; background: #f3f7f4; border-radius: 6px; }
+.partner-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 18px; border-top: 1px solid #e8efea; color: #007b50; font-size: 12px; font-weight: 600; text-decoration: none; min-height: 44px; }
+.partner-link:focus-visible { outline: 2px solid #009e67; outline-offset: 5px; border-radius: 4px; }
 @media (max-width: 700px) {
   .partner-grid { grid-template-columns: 1fr; gap: 20px; }
-  .partner-card { border-radius: 24px; }
   .partner-brand-panel { min-height: 215px; padding: 24px; }
   .partner-body { padding: 26px 24px 22px; }
   .partner-wordmark { font-size: 24px; }
 }
-@media (prefers-reduced-motion: reduce) { .partner-card, .partner-link { transition: none; } .partner-card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .partner-card { transition: none; } }

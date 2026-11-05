@@ -291,7 +291,7 @@ export default function MapSection({ paused = false }) {
                       y="4"
                       fontSize="9"
                       fill="#1e293b"
-                      fontFamily="var(--font-sans)"
+                      fontFamily="DM Sans, sans-serif"
                       fontWeight="600"
                     >
                       {c.label}
