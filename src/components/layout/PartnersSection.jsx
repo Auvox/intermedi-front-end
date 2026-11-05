@@ -19,16 +19,14 @@ export default function PartnersSection() {
           {partners.map(partner => (
             <article className={`partner-card partner-card--${partner.id}`} key={partner.id}>
               <div className="partner-brand-panel">
-                <span className="partner-category">{partner.category}</span>
                 <div className="partner-brand">
                   <img src={partner.logo} alt={`Marca ${partner.name}`} loading="lazy" decoding="async" />
                   {partner.id === "popular" && <span className="partner-wordmark">Farmácia<br /><strong>Popular</strong></span>}
                 </div>
-                <span className="partner-brand-caption">{partner.name}</span>
               </div>
               <div className="partner-body">
                 <h3>{partner.title}</h3>
-                <p>{partner.description}</p>
+                <p><strong>{partner.category}.</strong> {partner.description}</p>
                 <ul className="partner-tags" aria-label={`Áreas de atuação: ${partner.name}`}>
                   {partner.tags.map(tag => <li key={tag}>{tag}</li>)}
                 </ul>
