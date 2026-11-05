@@ -205,6 +205,8 @@ function HowSection() {
               type="button"
               role="radio"
               aria-checked={v.id === vehicleId}
+              aria-label={v.name}
+              title={v.name}
               tabIndex={v.id === vehicleId ? 0 : -1}
               className={`vehicle-option${v.id === vehicleId ? " is-chosen" : ""}`}
               style={{ "--vehicle": v.color, "--vehicle-tint": v.tint }}
@@ -212,7 +214,6 @@ function HowSection() {
               onKeyDown={event => onPickerKey(event, index)}
             >
               <svg viewBox="-34 -18 68 36" aria-hidden="true"><Vehicle {...v} /></svg>
-              <span>{v.name}</span>
             </button>
           ))}
         </div>
