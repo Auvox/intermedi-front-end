@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import AccessibilityMenu from "../components/layout/AccessibilityMenu";
 import useAccessibility from "../hooks/useAccessibility";
 import useLandingReveal from "../hooks/useLandingReveal";
+import useLandingScrollMemory from "../hooks/useLandingScrollMemory";
 import "../styles/LandingPage.css";
 
 import Nav from "../components/layout/Nav";
@@ -19,6 +20,7 @@ export default function LandingPage() {
   const rootRef = useRef(null);
   const { preferences, toggle, reset } = useAccessibility(rootRef);
   useLandingReveal(rootRef, !preferences.motion);
+  useLandingScrollMemory();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("#inicio");

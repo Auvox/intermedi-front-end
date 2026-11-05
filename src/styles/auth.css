@@ -291,9 +291,9 @@ body:has(.auth-page) { background: #fff; margin: 0; }
 .auth-back:hover { border-color: #c7c7cc; background: #fff; }
 
 /* Voltar ao site: a página encolhe um pouco ao apertar e se fecha da esquerda
-   para a direita, como uma cortina, curta e sem quicar. Atrás fica o escuro
-   do topo do site, que aparece em seguida. A sombra acompanha a borda. */
-body:has(.auth-page.is-pressing), body:has(.auth-page.is-leaving) { background: #1d1d1f; }
+   para a direita, como uma cortina, curta e sem quicar. Atrás fica o verde-claro
+   do topo do site, que aparece em seguida (não um fundo escuro). A sombra acompanha a borda. */
+body:has(.auth-page.is-pressing), body:has(.auth-page.is-leaving) { background: #f3faf6; }
 .auth-page { transform-origin: 100% 50%; transition: transform .16s cubic-bezier(.3, 0, .2, 1); }
 .auth-page::after { content: ""; position: absolute; inset: 0; z-index: 10; background: linear-gradient(90deg, rgb(0 0 0 / .18), transparent 72px); opacity: 0; pointer-events: none; }
 .auth-page.is-pressing { transform: scale(.985); }
