@@ -74,6 +74,7 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
     const giro = q("carrinho-giro");
     const rota = q("rota");
     const entregue = q("entregue");
+    const rastro = q("rastro");
     const caixas = gsap.utils.toArray(svg.querySelectorAll('[data-j="caixa"]'));
     const blocos = gsap.utils.toArray(textos.current.querySelectorAll('[data-j="texto"]'));
     const convite = indicador.current;
@@ -144,6 +145,9 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
       caminhao.setAttribute("transform", `translate(${noMundo.x.toFixed(2)} ${noMundo.y.toFixed(2)})`);
       giro.setAttribute("transform", `rotate(${((ang * 180) / Math.PI).toFixed(2)})`);
       rota.style.strokeDashoffset = String(1 - s);
+      // riscos de velocidade: aparecem com a velocidade do caminhão
+      const v = (percurso(p + 0.003) - percurso(p - 0.003)) / 0.006;
+      rastro.style.opacity = limitar(v / 1.4, 0, 1).toFixed(2);
 
       const camera = posicaoDaCamera(p, noMundo);
       svg.setAttribute(
@@ -218,6 +222,9 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
         gsap.set(caixa, { x: daPorta.x - vx, y: daPorta.y - vy, autoAlpha: 0 });
         tl.to(caixa, { autoAlpha: 1, duration: 0.008 }, 0.025 + i * 0.03)
           .to(caixa, { x: 0, y: 0, duration: 0.04, ease: "power1.inOut" }, 0.03 + i * 0.03)
+          // entra no baú fechado e só reaparece na entrega
+          .to(caixa, { autoAlpha: 0, duration: 0.006 }, 0.07 + i * 0.03)
+          .to(caixa, { autoAlpha: 1, duration: 0.004 }, CHEGADA + 0.004 + i * 0.012)
           .to(caixa, { x: paraPorta.x - vx, y: paraPorta.y - vy, duration: 0.026, ease: "power1.inOut" }, CHEGADA + 0.008 + i * 0.012)
           .to(caixa, { autoAlpha: 0, duration: 0.008 }, CHEGADA + 0.03 + i * 0.012);
       });
@@ -266,6 +273,7 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, sai
       caminhao.setAttribute("transform", `translate(${FIM.x} ${FIM.y})`);
       giro.setAttribute("transform", "rotate(90)");
       rota.style.strokeDashoffset = "";
+      rastro.style.opacity = "";
     };
   }, [rolagem, palco, mundo, textos, indicador, saida, entrada, ativo, aoMudarCena]);
 }

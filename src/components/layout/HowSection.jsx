@@ -19,8 +19,98 @@ function StepIcon({ name }) {
   );
 }
 
+// Veículos para o visitante escolher; só ilustração. Desenhados de cima, de
+// frente para +x, no mesmo tamanho do carrinho da rota.
+const vehicles = [
+  { id: "van", name: "Van", color: "#16804a", tint: "#e3f3e8" },
+  { id: "caminhao", name: "Caminhão", color: "#2563eb", tint: "#dbe7fd" },
+  { id: "carro", name: "Carro", color: "#dc2626", tint: "#fde2e2" },
+  { id: "moto", name: "Moto", color: "#ea580c", tint: "#ffedd5" },
+];
+const VEHICLE_KEY = "intermedi:veiculo";
+
+function Vehicle({ id, color, tint }) {
+  const tyre = "#1d1d1f";
+  if (id === "caminhao") return (
+    <>
+      <rect x="-31" y="-11" width="60" height="26" rx="6" fill="#173e2b" opacity=".12" />
+      <g fill={tyre}>
+        <rect x="-25" y="-15" width="8" height="4" rx="2" /><rect x="-14" y="-15" width="8" height="4" rx="2" /><rect x="14" y="-15" width="8" height="4" rx="2" />
+        <rect x="-25" y="11" width="8" height="4" rx="2" /><rect x="-14" y="11" width="8" height="4" rx="2" /><rect x="14" y="11" width="8" height="4" rx="2" />
+      </g>
+      <rect x="-30" y="-12" width="38" height="24" rx="3" fill="#fff" stroke={color} strokeWidth="1.5" />
+      <rect x="-26" y="-8" width="30" height="16" rx="2" fill={tint} />
+      <rect x="10" y="-11" width="16" height="22" rx="5" fill={color} />
+      <rect x="19" y="-8" width="4" height="16" rx="1.5" fill={tint} />
+    </>
+  );
+  if (id === "carro") return (
+    <>
+      <rect x="-21" y="-9" width="46" height="24" rx="10" fill="#173e2b" opacity=".12" />
+      <g fill={tyre}>
+        <rect x="-16" y="-13" width="8" height="4" rx="2" /><rect x="9" y="-13" width="8" height="4" rx="2" />
+        <rect x="-16" y="9" width="8" height="4" rx="2" /><rect x="9" y="9" width="8" height="4" rx="2" />
+      </g>
+      <rect x="-22" y="-11" width="44" height="22" rx="9" fill={color} />
+      <rect x="-9" y="-8" width="15" height="16" rx="4" fill={tint} />
+      <rect x="8" y="-8" width="5" height="16" rx="2" fill="#fff" opacity=".85" />
+      <rect x="-15" y="-7" width="4" height="14" rx="2" fill="#fff" opacity=".7" />
+    </>
+  );
+  if (id === "moto") return (
+    <>
+      <rect x="-23" y="-6" width="46" height="16" rx="8" fill="#173e2b" opacity=".12" />
+      <rect x="-21" y="-2.5" width="10" height="5" rx="2.5" fill={tyre} />
+      <rect x="12" y="-2.5" width="10" height="5" rx="2.5" fill={tyre} />
+      <rect x="-23" y="-8" width="11" height="16" rx="2" fill="#fff" stroke={color} strokeWidth="1.5" />
+      <rect x="-12" y="-4" width="24" height="8" rx="4" fill={color} />
+      <path d="M10-9v18" stroke={tyre} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="-2" r="6" fill={tint} stroke={color} strokeWidth="1.5" />
+    </>
+  );
+  return (
+    <>
+      <rect x="-23" y="-11" width="48" height="26" rx="9" fill="#173e2b" opacity=".12" />
+      <g fill={color}>
+        <rect x="-16" y="-14" width="8" height="5" rx="2" /><rect x="-16" y="9" width="8" height="5" rx="2" />
+        <rect x="10" y="-14" width="8" height="5" rx="2" /><rect x="10" y="9" width="8" height="5" rx="2" />
+      </g>
+      <rect x="-24" y="-11" width="48" height="22" rx="7" fill="#fff" stroke={color} strokeWidth="1.5" />
+      <path d="M5-10v20M13-8h5q3 8 0 16h-5q2-8 0-16Z" fill={tint} stroke={color} strokeWidth="1.2" strokeLinejoin="round" />
+      <rect x="-20" y="-8" width="21" height="16" rx="3" fill={tint} />
+      <path d="M-10-4v8M-14 0h8" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </>
+  );
+}
+
+function readVehicle() {
+  try {
+    const saved = window.localStorage.getItem(VEHICLE_KEY);
+    return vehicles.some(v => v.id === saved) ? saved : "van";
+  } catch {
+    return "van";
+  }
+}
+
 function HowSection() {
   const [selected, setSelected] = useState(null);
+  const [vehicleId, setVehicleId] = useState(readVehicle);
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  const pickers = useRef([]);
+  const chooseVehicle = id => {
+    setVehicleId(id);
+    setSelected(current => current ?? 0);
+    try { window.localStorage.setItem(VEHICLE_KEY, id); } catch { /* sem armazenamento: só não lembra */ }
+  };
+  // grupo de opções: as setas trocam de veículo, como num rádio
+  const onPickerKey = (event, index) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    const next = (index + step + vehicles.length) % vehicles.length;
+    chooseVehicle(vehicles[next].id);
+    pickers.current[next]?.focus();
+  };
   const [route, setRoute] = useState({ width: 1000, height: 400, d: "", stops: [] });
   const container = useRef(null);
   const path = useRef(null);
@@ -69,6 +159,8 @@ function HowSection() {
       const delta = Math.hypot(point.x - destination.x, point.y - destination.y);
       if (delta < nearest) { nearest = delta; target = distance; }
     }
+    // estaciona um pouco antes do marcador, para o veículo escolhido ficar à vista
+    target = Math.max(0, target - 58);
     const from = Math.min(progress.current, length);
     const direction = target >= from ? 1 : -1;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("a11y-motion") || document.body.classList.contains("a11y-motion");
@@ -84,7 +176,7 @@ function HowSection() {
       const before = road.getPointAtLength(Math.max(0, distance - 2));
       const after = road.getPointAtLength(Math.min(length, distance + 2));
       const angle = Math.atan2(after.y - before.y, after.x - before.x) * 180 / Math.PI;
-      car.current.setAttribute("transform", `translate(${point.x} ${point.y}) rotate(${angle}) scale(${direction} 1)`);
+      car.current.setAttribute("transform", `translate(${point.x} ${point.y}) rotate(${angle}) scale(${direction * 1.25} 1.25)`);
       if (fraction < 1) frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);
@@ -103,6 +195,26 @@ function HowSection() {
           <p className="lp-section-sub">Da primeira busca até a sua farmácia. Selecione uma etapa e percorra o caminho.</p>
         </div>
 
+        <div className="vehicle-picker" role="radiogroup" aria-label="Escolha o veículo da entrega">
+          {vehicles.map((v, index) => (
+            <button
+              key={v.id}
+              ref={element => { pickers.current[index] = element; }}
+              type="button"
+              role="radio"
+              aria-checked={v.id === vehicleId}
+              tabIndex={v.id === vehicleId ? 0 : -1}
+              className={`vehicle-option${v.id === vehicleId ? " is-chosen" : ""}`}
+              style={{ "--vehicle": v.color, "--vehicle-tint": v.tint }}
+              onClick={() => chooseVehicle(v.id)}
+              onKeyDown={event => onPickerKey(event, index)}
+            >
+              <svg viewBox="-34 -18 68 36" aria-hidden="true"><Vehicle {...v} /></svg>
+              <span>{v.name}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="journey" ref={container}>
           <svg className="journey-route" viewBox={`0 0 ${route.width} ${route.height}`} fill="none" aria-hidden="true">
             <path ref={path} className="journey-road" d={route.d} />
@@ -110,18 +222,7 @@ function HowSection() {
           </svg>
           <svg className="journey-car-layer" viewBox={`0 0 ${route.width} ${route.height}`} fill="none" aria-hidden="true">
             <g ref={car} style={{ visibility: selected === null ? "hidden" : "visible" }}>
-              <rect x="-23" y="-11" width="48" height="26" rx="9" fill="#173e2b" opacity=".12" />
-              <g fill="#16804a">
-                <rect x="-16" y="-14" width="8" height="5" rx="2" />
-                <rect x="-16" y="9" width="8" height="5" rx="2" />
-                <rect x="10" y="-14" width="8" height="5" rx="2" />
-                <rect x="10" y="9" width="8" height="5" rx="2" />
-              </g>
-              <rect x="-24" y="-11" width="48" height="22" rx="7" fill="#fff" stroke="#16804a" strokeWidth="1.5" />
-              <path d="M5-10v20M13-8h5q3 8 0 16h-5q2-8 0-16Z" fill="#bce5d1" stroke="#16804a" strokeWidth="1.2" strokeLinejoin="round" />
-              <rect x="-20" y="-8" width="21" height="16" rx="3" fill="#eaf6ef" />
-              <path d="M-10-4v8M-14 0h8" stroke="#16804a" strokeWidth="1.8" strokeLinecap="round" />
-              <path d="M22-7v3M22 4v3" stroke="#82ad8c" strokeWidth="2" strokeLinecap="round" />
+              <Vehicle {...vehicle} />
             </g>
           </svg>
           <ol className="journey-steps" aria-label="Etapas do pedido">
