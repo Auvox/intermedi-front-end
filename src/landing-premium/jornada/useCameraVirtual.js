@@ -7,9 +7,11 @@ gsap.registerPlugin(ScrollTrigger);
 
 // Fases no progresso normalizado da seção (0 a 1)
 export const PARTIDA = 0.15; // fim do carregamento: o caminhão começa a descer
-export const CHEGADA = 0.9; // o caminhão para na porta da solicitante
+export const CHEGADA = 0.84; // o caminhão para na porta da solicitante
+export const ENTREGUE = 0.92; // caixas na farmácia e selo de concluído
+export const SAIDA = 0.93; // daqui até 1 o cenário dá lugar à cor da seção seguinte
 // Começo de cada cena do texto
-export const CENAS = [0, 0.12, 0.28, 0.7, 0.9];
+export const CENAS = [0, 0.12, 0.28, 0.66, 0.84];
 // Até onde a câmera pode ir além do mundo (além das bordas há só chão)
 const LIMITES = { topo: -500, base: MUNDO.altura + 100, esquerda: -700, direita: MUNDO.largura + 700 };
 
@@ -48,7 +50,19 @@ const paraOCaminhao = (dx, dy, ang) => ({
 //   naTela         onde o caminhão cai na tela (fração 0 a 1), usada para
 //                  garantir que ele nunca saia do enquadramento
 // A tela é o viewBox do SVG: tela = mundo - câmera. Nada de timers.
-export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, ativo, aoMudarCena }) {
+// Cor de fundo da primeira seção depois da jornada (subindo até achar um
+// elemento seguinte e descendo pelos primeiros filhos até um fundo opaco)
+function corDaProximaSecao(secao) {
+  let el = secao;
+  while (el && !el.nextElementSibling) el = el.parentElement;
+  for (let alvo = el?.nextElementSibling; alvo; alvo = alvo.firstElementChild) {
+    const cor = getComputedStyle(alvo).backgroundColor;
+    if (cor && cor !== "transparent" && !/rgba\(.*,\s*0\)$/.test(cor)) return cor;
+  }
+  return null;
+}
+
+export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, saida, ativo, aoMudarCena }) {
   useLayoutEffect(() => {
     if (!ativo) return undefined;
     const svg = mundo.current;
@@ -92,7 +106,8 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, ati
 
     const posicaoDaCamera = (p, noMundo) => {
       const seguir = suave(PARTIDA + 0.02, 0.3, p);
-      const chegar = suave(0.74, 0.93, p);
+      // parada antes da saída: em 0,88 a câmera já está no quadro final
+      const chegar = suave(0.68, 0.88, p);
       // a mira acompanha o caminhão na vertical; na horizontal, só uma parte
       // das curvas, para ele oscilar de leve em torno do centro
       const seguidoX = CENTRO_X + (noMundo.x - CENTRO_X) * campo.seguirX;
@@ -157,6 +172,8 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, ati
       const narrativa = textos.current.getBoundingClientRect();
       campo.margemEsquerda = largo ? Math.max(0.12, (narrativa.right - r.left + 70) / r.width) : 0.12;
       campo.margemTopo = largo ? 0.12 : 0.44;
+      const cor = corDaProximaSecao(rolagem.current.closest("section"));
+      if (cor) quadro.style.setProperty("--jx-saida", cor);
       desenhar();
     };
 
@@ -196,13 +213,20 @@ export function useCameraVirtual({ rolagem, palco, mundo, textos, indicador, ati
         gsap.set(caixa, { x: daPorta.x - vx, y: daPorta.y - vy, autoAlpha: 0 });
         tl.to(caixa, { autoAlpha: 1, duration: 0.008 }, 0.025 + i * 0.03)
           .to(caixa, { x: 0, y: 0, duration: 0.04, ease: "power1.inOut" }, 0.03 + i * 0.03)
-          .to(caixa, { x: paraPorta.x - vx, y: paraPorta.y - vy, duration: 0.03, ease: "power1.inOut" }, 0.905 + i * 0.014)
-          .to(caixa, { autoAlpha: 0, duration: 0.008 }, 0.93 + i * 0.014);
+          .to(caixa, { x: paraPorta.x - vx, y: paraPorta.y - vy, duration: 0.026, ease: "power1.inOut" }, CHEGADA + 0.008 + i * 0.012)
+          .to(caixa, { autoAlpha: 0, duration: 0.008 }, CHEGADA + 0.03 + i * 0.012);
       });
 
       // Entrega concluída
       gsap.set(entregue, { autoAlpha: 0, scale: 0.5, transformOrigin: "50% 50%" });
-      tl.to(entregue, { autoAlpha: 1, scale: 1, duration: 0.03, ease: "back.out(2)" }, 0.955);
+      tl.to(entregue, { autoAlpha: 1, scale: 1, duration: 0.024, ease: "back.out(2)" }, ENTREGUE - 0.024);
+
+      // Saída (0,93 a 1): a camada ganha a cor da seção seguinte enquanto o
+      // cenário sobe um pouco; o texto sai por último. Tudo pela rolagem,
+      // então volta ao contrário quando se rola para cima.
+      tl.fromTo(saida.current, { opacity: 0 }, { opacity: 1, duration: 1 - SAIDA, ease: "power1.inOut" }, SAIDA)
+        .fromTo(svg, { y: 0 }, { y: -28, duration: 1 - SAIDA, ease: "power1.in" }, SAIDA)
+        .to(textos.current, { autoAlpha: 0, y: -12, duration: 0.03, ease: "power1.in" }, 0.965);
 
       // duração total exatamente 1: o tempo da timeline é o progresso
       tl.set({}, {}, 1);

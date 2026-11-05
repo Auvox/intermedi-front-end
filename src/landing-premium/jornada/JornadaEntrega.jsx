@@ -24,16 +24,19 @@ export default function JornadaEntrega() {
   const mundo = useRef(null);
   const textos = useRef(null);
   const indicador = useRef(null);
+  const saida = useRef(null);
   const movimento = useMotion();
   const [cena, setCena] = useState(0);
 
-  useCameraVirtual({ rolagem, palco, mundo, textos, indicador, ativo: movimento, aoMudarCena: setCena });
+  useCameraVirtual({ rolagem, palco, mundo, textos, indicador, saida, ativo: movimento, aoMudarCena: setCena });
 
   return (
     <section id="solucao" className="jx lpx-fundo-nevoa" data-fundo="nevoa" aria-labelledby="solucao-titulo">
       <div ref={rolagem} className={`jx-rolagem ${movimento ? "is-animado" : "is-estatico"}`}>
         <div ref={palco} className="jx-palco">
           <Mundo ref={mundo} />
+          {/* saída: cobre o cenário com a cor da seção seguinte no fim da rolagem */}
+          <div ref={saida} className="jx-saida" aria-hidden="true" />
 
           <ol ref={textos} className="jx-narrativa" aria-label="A jornada de uma entrega">
             {CENAS_TEXTO.map((c, i) => (

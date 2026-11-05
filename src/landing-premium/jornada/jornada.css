@@ -6,12 +6,23 @@
    ============================================================ */
 
 .jx { position: relative; background: var(--nevoa); }
-.jx-rolagem.is-animado { height: 720svh; }
+/* 760svh: o trecho final de saída não encurta o percurso do caminhão */
+.jx-rolagem.is-animado { height: 760svh; }
 
 .jx-palco { position: relative; }
 .jx-rolagem.is-animado .jx-palco { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .jx-rolagem.is-animado .jx-mundo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .jx-mundo { font-family: var(--font-sans); }
+
+/* Saída: no fim da rolagem esta camada cobre o cenário com a cor da seção
+   seguinte (--jx-saida, lida pelo useCameraVirtual), então o palco termina
+   da mesma cor que vem depois e não sobra a linha onde a estrada é cortada. */
+.jx-saida { display: none; }
+.jx-rolagem.is-animado .jx-saida {
+  display: block; position: absolute; inset: 0; z-index: 1;
+  background: var(--jx-saida, var(--nevoa));
+  opacity: 0; pointer-events: none;
+}
 
 /* ---------- Narrativa sobre o cenário ---------- */
 .jx-narrativa { margin: 0; padding: 0; list-style: none; }
@@ -95,7 +106,7 @@
 
 /* ---------- Celular e tablet: texto numa faixa no topo, caminhão abaixo ---------- */
 @media (max-width: 899.98px) {
-  .jx-rolagem.is-animado { height: 680svh; }
+  .jx-rolagem.is-animado { height: 720svh; }
   .jx-rolagem.is-animado .jx-narrativa {
     left: 0; right: 0; top: var(--nav-h); width: auto;
     padding: 14px var(--gutter) 18px;
