@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapaRede from "../components/simulacao/MapaRede";
 import LinhaDoTempo from "../components/simulacao/LinhaDoTempo";
 import {
@@ -7,7 +7,8 @@ import {
   agregarPorMunicipio,
   buscarRede,
   corDoValor,
-  enquadrarFarmacias,
+  carregarDistritos,
+  distritoDoPonto,
   escalaDoRemedio,
   estaACaminho,
   eventosDoPedido,
@@ -15,6 +16,7 @@ import {
   prepararRede,
   progresso,
   saldoPorFarmacia,
+  temDistritos,
 } from "../services/rede";
 import "../styles/simulacao.css";
 
@@ -75,7 +77,14 @@ export default function AdminSimulacao() {
   const [t, setT] = useState(() => Date.now());
   const [tocando, setTocando] = useState(false);
   const [velocidade, setVelocidade] = useState(600);
-  const [viewBox, setViewBox] = useState(null); // null: enquadra nas farmácias quando os dados chegam
+  const [viewBox, setViewBox] = useState(ENQUADRAMENTOS.estado);
+  // cidade aberta (zoom) e, quando houver desenho, os distritos dela
+  const [cidade, setCidade] = useState(null);
+  const [distritos, setDistritos] = useState(null);
+  const [distrito, setDistrito] = useState(null);
+  const apiMapa = useRef(null);
+  const animacao = useRef(null);
+  const cidadeAberta = useRef(null);
   const [municipio, setMunicipio] = useState(null);
   const [idPedido, setIdPedido] = useState(null);
   const [idFarmacia, setIdFarmacia] = useState(null);
@@ -90,7 +99,6 @@ export default function AdminSimulacao() {
       buscarRede(dias, { signal })
         .then((resposta) => {
           setDados(resposta);
-          setViewBox((atual) => atual ?? enquadrarFarmacias(resposta.farmacias));
           setDiferencaRelogio(Date.parse(resposta.agora) - Date.now());
           setErro("");
         })
@@ -222,33 +230,83 @@ export default function AdminSimulacao() {
     return [...grupos.values()].map((g) => ({ ...g, x: g.x / g.n, y: g.y / g.n, nome: nomeDoMunicipio(g.codigo) }));
   }, [rede]);
 
-  // com zoom de bairro, o nome de cada farmácia; de longe, o do município
-  const vistaRede = useMemo(() => enquadrarFarmacias(rede.farmacias), [rede]);
-  const vista = viewBox ?? ENQUADRAMENTOS.estado;
-  const dePerto = vista[2] < 20000;
+  // dentro da cidade: o distrito de cada farmácia e a métrica por distrito
+  const distritoDe = useMemo(() => {
+    const mapa = new Map();
+    if (distritos) {
+      for (const f of rede.farmacias) {
+        if (f.codigo === cidade && f.x != null) mapa.set(f.idFarmacia, distritoDoPonto(distritos, f.x, f.y));
+      }
+    }
+    return mapa;
+  }, [rede, distritos, cidade]);
+  const porDistrito = useMemo(
+    () => (distritos
+      ? agregarPorMunicipio(rede.pedidos, { metrica, idRemedio, inicio, fim: minuto * MINUTO + MINUTO - 1, chave: (f) => distritoDe.get(f.idFarmacia) ?? null })
+      : new Map()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rede, distritos, distritoDe, metrica, idRemedio, minuto, dias],
+  );
+  const maximoDistrito = Math.max(0, ...[...porDistrito.values()].map((d) => d.valor));
+  const distritosComFarmacia = new Set(distritoDe.values());
+  const rotulosDistritos = (distritos ?? [])
+    .filter((d) => d.caixa[2] > 2600 || distritosComFarmacia.has(d.nome))
+    .map((d) => ({ codigo: `d:${d.nome}`, distrito: d.nome, x: d.caixa[0] + d.caixa[2] / 2, y: d.caixa[1] + d.caixa[3] / 2, nome: d.nome }));
   const rotulosFarmacias = useMemo(
     () => rede.farmacias.filter((f) => f.x != null).map((f) => ({ codigo: `f${f.idFarmacia}`, idFarmacia: f.idFarmacia, x: f.x, y: f.y, nome: f.nome })),
     [rede],
   );
 
   const m = METRICAS[metrica];
-  const ranking = ordenar(new Map([...porMunicipio].map(([codigo, dadosMun]) => [codigo, dadosMun.valor]))).slice(0, 5);
+  // dentro de uma cidade com distritos, o ranking é dos distritos
+  const fonteRanking = distritos ? porDistrito : porMunicipio;
+  const maximoRanking = distritos ? maximoDistrito : maximo;
+  const ranking = ordenar(new Map([...fonteRanking].map(([chave, dadosArea]) => [chave, dadosArea.valor]))).slice(0, 5);
   const pedido = idPedido ? rede.pedidos.find((p) => p.idPedido === idPedido) : null;
   const farmacia = idFarmacia ? rede.porId.get(idFarmacia) : null;
 
-  function focarMunicipio(codigo) {
-    setMunicipio(codigo);
-    setIdPedido(null);
-    setIdFarmacia(null);
-    const grupo = rotulos.find((r) => r.codigo === codigo);
-    if (!grupo) return;
-    const [, , w0, h0] = ENQUADRAMENTOS.grandeSp;
-    const w = w0 * 0.55;
-    const h = h0 * 0.55;
-    setViewBox([grupo.x - w / 2, grupo.y - h / 2, w, h]);
+  // zoom animado (o mapa não arrasta: só a página muda o enquadramento)
+  function animarPara(alvo) {
+    cancelAnimationFrame(animacao.current);
+    const de = viewBox;
+    const inicioAnimacao = performance.now();
+    const passo = (agoraAnimacao) => {
+      const k = Math.min(1, (agoraAnimacao - inicioAnimacao) / 900);
+      const suave = 1 - (1 - k) ** 3;
+      setViewBox(de.map((v, i) => v + (alvo[i] - v) * suave));
+      if (k < 1) animacao.current = requestAnimationFrame(passo);
+    };
+    animacao.current = requestAnimationFrame(passo);
   }
 
-  function aoClicarElemento({ pedido: idP, farmacia: idF }) {
+  async function abrirCidade(codigo) {
+    const caixa = apiMapa.current?.caixaDoMunicipio(codigo);
+    if (!caixa) return;
+    const folga = Math.max(caixa[2], caixa[3]) * 0.12;
+    animarPara([caixa[0] - folga, caixa[1] - folga, caixa[2] + 2 * folga, caixa[3] + 2 * folga]);
+    cidadeAberta.current = codigo;
+    setCidade(codigo);
+    setMunicipio(codigo);
+    setDistrito(null);
+    setIdPedido(null);
+    setIdFarmacia(null);
+    setDistritos(null);
+    if (!temDistritos(codigo)) return;
+    const lista = await carregarDistritos(codigo);
+    if (cidadeAberta.current === codigo) setDistritos(lista);
+  }
+
+  function voltarAoEstado() {
+    cidadeAberta.current = null;
+    animarPara(ENQUADRAMENTOS.estado);
+    setCidade(null);
+    setDistritos(null);
+    setDistrito(null);
+    setMunicipio(null);
+    setIdFarmacia(null);
+  }
+
+  function aoClicarElemento({ pedido: idP, farmacia: idF, distrito: nomeDistrito }) {
     if (idP) {
       setIdPedido(Number(idP));
       setIdFarmacia(null);
@@ -257,23 +315,46 @@ export default function AdminSimulacao() {
       setIdFarmacia(Number(idF));
       setIdPedido(null);
       setMunicipio(f?.codigo ?? null);
+      setDistrito(distritoDe.get(Number(idF)) ?? null);
+    } else if (nomeDistrito) {
+      setDistrito(nomeDistrito);
+      setIdPedido(null);
+      setIdFarmacia(null);
     }
   }
 
-  const dica = (codigo) => {
-    const dadosMun = porMunicipio.get(codigo);
+  const dica = (alvo) => {
+    if (alvo.distrito) {
+      const dadosDistrito = porDistrito.get(alvo.distrito);
+      return { titulo: alvo.distrito, detalhe: dadosDistrito ? `${numero(dadosDistrito.valor)} ${m.unidade}` : "Sem movimento neste filtro" };
+    }
+    if (alvo.farmacia) {
+      const f = rede.porId.get(Number(alvo.farmacia));
+      return f ? { titulo: f.nome, detalhe: [f.bairro, f.cidade].filter(Boolean).join(", ") } : null;
+    }
+    if (alvo.pedido) {
+      const p = rede.pedidos.find((x) => x.idPedido === Number(alvo.pedido));
+      return p ? { titulo: `${nomeRemedio(p)} · ${numero(p.quantidade)} un.`, detalhe: `${p.origem.nome} → ${p.destino.nome}` } : null;
+    }
+    if (!alvo.municipio) return null;
+    const dadosMun = porMunicipio.get(alvo.municipio);
     return {
-      titulo: nomeDoMunicipio(codigo),
-      detalhe: dadosMun ? `${numero(dadosMun.valor)} ${m.unidade}` : rotulos.some((r) => r.codigo === codigo) ? "Sem movimento neste filtro" : null,
+      titulo: nomeDoMunicipio(alvo.municipio),
+      detalhe: dadosMun ? `${numero(dadosMun.valor)} ${m.unidade}` : cidade ? null : "Clique para ver de perto",
     };
   };
 
-  const dadosMunicipio = municipio ? porMunicipio.get(municipio) : null;
-  const farmaciasDoMunicipio = municipio ? rede.farmacias.filter((f) => f.codigo === municipio) : [];
+  // área do detalhe: o distrito escolhido ou o município
+  const area = distrito
+    ? { chave: distrito, nome: distrito, dados: porDistrito.get(distrito), mapa: porDistrito, farmacias: rede.farmacias.filter((f) => distritoDe.get(f.idFarmacia) === distrito) }
+    : municipio
+      ? { chave: municipio, nome: nomeDoMunicipio(municipio), dados: porMunicipio.get(municipio), mapa: porMunicipio, farmacias: rede.farmacias.filter((f) => f.codigo === municipio) }
+      : null;
   const totalNoPeriodo = [...porMunicipio.values()].reduce((s, d) => s + d.valor, 0);
   const pedidosNoPeriodo = [...porMunicipio.values()].reduce((s, d) => s + d.pedidos, 0);
   const fecharDetalhe = () => {
-    setMunicipio(null);
+    if (distrito) setDistrito(null);
+    else setMunicipio(null);
     setIdPedido(null);
     setIdFarmacia(null);
   };
@@ -291,15 +372,25 @@ export default function AdminSimulacao() {
       <div className="sim-grade">
         <section className="sim-palco" aria-label="Mapa da rede">
           <MapaRede
-            viewBox={vista}
-            onViewBox={setViewBox}
-            vistaRede={vistaRede}
+            viewBox={viewBox}
+            apiRef={apiMapa}
+            navegacao={
+              <div className="sim-navegacao">
+                {cidade ? (
+                  <>
+                    <button type="button" onClick={voltarAoEstado}>← Estado</button>
+                    <span><b>{nomeDoMunicipio(cidade)}</b>{distritos ? ` · ${distritos.length} distritos` : ""}</span>
+                  </>
+                ) : (
+                  <span>Clique numa cidade para ver de perto</span>
+                )}
+              </div>
+            }
             cores={cores}
-            selecionado={municipio}
+            selecionado={cidade ? null : municipio}
             onSelecionar={(codigo) => {
-              setMunicipio(codigo);
-              setIdPedido(null);
-              setIdFarmacia(null);
+              if (codigo) abrirCidade(codigo);
+              else if (!cidade) fecharDetalhe();
             }}
             onElemento={aoClicarElemento}
             dica={dica}
@@ -318,6 +409,19 @@ export default function AdminSimulacao() {
           >
             {(px) => (
               <>
+                {distritos?.map((d) => {
+                  const dadosDistrito = porDistrito.get(d.nome);
+                  const cor = corDoValor(dadosDistrito?.valor, maximoDistrito, escala) ?? (distritosComFarmacia.has(d.nome) ? COR_COM_FARMACIA : "#ffffff");
+                  return (
+                    <path
+                      key={d.nome}
+                      d={d.d}
+                      className={`sim-clicavel sim-distrito${d.nome === distrito ? " is-selecionado" : ""}`}
+                      data-distrito={d.nome}
+                      style={{ fill: cor }}
+                    />
+                  );
+                })}
                 {aCaminho.map((p) => {
                   const a = p.origem;
                   const b = p.destino;
@@ -354,8 +458,9 @@ export default function AdminSimulacao() {
                     </g>
                   );
                 })}
-                {(dePerto
-                  ? semSobrepor(rotulosFarmacias, px * 1.3, (r) => (r.idFarmacia === idFarmacia ? Infinity : Math.abs(saldo.get(r.idFarmacia) ?? 0)))
+                {(cidade
+                  ? semSobrepor([...rotulosFarmacias, ...rotulosDistritos], px * 1.3, (r) =>
+                    r.idFarmacia ? 1e9 : r.distrito === distrito ? 1e10 : porDistrito.get(r.distrito)?.valor ?? 0)
                   : semSobrepor(rotulos, px * 1.3, (r) => (r.codigo === municipio ? Infinity : porMunicipio.get(r.codigo)?.valor ?? 0))
                 ).map((r) => (
                   <text key={r.codigo} x={r.x + 12 * px} y={r.y + 5 * px} fontSize={15 * px} strokeWidth={4 * px} className="sim-rotulo">
@@ -438,32 +543,32 @@ export default function AdminSimulacao() {
               </dl>
               {estaACaminho(pedido, momento) && <p className="sim-status">Na estrada neste momento</p>}
             </div>
-          ) : municipio ? (
+          ) : area ? (
             <div className="sim-secao sim-detalhe">
               <button type="button" className="sim-fechar" onClick={fecharDetalhe} aria-label="Fechar município">×</button>
               <h2 className="sim-titulo-bloco">{m.titulo}{nomeDoFiltro ? ` · ${nomeDoFiltro}` : ""}</h2>
-              <p className="sim-nome">{nomeDoMunicipio(municipio)}</p>
-              {dadosMunicipio ? (
+              <p className="sim-nome">{area.nome}</p>
+              {area.dados ? (
                 <>
-                  <p className="sim-destaque">{numero(dadosMunicipio.valor)} <small>{m.unidade}</small></p>
+                  <p className="sim-destaque">{numero(area.dados.valor)} <small>{m.unidade}</small></p>
                   <dl className="sim-numeros">
-                    <div><dt>Pedidos</dt><dd>{numero(dadosMunicipio.pedidos)}</dd></div>
-                    <div><dt>Farmácias</dt><dd>{numero(farmaciasDoMunicipio.length)}</dd></div>
-                    <div><dt>Posição</dt><dd>{ordenar(new Map([...porMunicipio].map(([c, d]) => [c, d.valor]))).findIndex(([c]) => c === municipio) + 1}º</dd></div>
+                    <div><dt>Pedidos</dt><dd>{numero(area.dados.pedidos)}</dd></div>
+                    <div><dt>Farmácias</dt><dd>{numero(area.farmacias.length)}</dd></div>
+                    <div><dt>Posição</dt><dd>{ordenar(new Map([...area.mapa].map(([c, d]) => [c, d.valor]))).findIndex(([c]) => c === area.chave) + 1}º</dd></div>
                   </dl>
-                  <ListaBarras titulo="Por farmácia" itens={ordenar(dadosMunicipio.porFarmacia).map(([id, v]) => [rede.porId.get(id)?.nome ?? `#${id}`, v])} destaque={farmacia?.nome} cor={escala[3]} />
-                  {!idRemedio && <ListaBarras titulo="Remédios" itens={ordenar(dadosMunicipio.porRemedio).slice(0, 5)} cor={escala[3]} />}
-                  <ListaBarras titulo={m.parceiro === "origem" ? "De onde veio" : "Para onde foi"} itens={ordenar(dadosMunicipio.parceiros).slice(0, 5)} cor={escala[3]} />
+                  <ListaBarras titulo="Por farmácia" itens={ordenar(area.dados.porFarmacia).map(([id, v]) => [rede.porId.get(id)?.nome ?? `#${id}`, v])} destaque={farmacia?.nome} cor={escala[3]} />
+                  {!idRemedio && <ListaBarras titulo="Remédios" itens={ordenar(area.dados.porRemedio).slice(0, 5)} cor={escala[3]} />}
+                  <ListaBarras titulo={m.parceiro === "origem" ? "De onde veio" : "Para onde foi"} itens={ordenar(area.dados.parceiros).slice(0, 5)} cor={escala[3]} />
                 </>
               ) : (
                 <>
                   <p className="sim-vazio">
-                    {farmaciasDoMunicipio.length
+                    {area.farmacias.length
                       ? `Sem ${m.unidade} neste filtro até este momento.`
                       : "Nenhuma farmácia da rede neste município."}
                   </p>
-                  {farmaciasDoMunicipio.length > 0 && (
-                    <ListaBarras titulo="Farmácias da rede" itens={farmaciasDoMunicipio.map((f) => [f.nome, 0])} semValor />
+                  {area.farmacias.length > 0 && (
+                    <ListaBarras titulo="Farmácias da rede" itens={area.farmacias.map((f) => [f.nome, 0])} semValor />
                   )}
                 </>
               )}
@@ -507,10 +612,14 @@ export default function AdminSimulacao() {
               <ol className="sim-ranking">
                 {ranking.map(([codigo, valor]) => (
                   <li key={codigo}>
-                    <button type="button" onClick={() => focarMunicipio(codigo)} aria-pressed={codigo === municipio}>
-                      <span>{nomeDoMunicipio(codigo)}</span>
+                    <button
+                      type="button"
+                      onClick={() => (distritos ? setDistrito(codigo) : abrirCidade(codigo))}
+                      aria-pressed={distritos ? codigo === distrito : codigo === municipio}
+                    >
+                      <span>{distritos ? codigo : nomeDoMunicipio(codigo)}</span>
                       <b>{numero(valor)}</b>
-                      <i style={{ width: `${(valor / maximo) * 100}%`, background: corDoValor(valor, maximo, escala) }} aria-hidden="true" />
+                      <i style={{ width: `${(valor / maximoRanking) * 100}%`, background: corDoValor(valor, maximoRanking, escala) }} aria-hidden="true" />
                     </button>
                   </li>
                 ))}

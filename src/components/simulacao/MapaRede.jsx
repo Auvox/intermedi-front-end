@@ -1,36 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import mapaSvg from "../../assets/mapa-svg.svg";
-import { ENQUADRAMENTOS } from "../../services/rede";
 
 // Mapa de SP (o mesmo da página inicial) com os 645 municípios clicáveis.
 // O SVG é posto direto na página para pintar cada município ("mun_<código IBGE>");
-// por cima vem uma camada com a mesma viewBox para farmácias e trajetos.
-//   viewBox / onViewBox   enquadramento (zoom e arraste)
-//   vistaRede             enquadramento com todas as farmácias (botão "Farmácias")
-//   acoes                 controles no canto superior direito (ex.: filtro de remédio)
+// por cima vem uma camada com a mesma viewBox para distritos, farmácias e trajetos.
+// O mapa é fixo: não arrasta nem dá zoom com o mouse; quem muda o enquadramento
+// é a página (zoom animado ao abrir uma cidade).
+//   viewBox               enquadramento
+//   apiRef                recebe { caixaDoMunicipio(código) } quando o mapa carrega
+//   navegacao / acoes     controles nos cantos superiores esquerdo / direito
 //   cores                 Map código -> cor do município
 //   selecionado           código do município escolhido
 //   onSelecionar          clique num município (null = fora dele)
 //   onElemento            clique num elemento da camada com a classe "sim-clicavel"
-//                         (recebe o dataset dele: data-pedido, data-farmacia…)
-//   dica                  (código) -> { titulo, detalhe } do balão ao passar o mouse
+//                         (recebe o dataset dele: data-pedido, data-farmacia, data-distrito…)
+//   dica                  ({ municipio } ou dataset) -> { titulo, detalhe } do balão
 //   children              (escala) -> elementos da camada; escala = unidades por pixel
 
 const COR_BASE = "#ffffff";
-const LARGURA_MINIMA = 1500; // zoom máximo (~5 km de largura)
-const ESTADO = ENQUADRAMENTOS.estado;
 
 let textoSvg = null; // 950 KB: baixa uma vez só
 const carregarSvg = () => (textoSvg ??= fetch(mapaSvg).then((r) => r.text()));
-
-function limitar([x, y, largura, altura]) {
-  const w = Math.min(Math.max(largura, LARGURA_MINIMA), ESTADO[2] * 1.15);
-  const h = (w * altura) / largura;
-  const folga = w * 0.3;
-  const nx = Math.min(Math.max(x, ESTADO[0] - folga), ESTADO[0] + ESTADO[2] - w + folga);
-  const ny = Math.min(Math.max(y, ESTADO[1] - folga), ESTADO[1] + ESTADO[3] - h + folga);
-  return [nx, ny, w, h];
-}
 
 // estica o enquadramento para a proporção da caixa (sem faixas vazias nas bordas)
 function cobrir([x, y, w, h], proporcao) {
@@ -42,11 +32,10 @@ function cobrir([x, y, w, h], proporcao) {
   return [x - (nw - w) / 2, y, nw, h];
 }
 
-export default function MapaRede({ viewBox, onViewBox, vistaRede, acoes, cores, selecionado, onSelecionar, onElemento, dica, children }) {
+export default function MapaRede({ viewBox, apiRef, navegacao, acoes, cores, selecionado, onSelecionar, onElemento, dica, children }) {
   const caixa = useRef(null);
   const base = useRef(null);
   const svgRef = useRef(null);
-  const arraste = useRef(null);
   const [carregado, setCarregado] = useState(false);
   const [erro, setErro] = useState("");
   const [balao, setBalao] = useState(null);
@@ -75,6 +64,16 @@ export default function MapaRede({ viewBox, onViewBox, vistaRede, acoes, cores, 
   }, []);
 
   useEffect(() => {
+    if (!carregado || !apiRef) return;
+    apiRef.current = {
+      caixaDoMunicipio: (codigo) => {
+        const b = svgRef.current?.querySelector(`#mun_${codigo}`)?.getBBox();
+        return b ? [b.x, b.y, b.width, b.height] : null;
+      },
+    };
+  }, [carregado, apiRef]);
+
+  useEffect(() => {
     svgRef.current?.setAttribute("viewBox", vb.join(" "));
   });
 
@@ -99,86 +98,39 @@ export default function MapaRede({ viewBox, onViewBox, vistaRede, acoes, cores, 
 
   const escala = vb[2] / tamanho.largura;
 
-  // ponto da tela -> coordenada do mapa
-  const noMapa = (clientX, clientY) => {
-    const r = caixa.current.getBoundingClientRect();
-    return [vb[0] + ((clientX - r.left) / r.width) * vb[2], vb[1] + ((clientY - r.top) / r.height) * vb[3]];
-  };
-
-  function zoom(fator, cx, cy) {
-    const [x, y, w, h] = vb;
-    const [px, py] = cx == null ? [x + w / 2, y + h / 2] : noMapa(cx, cy);
-    const nw = w * fator;
-    const nh = h * fator;
-    onViewBox(limitar([px - ((px - x) / w) * nw, py - ((py - y) / h) * nh, nw, nh]));
-  }
-
-  // roda do mouse: zoom no ponto do cursor (precisa de passive: false)
-  const zoomRef = useRef(zoom);
-  useEffect(() => {
-    zoomRef.current = zoom;
-  });
-  useEffect(() => {
-    const el = caixa.current;
-    const aoRolar = (e) => {
-      e.preventDefault();
-      zoomRef.current(e.deltaY > 0 ? 1.18 : 1 / 1.18, e.clientX, e.clientY);
-    };
-    el.addEventListener("wheel", aoRolar, { passive: false });
-    return () => el.removeEventListener("wheel", aoRolar);
-  }, []);
-
-  const municipioEm = (alvo) => alvo.closest?.('[id^="mun_"]')?.id.slice(4) ?? null;
-
-  function aoApertar(e) {
-    if (e.button !== 0) return;
-    arraste.current = { x: e.clientX, y: e.clientY, inicio: vb, moveu: false };
-    caixa.current.setPointerCapture(e.pointerId);
+  // o que está embaixo do ponteiro: um elemento da camada ou um município
+  function alvoEm(e) {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const clicavel = el?.closest?.(".sim-clicavel");
+    if (clicavel) return { ...clicavel.dataset };
+    const municipio = el?.closest?.('[id^="mun_"]')?.id.slice(4);
+    return municipio ? { municipio } : null;
   }
 
   function aoMover(e) {
-    const a = arraste.current;
-    if (a) {
-      const dx = e.clientX - a.x;
-      const dy = e.clientY - a.y;
-      if (!a.moveu && Math.hypot(dx, dy) < 4) return;
-      a.moveu = true;
-      setBalao(null);
-      const r = caixa.current.getBoundingClientRect();
-      const [x, y, w, h] = a.inicio;
-      onViewBox(limitar([x - (dx / r.width) * w, y - (dy / r.height) * h, w, h]));
-      return;
-    }
-    const codigo = municipioEm(document.elementFromPoint(e.clientX, e.clientY) ?? e.target);
-    if (!codigo) return setBalao(null);
+    const alvo = alvoEm(e);
+    const texto = alvo ? dica(alvo) : null;
+    if (!texto) return setBalao(null);
     const r = caixa.current.getBoundingClientRect();
-    setBalao({ codigo, x: e.clientX - r.left, y: e.clientY - r.top });
+    setBalao({ texto, x: e.clientX - r.left, y: e.clientY - r.top });
   }
 
-  function aoSoltar(e) {
-    const a = arraste.current;
-    arraste.current = null;
-    if (!a || a.moveu) return;
-    // clique: o que está embaixo do ponteiro (a camada de cima deixa passar)
-    const alvo = document.elementFromPoint(e.clientX, e.clientY);
-    const clicavel = alvo?.closest(".sim-clicavel");
-    if (clicavel) return onElemento?.({ ...clicavel.dataset });
-    onSelecionar(municipioEm(alvo));
+  function aoClicar(e) {
+    const alvo = alvoEm(e);
+    if (alvo && !alvo.municipio) return onElemento?.(alvo);
+    onSelecionar(alvo?.municipio ?? null);
   }
-
-  const textoBalao = balao ? dica(balao.codigo) : null;
 
   return (
     <div className="sim-mapa">
       <div
         ref={caixa}
         className="sim-mapa-caixa"
-        onPointerDown={aoApertar}
+        onClick={aoClicar}
         onPointerMove={aoMover}
-        onPointerUp={aoSoltar}
-        onPointerLeave={() => !arraste.current && setBalao(null)}
+        onPointerLeave={() => setBalao(null)}
         role="application"
-        aria-label="Mapa de São Paulo. Arraste para mover, role para aproximar, clique num município para ver os números."
+        aria-label="Mapa de São Paulo. Clique numa cidade para ver de perto."
       >
         <div ref={base} className="sim-mapa-base" />
         {carregado && (
@@ -188,20 +140,14 @@ export default function MapaRede({ viewBox, onViewBox, vistaRede, acoes, cores, 
         )}
         {!carregado && !erro && <p className="sim-mapa-aviso" role="status">Carregando o mapa…</p>}
         {erro && <p className="sim-mapa-aviso" role="alert">{erro}</p>}
-        {textoBalao && (
+        {balao && (
           <div className="sim-balao" style={{ left: balao.x, top: balao.y }} role="tooltip">
-            <strong>{textoBalao.titulo}</strong>
-            {textoBalao.detalhe && <span>{textoBalao.detalhe}</span>}
+            <strong>{balao.texto.titulo}</strong>
+            {balao.texto.detalhe && <span>{balao.texto.detalhe}</span>}
           </div>
         )}
       </div>
-      <div className="sim-zoom" role="group" aria-label="Zoom do mapa">
-        <button type="button" onClick={() => zoom(1 / 1.6)} aria-label="Aproximar">+</button>
-        <button type="button" onClick={() => zoom(1.6)} aria-label="Afastar">−</button>
-        <button type="button" onClick={() => onViewBox(ENQUADRAMENTOS.estado)}>Estado</button>
-        <button type="button" onClick={() => onViewBox(ENQUADRAMENTOS.grandeSp)}>Grande SP</button>
-        <button type="button" onClick={() => onViewBox(vistaRede)}>Farmácias</button>
-      </div>
+      {navegacao && <div className="sim-mapa-navegacao">{navegacao}</div>}
       {acoes && <div className="sim-mapa-acoes">{acoes}</div>}
     </div>
   );

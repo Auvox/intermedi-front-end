@@ -141,8 +141,9 @@ export const METRICAS = {
   },
 };
 
-// soma da métrica por município entre `inicio` e `fim` (com o filtro de remédio)
-export function agregarPorMunicipio(pedidos, { metrica, idRemedio, inicio, fim }) {
+// soma da métrica por município entre `inicio` e `fim` (com o filtro de remédio);
+// `chave` troca o agrupamento (ex.: por distrito da farmácia)
+export function agregarPorMunicipio(pedidos, { metrica, idRemedio, inicio, fim, chave = (f) => f.codigo }) {
   const m = METRICAS[metrica];
   const porMunicipio = new Map();
   for (const p of pedidos) {
@@ -150,7 +151,7 @@ export function agregarPorMunicipio(pedidos, { metrica, idRemedio, inicio, fim }
     const em = m.quando(p);
     if (em == null || em < inicio || em > fim) continue;
     const farmacia = p[m.lado];
-    const codigo = farmacia.codigo;
+    const codigo = chave(farmacia);
     if (!codigo) continue;
     const atual = porMunicipio.get(codigo) ?? { valor: 0, pedidos: 0, porFarmacia: new Map(), porRemedio: new Map(), parceiros: new Map() };
     const valor = m.valor(p);
@@ -217,4 +218,42 @@ export function corDoValor(valor, maximo, escala = ESCALA_AMARELO) {
   if (!valor || !maximo) return null;
   const nivel = Math.min(escala.length - 1, Math.floor(Math.sqrt(valor / maximo) * escala.length));
   return escala[nivel];
+}
+
+// --- distritos (zoom numa cidade) ------------------------------------------
+
+// cidades com o desenho dos distritos (carregado só quando a cidade é aberta)
+// São Paulo: 96 distritos do GeoSampa (Prefeitura), já nas coordenadas do mapa
+const DISTRITOS = {
+  3550308: () => import("../data/distritosSaoPaulo.json").then((m) => m.default),
+};
+export const temDistritos = (codigo) => Boolean(DISTRITOS[codigo]);
+
+export async function carregarDistritos(codigo) {
+  const lista = await DISTRITOS[codigo]?.();
+  if (!lista) return null;
+  return lista.map(({ nome, d }) => {
+    const aneis = d.split("Z").filter(Boolean).map((anel) =>
+      anel.replace("M", "").split("L").map((par) => par.split(",").map(Number)));
+    const pontos = aneis.flat();
+    const xs = pontos.map(([x]) => x);
+    const ys = pontos.map(([, y]) => y);
+    const caixa = [Math.min(...xs), Math.min(...ys)];
+    caixa.push(Math.max(...xs) - caixa[0], Math.max(...ys) - caixa[1]);
+    return { nome, d, aneis, caixa };
+  });
+}
+
+// distrito que contém o ponto (raio cruzando as bordas)
+export function distritoDoPonto(distritos, x, y) {
+  const dentro = (anel) => {
+    let sim = false;
+    for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) {
+      const [xi, yi] = anel[i];
+      const [xj, yj] = anel[j];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) sim = !sim;
+    }
+    return sim;
+  };
+  return distritos.find((d) => d.aneis.some(dentro))?.nome ?? null;
 }

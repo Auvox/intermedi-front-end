@@ -55,12 +55,7 @@
   border: 1px solid var(--color-border-subtle);
   border-radius: 20px;
   background: #eef3f6;
-  cursor: grab;
-  touch-action: none;
   user-select: none;
-}
-.sim-mapa-caixa:active {
-  cursor: grabbing;
 }
 .sim-mapa-base,
 .sim-mapa-camada,
@@ -114,42 +109,66 @@
   color: var(--color-text-muted);
 }
 
-.sim-zoom {
+/* canto esquerdo: dica no estado; dentro da cidade, "← Estado" e o nome dela */
+.sim-mapa-navegacao {
   position: absolute;
   top: 16px;
   left: 16px;
+}
+.sim-navegacao {
   display: flex;
-  gap: 4px;
-  padding: 5px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px 6px 6px;
   border-radius: 14px;
   background: color-mix(in srgb, var(--color-surface) 94%, transparent);
   box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
-  backdrop-filter: blur(6px);
+  font-size: 16px;
+  color: var(--color-text-secondary, #5a5f56);
 }
-.sim-zoom button {
-  min-width: 42px;
+.sim-navegacao > span:only-child {
+  padding-left: 10px;
+}
+.sim-navegacao b {
+  color: var(--color-text-primary);
+}
+.sim-navegacao button {
   height: 40px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 0;
   border-radius: 10px;
-  background: transparent;
-  color: var(--color-text-primary);
+  background: var(--sim-tinta);
+  color: #fff;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
-.sim-zoom button:first-child,
-.sim-zoom button:nth-child(2) {
-  font-size: 22px;
-  line-height: 1;
-}
-.sim-zoom button:hover {
-  background: var(--color-fill);
-}
-.sim-zoom button:focus-visible {
+.sim-navegacao button:focus-visible {
   outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline-offset: 2px;
+}
+
+/* distritos da cidade aberta (camada por cima do município) */
+.sim-distrito {
+  stroke: #a39776;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: fill 0.35s ease;
+  animation: sim-aparecer 0.5s ease both;
+}
+.sim-distrito:hover {
+  stroke: var(--sim-tinta);
+  stroke-width: 2px;
+}
+.sim-distrito.is-selecionado {
+  stroke: var(--sim-tinta);
+  stroke-width: 3px;
+}
+@keyframes sim-aparecer {
+  from { opacity: 0; }
 }
 
 .sim-mapa-acoes {
@@ -794,9 +813,6 @@
     width: 100%;
     margin-left: 0;
   }
-  .sim-zoom button:nth-child(n + 3) {
-    display: none;
-  }
   .sim-filtro-remedio span {
     display: none;
   }
@@ -809,7 +825,9 @@
   .sim-tempo.is-ao-vivo .sim-ao-vivo i {
     animation: none;
   }
-  .sim-mapa-svg [id^="mun_"] {
+  .sim-mapa-svg [id^="mun_"],
+  .sim-distrito {
     transition: none;
+    animation: none;
   }
 }
