@@ -2,7 +2,7 @@ import { API_URL, apiRequest } from "./api";
 
 // Cliente da aba "Desempenho" do admin. As rotas de analytics e saúde só
 // respondem ao admin logado (back: services/acesso.service.mjs), então a aba
-// pede o login do admin (CPF + matrícula + senha) e guarda o token só nesta
+// pede o login do admin (CPF + senha) e guarda o token só nesta
 // aba do navegador (sessionStorage).
 
 const CHAVE_TOKEN = "intermedi.desempenho.token";
@@ -44,11 +44,11 @@ export function aoMudarToken(ouvinte) {
   return () => ouvintes.delete(ouvinte);
 }
 
-export async function entrarComoAdmin({ cpf, matricula, senha }) {
+export async function entrarComoAdmin({ cpf, senha }) {
   const dados = await apiRequest("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cpf, matricula, senha }),
+    body: JSON.stringify({ cpf, senha }),
   });
   if (dados.usuario?.papel !== "admin") {
     throw new Error("Esta conta não é de admin. Só o admin vê o desempenho do sistema.");

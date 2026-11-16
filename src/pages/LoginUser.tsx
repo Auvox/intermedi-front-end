@@ -14,10 +14,10 @@ import { entrarComoAdmin } from "../services/desempenho";
 import { guardarTokenSessao } from "../services/presenca";
 
 type Role = "gerente" | "funcionario" | "admin";
-// Matrícula da equipe: G000123 gerente, 000123 funcionário, A000123 admin
+// Gerente e funcionário entram com CPF + matrícula (G000123 / 000123);
+// o admin entra com CPF + senha
 const MATRICULA_GERENTE = /^G\d{6}$/i;
 const MATRICULA_FUNCIONARIO = /^\d{6}$/;
-const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Duração da folha virando ao voltar para o site (igual ao CSS)
 const LEAVE_MS = 420;
 const profiles = [
@@ -162,11 +162,9 @@ export default function LoginUser() {
     const formData = new FormData(form);
 
     if (role === "funcionario") {
-      // Funcionário entra com CPF + matrícula + senha (POST /auth/login);
-      // a matrícula e a senha provisória chegam no e-mail de acesso
+      // Funcionário entra com CPF + matrícula (POST /auth/login).
       const cpf = String(formData.get("cpf") || "").replace(/\D/g, "");
       const matricula = String(formData.get("matricula") || "").trim();
-      const senha = String(formData.get("senha") || "");
 
       if (!cpf) {
         setMessage("Informe o CPF do funcionário.");
@@ -184,16 +182,12 @@ export default function LoginUser() {
         setMessage("A matrícula do funcionário tem 6 números (ex.: 000123).");
         return;
       }
-      if (!senha) {
-        setMessage("Informe a senha do funcionário.");
-        return;
-      }
 
       try {
         const { token, usuario } = await apiRequest("/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cpf, matricula, senha }),
+          body: JSON.stringify({ cpf, matricula }),
         });
         if (usuario?.papel !== "funcionario") {
           setMessage("Esta conta não é de funcionário. Escolha o perfil certo para entrar.");
@@ -226,7 +220,7 @@ export default function LoginUser() {
       } catch (error: any) {
         setMessage(
           error?.status === 401
-            ? "CPF, matrícula ou senha incorretos."
+            ? "CPF ou matrícula incorretos."
             : error instanceof Error
               ? error.message
               : "Não foi possível entrar. Tente novamente.",
@@ -237,15 +231,10 @@ export default function LoginUser() {
 
     if (role === "admin") {
       const cpf = String(formData.get("cpf") || "").trim();
-      const matricula = String(formData.get("matricula") || "").trim();
       const senha = String(formData.get("senha") || "");
 
       if (!cpf) {
         setMessage("Informe o CPF do admin.");
-        return;
-      }
-      if (!matricula) {
-        setMessage("Informe a matrícula do admin.");
         return;
       }
       if (!senha) {
@@ -255,42 +244,16 @@ export default function LoginUser() {
 
       try {
         // o mesmo token serve para a aba Desempenho, que não pede login de novo
-        await entrarComoAdmin({ cpf, matricula, senha });
+        await entrarComoAdmin({ cpf, senha });
         navigate("/admin", { replace: true });
       } catch (error: any) {
         setMessage(
           error?.status === 401
-            ? "CPF, matrícula ou senha incorretos."
+            ? "CPF ou senha incorretos."
             : error instanceof Error
               ? error.message
               : "Não foi possível entrar. Tente novamente.",
         );
-      }
-      return;
-    }
-
-    // Admin entra com CPF + matrícula + senha (POST /auth/login)
-    if (role === "admin") {
-      const cpf = String(formData.get("cpf") || "").trim();
-      const matricula = String(formData.get("matricula") || "").trim();
-      const senha = String(formData.get("senha") || "");
-      if (!cpf) {
-        setMessage("Informe o CPF do admin.");
-        return;
-      }
-      if (!matricula) {
-        setMessage("Informe a matrícula do admin.");
-        return;
-      }
-      if (!senha) {
-        setMessage("Informe a senha do admin.");
-        return;
-      }
-      try {
-        await entrarComoAdmin({ cpf, matricula, senha });
-        navigate("/admin", { replace: true });
-      } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Não foi possível entrar como admin. Tente novamente.");
       }
       return;
     }
@@ -300,21 +263,18 @@ export default function LoginUser() {
       return;
     }
 
-    // Gerente entra com e-mail + matrícula + senha, conferidos no back-end
-    const email = String(formData.get("email") || "")
-      .trim()
-      .toLowerCase();
+    // Gerente entra com CPF + matrícula, conferidos no back-end
+    const cpf = String(formData.get("cpf") || "").replace(/\D/g, "");
     const matricula = String(formData.get("matricula") || "")
       .trim()
       .toUpperCase();
-    const senha = String(formData.get("senha") || "");
 
-    if (!email) {
-      setMessage("Informe o e-mail do gerente.");
+    if (!cpf) {
+      setMessage("Informe o CPF do gerente.");
       return;
     }
-    if (!EMAIL_VALIDO.test(email)) {
-      setMessage("Informe um e-mail válido do gerente.");
+    if (cpf.length !== 11) {
+      setMessage("O CPF tem 11 números.");
       return;
     }
     if (!matricula) {
@@ -325,16 +285,18 @@ export default function LoginUser() {
       setMessage("A matrícula do gerente tem a letra G e 6 números (ex.: G000123).");
       return;
     }
-    if (!senha) {
-      setMessage("Informe a senha do gerente.");
-      return;
-    }
 
     try {
-      await entrarComoGerente({ email, matricula, senha });
+      await entrarComoGerente({ cpf, matricula });
       navigate("/gerente", { replace: true });
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível concluir o acesso. Tente novamente.");
+    } catch (error: any) {
+      setMessage(
+        error?.status === 401
+          ? "CPF ou matrícula incorretos."
+          : error instanceof Error
+            ? error.message
+            : "Não foi possível concluir o acesso. Tente novamente.",
+      );
     }
   }
   return (
@@ -417,29 +379,17 @@ export default function LoginUser() {
                 aria-busy={submitting}
                 noValidate
               >
-                {role === "gerente" ? (
-                  <label>
-                    E-mail
-                    <input
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="voce@farmacia.com.br"
-                      maxLength={254}
-                    />
-                  </label>
-                ) : (
-                  <label>
-                    CPF
-                    <input
-                      name="cpf"
-                      type="text"
-                      autoComplete="off"
-                      placeholder="Digite seu CPF"
-                      maxLength={14}
-                    />
-                  </label>
-                )}
+                <label>
+                  CPF
+                  <input
+                    name="cpf"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Digite seu CPF"
+                    maxLength={14}
+                  />
+                </label>
+                {role !== "admin" && (
                 <label>
                   Matrícula
                   <input
@@ -450,6 +400,8 @@ export default function LoginUser() {
                     maxLength={20}
                   />
                 </label>
+                )}
+                {role === "admin" && (
                 <label>
                   Senha
                   <span className="auth-password">
@@ -471,6 +423,7 @@ export default function LoginUser() {
                     </button>
                   </span>
                 </label>
+                )}
                 {role === "admin" && (
                   <p className="auth-admin-note">
                     <Icon name="shield" /> Acesso exclusivo para administradores

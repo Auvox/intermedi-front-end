@@ -1,8 +1,8 @@
 import { apiRequest } from "./api";
 import { guardarTokenSessao } from "./presenca";
 
-// Sessão do gerente no back-end (POST /auth/login com e-mail + matrícula +
-// senha). O JWT fica só nesta aba do navegador (sessionStorage).
+// Sessão do gerente no back-end (POST /auth/login com CPF + matrícula).
+// O JWT fica só nesta aba do navegador (sessionStorage).
 
 const CHAVE_TOKEN = "intermedi.gerente.token";
 
@@ -37,11 +37,11 @@ function paraUsuario(usuario) {
   };
 }
 
-export async function entrarComoGerente({ email, matricula, senha }) {
+export async function entrarComoGerente({ cpf, matricula }) {
   const dados = await apiRequest("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, matricula, senha }),
+    body: JSON.stringify({ cpf, matricula }),
   });
   if (dados.usuario?.papel !== "gerente") {
     throw new Error("Esta conta não é de gerente. Escolha o perfil certo para entrar.");
