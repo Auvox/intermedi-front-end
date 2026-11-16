@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ManagerIcon from "./ManagerIcon";
-import { ListaRastreio } from "./Rastreio";
+import PainelNotificacoes from "./PainelNotificacoes";
+import { useVistas } from "../hooks/useVistas";
+import { useRelogio } from "../hooks/useRastreio";
+import { haQuanto, ICONE_MARCO } from "../services/rastreio";
 
 // Sino do funcionário: cada etapa da entrega dos chamados que ele abriu e os
 // remédios que chegaram na unidade por pedido de outra pessoa
@@ -12,8 +15,9 @@ export function SinoFuncionario({ rastreio, fonte }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { naoLidos, marcarLidos } = rastreio;
-  // Quais eram novas quando o sino abriu (abrir já marca como lidas)
-  const [novos, setNovos] = useState(() => new Set());
+  // o que já foi clicado (o resto fica em destaque)
+  const { vistas, marcar } = useVistas();
+  const agora = useRelogio(false);
   const linkPedido = (e) => `${location.pathname}?perfil=pedido:${e.pedido.idRedistribuicao}`;
 
   useEffect(() => {
@@ -34,10 +38,7 @@ export function SinoFuncionario({ rastreio, fonte }) {
   }, [aberto]);
 
   function alternar() {
-    if (!aberto) {
-      setNovos(new Set(rastreio.eventos.filter(rastreio.isNaoLido).map((e) => e.chave)));
-      marcarLidos();
-    }
+    if (!aberto) marcarLidos();
     setAberto((v) => !v);
   }
 
@@ -55,27 +56,26 @@ export function SinoFuncionario({ rastreio, fonte }) {
         <b>{naoLidos}</b>
       </button>
       {aberto && (
-        <div className="chamado-bell-panel" id={painelId} role="region" aria-label="Entregas de remédios">
-          <p className="chamado-bell-title">Rastreamento das entregas</p>
-          {fonte.loading && !fonte.carregado ? (
-            <p className="chamado-bell-empty" role="status">Carregando…</p>
-          ) : fonte.error && !fonte.carregado ? (
-            <div className="chamado-bell-empty" role="alert">
-              <p>{fonte.error}</p>
-              <button type="button" className="mgr-text-button" onClick={fonte.retry}>Tentar de novo</button>
-            </div>
-          ) : (
-            <ListaRastreio
-              eventos={rastreio.eventos}
-              isNovo={(e) => novos.has(e.chave)}
-              linkPara={linkPedido}
-              onAbrir={(e) => { setAberto(false); navigate(linkPedido(e)); }}
-            />
-          )}
-          <Link className="chamado-bell-all" to="/funcionario/chamados" onClick={() => setAberto(false)}>
-            Minhas solicitações →
-          </Link>
-        </div>
+        <PainelNotificacoes
+          id={painelId}
+          vistas={vistas}
+          onMarcar={marcar}
+          carregando={fonte.loading && !fonte.carregado}
+          erros={fonte.error && !fonte.carregado ? [{ texto: fonte.error, tentar: fonte.retry }] : []}
+          itens={rastreio.eventos.map((e) => ({
+            chave: `entrega:${e.chave}`,
+            icone: ICONE_MARCO[e.marco] ?? "truck",
+            titulo: `${e.titulo} · ${e.item}`,
+            detalhe: e.descricao,
+            meta: `Entrega · ${haQuanto(e.quando, Math.max(agora, e.quando))}`,
+            quando: e.quando,
+            abrir: () => {
+              setAberto(false);
+              navigate(linkPedido(e));
+            },
+          }))}
+          rodape={<Link to="/funcionario/chamados" onClick={() => setAberto(false)}>Minhas solicitações</Link>}
+        />
       )}
     </div>
   );

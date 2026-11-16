@@ -5,6 +5,7 @@ import { useEnderecosFarmacias, useRelogio } from "../hooks/useRastreio";
 import {
   diaEHora,
   haQuanto,
+  ICONE_MARCO,
   horarioEtapa,
   localDaPonta,
   montarRastreio,
@@ -22,17 +23,6 @@ const ROTULO_ESTADO = {
   cancelado: "Pedido cancelado",
 };
 
-const ICONE_MARCO = {
-  solicitado: "clipboard",
-  aceito: "check",
-  preparo: "box",
-  saiu: "truck",
-  transito: "truck",
-  chegando: "map",
-  entregue: "box",
-  recusado: "alert",
-  cancelado: "alert",
-};
 
 // Situação atual do pedido, recalculada a cada segundo enquanto o caminhão anda
 function useRastreio(pedido) {

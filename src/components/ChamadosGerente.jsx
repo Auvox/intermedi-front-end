@@ -2,9 +2,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ManagerIcon from "./ManagerIcon";
 import { ChamadoModal, DespachoResumo } from "./Chamados";
-import { ListaRastreio } from "./Rastreio";
+import PainelNotificacoes from "./PainelNotificacoes";
+import { useVistas } from "../hooks/useVistas";
+import { useRelogio } from "../hooks/useRastreio";
+import { haQuanto, ICONE_MARCO } from "../services/rastreio";
 import { disponibilidadeChamado, redistribuirChamado, responderChamado } from "../services/api";
-import { prioridadeChamado, resumoRemedios, tempoDesde } from "../services/chamados";
+import { dataDoChamado, prioridadeChamado, resumoRemedios, tempoDesde } from "../services/chamados";
 
 // Sininho do topo: chamados pendentes da equipe, pedidos de outras farmácias e
 // o rastreamento das entregas (o que a farmácia pediu e o que ela está enviando).
@@ -14,19 +17,22 @@ export function NotificacoesGerente({ gerente, pendentes, pedidos, rastreio }) {
   const painelId = useId();
   const navigate = useNavigate();
   const location = useLocation();
-  // Atualizações de entrega que eram novas quando o sino abriu (abrir já marca como lidas)
-  const [novos, setNovos] = useState(() => new Set());
+  // o que já foi clicado (o resto fica em destaque)
+  const { vistas, marcar } = useVistas();
+  const agora = useRelogio(false);
   const totalPedidos = pedidos?.totalPendentes ?? 0;
   const totalEntregas = rastreio?.naoLidos ?? 0;
   const total = pendentes.totalPendentes + totalPedidos + totalEntregas;
   // o pedido abre na página de rastreamento, por cima da tela atual
   const linkPedido = (e) => `${location.pathname}?perfil=pedido:${e.pedido.idRedistribuicao}`;
 
+  const abrir = (destino) => {
+    setAberto(false);
+    navigate(destino);
+  };
+
   function alternar() {
-    if (!aberto && rastreio) {
-      setNovos(new Set(rastreio.eventos.filter(rastreio.isNaoLido).map((e) => e.chave)));
-      rastreio.marcarLidos();
-    }
+    if (!aberto && rastreio) rastreio.marcarLidos();
     setAberto((v) => !v);
   }
 
@@ -61,76 +67,50 @@ export function NotificacoesGerente({ gerente, pendentes, pedidos, rastreio }) {
         <b>{total}</b>
       </button>
       {aberto && (
-        <div className="chamado-bell-panel" id={painelId} role="region" aria-label="Notificações">
-          <p className="chamado-bell-title">Chamados da sua equipe</p>
-          {gerente.loading || pendentes.loading ? (
-            <p className="chamado-bell-empty" role="status">Carregando…</p>
-          ) : gerente.error || pendentes.error ? (
-            <div className="chamado-bell-empty" role="alert">
-              <p>{gerente.error || pendentes.error}</p>
-              <button type="button" className="mgr-text-button" onClick={gerente.error ? gerente.retry : pendentes.retry}>
-                Tentar de novo
-              </button>
-            </div>
-          ) : pendentes.pendentes.length ? (
-            <ul>
-              {pendentes.pendentes.slice(0, 5).map((c) => (
-                <li key={c.idChamado}>
-                  <Link to={`/gerente/chamados?perfil=chamado:${c.idChamado}`} onClick={() => setAberto(false)}>
-                    <strong>{c.funcionario?.nomeFuncionario}</strong> solicitou {resumoRemedios(c.remedios)}
-                    <small>
-                      <span className={c.prioridade === "urgente" ? "chamado-urgente-text" : undefined}>
-                        {prioridadeChamado(c.prioridade).label}
-                      </span>{" "}
-                      · {tempoDesde(c.dataAbertura)}
-                    </small>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="chamado-bell-empty">Nenhuma solicitação pendente.</p>
-          )}
-          <Link className="chamado-bell-all" to="/gerente/chamados" onClick={() => setAberto(false)}>
-            Ver todos os chamados →
-          </Link>
-          <p className="chamado-bell-title chamado-bell-secao">Pedidos de outras farmácias</p>
-          {pedidos?.loading ? (
-            <p className="chamado-bell-empty" role="status">Carregando…</p>
-          ) : pedidos?.error ? (
-            <div className="chamado-bell-empty" role="alert">
-              <p>{pedidos.error}</p>
-              <button type="button" className="mgr-text-button" onClick={pedidos.retry}>Tentar de novo</button>
-            </div>
-          ) : pedidos?.pedidos.length ? (
-            <ul>
-              {pedidos.pedidos.slice(0, 5).map((p) => (
-                <li key={p.idRedistribuicao}>
-                  <Link to={`/gerente/pedidos?pedido=${p.idRedistribuicao}`} onClick={() => setAberto(false)}>
-                    {p.mensagem}
-                    <small>{tempoDesde(p.dataSolicitacao)}</small>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="chamado-bell-empty">Nenhum pedido aguardando você.</p>
-          )}
-          <Link className="chamado-bell-all" to="/gerente/pedidos" onClick={() => setAberto(false)}>
-            Ver pedidos da rede →
-          </Link>
-          {rastreio && (
+        <PainelNotificacoes
+          id={painelId}
+          vistas={vistas}
+          onMarcar={marcar}
+          carregando={gerente.loading || pendentes.loading || pedidos?.loading}
+          erros={[
+            (gerente.error || pendentes.error) && { texto: gerente.error || pendentes.error, tentar: gerente.error ? gerente.retry : pendentes.retry },
+            pedidos?.error && { texto: pedidos.error, tentar: pedidos.retry },
+          ].filter(Boolean)}
+          itens={[
+            ...pendentes.pendentes.map((c) => ({
+              chave: `chamado:${c.idChamado}`,
+              icone: "ticket",
+              titulo: `${c.funcionario?.nomeFuncionario ?? "Alguém da equipe"} pediu ${resumoRemedios(c.remedios)}`,
+              meta: `Chamado da equipe · prioridade ${prioridadeChamado(c.prioridade).label.toLowerCase()} · ${tempoDesde(c.dataAbertura)}`,
+              urgente: c.prioridade === "urgente",
+              quando: dataDoChamado(c.dataAbertura)?.getTime(),
+              abrir: () => abrir(`/gerente/chamados?perfil=chamado:${c.idChamado}`),
+            })),
+            ...(pedidos?.pedidos ?? []).map((p) => ({
+              chave: `pedido-rede:${p.idRedistribuicao}`,
+              icone: "pharmacy",
+              titulo: p.mensagem,
+              meta: `Pedido de outra farmácia · ${tempoDesde(p.dataSolicitacao)}`,
+              quando: dataDoChamado(p.dataSolicitacao)?.getTime(),
+              abrir: () => abrir(`/gerente/pedidos?pedido=${p.idRedistribuicao}`),
+            })),
+            ...(rastreio?.eventos ?? []).map((e) => ({
+              chave: `entrega:${e.chave}`,
+              icone: ICONE_MARCO[e.marco] ?? "truck",
+              titulo: `${e.titulo} · ${e.item}`,
+              detalhe: e.descricao,
+              meta: `Entrega · ${haQuanto(e.quando, Math.max(agora, e.quando))}`,
+              quando: e.quando,
+              abrir: () => abrir(linkPedido(e)),
+            })),
+          ]}
+          rodape={
             <>
-              <p className="chamado-bell-title chamado-bell-secao">Rastreamento das entregas</p>
-              <ListaRastreio
-                eventos={rastreio.eventos}
-                isNovo={(e) => novos.has(e.chave)}
-                linkPara={linkPedido}
-                onAbrir={(e) => { setAberto(false); navigate(linkPedido(e)); }}
-              />
+              <Link to="/gerente/chamados" onClick={() => setAberto(false)}>Ver chamados</Link>
+              <Link to="/gerente/pedidos" onClick={() => setAberto(false)}>Ver pedidos da rede</Link>
             </>
-          )}
-        </div>
+          }
+        />
       )}
     </div>
   );

@@ -87,7 +87,7 @@ function textoMarco(id, { origem, destino }, p) {
       const caixas = caixasDoPedido(p);
       const quem = p.nomeFuncionarioPreparo ? `${p.nomeFuncionarioPreparo}, da ${origem.nome},` : `A equipe da ${origem.nome}`;
       return {
-        titulo: "Em preparo",
+        titulo: "Preparando",
         descricao: `${quem} está levando ${caixas} ${caixas === 1 ? "caixa" : "caixas"} até o caminhão.`,
       };
     }
@@ -330,3 +330,16 @@ export function haQuanto(ms, agora) {
   const horas = Math.floor(minutos / 60);
   return horas < 24 ? `há ${horas} h` : `há ${Math.floor(horas / 24)} d`;
 }
+
+// ícone de cada etapa da entrega (linha do tempo e sino)
+export const ICONE_MARCO = {
+  solicitado: "clipboard",
+  aceito: "check",
+  preparo: "box",
+  saiu: "truck",
+  transito: "truck",
+  chegando: "map",
+  entregue: "box",
+  recusado: "alert",
+  cancelado: "alert",
+};

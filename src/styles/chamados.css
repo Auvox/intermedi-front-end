@@ -947,3 +947,183 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Sino: uma lista só (chamados, pedidos da rede, entregas), do mais novo
+   para o mais antigo; o que ainda não foi clicado fica em destaque */
+.notif-painel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  display: grid;
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(620px, calc(100vh - 96px));
+  grid-template-rows: auto auto 1fr auto;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+.notif-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px 12px;
+}
+.notif-titulo {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.notif-contagem {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary-ink, var(--color-primary));
+  font-size: 13px;
+  font-weight: 700;
+}
+.notif-ler-todas {
+  margin-left: auto;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notif-ler-todas:hover {
+  color: var(--color-text-primary);
+}
+.notif-lista {
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.notif-lista li + li {
+  border-top: 1px solid var(--color-border-subtle);
+}
+.notif-lista button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 10px;
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notif-lista button:hover {
+  background: var(--color-surface-muted, #f5f6f4);
+}
+.notif-lista button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.notif-icone {
+  display: inline-flex;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+.notif-texto {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+/* o painel fica dentro do topo (.mgr-topbar strong corta com reticências) */
+.notif-painel .notif-lista button,
+.notif-painel .notif-texto > * {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.notif-texto strong {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+.notif-detalhe {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+.notif-texto small {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.notif-texto small.notif-urgente {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+/* ainda não clicada: fundo tingido, título forte e o ponto na cor da plataforma */
+.notif-lista li.is-nova button {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+.notif-lista li.is-nova button:hover {
+  background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
+}
+.notif-lista li.is-nova strong {
+  font-weight: 700;
+}
+.notif-lista li.is-nova .notif-icone {
+  color: var(--color-primary);
+}
+.notif-ponto {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.notif-vazio,
+.notif-erro {
+  margin: 0;
+  padding: 16px 18px;
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+.notif-erro {
+  color: var(--color-danger);
+}
+.notif-erro button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.notif-rodape {
+  display: flex;
+  gap: 20px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.notif-rodape a {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary-ink, var(--color-primary));
+}
+@media (max-width: 640px) {
+  .notif-painel {
+    position: fixed;
+    top: 64px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}
