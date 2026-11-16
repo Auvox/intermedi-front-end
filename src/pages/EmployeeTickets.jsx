@@ -6,14 +6,14 @@ import SolicitarReposicao from "../components/SolicitarReposicao";
 import { usePerfil } from "../components/perfil/perfilContext";
 import useApiList from "../hooks/useApiList";
 import useAcaoDaUrl from "../hooks/useAcaoDaUrl";
-import { INTERVALO_CHAMADOS, useFuncionarioAtual, usePolling } from "../hooks/useChamados";
+import { INTERVALO_CHAMADOS, useFarmaciaDoFuncionario, usePolling } from "../hooks/useChamados";
 import { listarChamadosFuncionario, listarRemedios } from "../services/api";
 import { INTERVALO_A_CAMINHO, STATUS_CHAMADO, temACaminho } from "../services/chamados";
 import { SkeletonTabela } from "../components/Skeleton";
 
 // "Minhas solicitações": chamados de reposição abertos pelo funcionário.
 export default function EmployeeTickets() {
-  const funcionario = useFuncionarioAtual();
+  const funcionario = useFarmaciaDoFuncionario();
   const { abrirPerfil } = usePerfil();
   const { idFuncionario } = funcionario;
   const [status, setStatus] = useState("");

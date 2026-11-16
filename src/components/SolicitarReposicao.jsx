@@ -1,8 +1,11 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { solicitarChamado } from "../services/api";
+import { listarEstoqueFarmacia, solicitarChamado } from "../services/api";
 import { PRIORIDADE_CHAMADO } from "../services/chamados";
+import { comSituacao, situacao } from "../services/remedios";
+import BuscaSelect from "./BuscaSelect";
 import { ChamadoModal, RemediosChamadoTable, StatusChamadoBadge } from "./Chamados";
+import { BarraEstoque } from "./Remedios";
 
 const novoItem = (idRemedio = "", quantidade = "") => ({
   key: crypto.randomUUID(),
@@ -15,6 +18,35 @@ const nomesGerentes = (gerentes = []) => {
   if (!nomes.length) return "o gerente da farmácia";
   return nomes.length === 1 ? nomes[0] : `${nomes.slice(0, -1).join(", ")} e ${nomes.at(-1)}`;
 };
+
+// Estoque da farmácia somado por remédio (um remédio pode ter vários lotes)
+function estoquePorRemedio(linhas = []) {
+  const porRemedio = new Map();
+  for (const linha of linhas) {
+    const chave = String(linha.idRemedio);
+    const atual = porRemedio.get(chave) ?? { quantidade: 0, estoqueMinimo: 0 };
+    porRemedio.set(chave, {
+      quantidade: atual.quantidade + (Number(linha.quantidade) || 0),
+      estoqueMinimo: Math.max(atual.estoqueMinimo, Number(linha.estoqueMinimo) || 0),
+    });
+  }
+  return new Map([...porRemedio].map(([chave, item]) => [chave, comSituacao(item)]));
+}
+
+// zerados e críticos primeiro: são os que mais precisam de reposição
+const ORDEM_SITUACAO = { zerado: 0, critico: 1, ok: 2 };
+
+// "120 un. · Em estoque", com a cor da situação
+function EstoqueNaLista({ item }) {
+  if (!item) return <span className="repo-estoque repo-estoque-neutral"><i aria-hidden="true" />Não tem na unidade</span>;
+  const { label, tone } = situacao(item.situacao);
+  return (
+    <span className={`repo-estoque repo-estoque-${tone}`}>
+      <i aria-hidden="true" />
+      {item.quantidade.toLocaleString("pt-BR")} un. · {label}
+    </span>
+  );
+}
 
 function validar(items) {
   const erros = {};
@@ -54,6 +86,27 @@ export default function SolicitarReposicao({
   const [erroEnvio, setErroEnvio] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [chamado, setChamado] = useState(null);
+  const [estoque, setEstoque] = useState(null);
+  const { idFarmacia } = funcionario;
+
+  // quanto tem de cada remédio na farmácia agora (aparece na escolha do remédio)
+  useEffect(() => {
+    if (!idFarmacia) return undefined;
+    const controller = new AbortController();
+    listarEstoqueFarmacia(idFarmacia, {}, { signal: controller.signal })
+      .then((dados) => setEstoque(estoquePorRemedio(dados?.estoque)))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [idFarmacia]);
+
+  const remediosOrdenados = useMemo(() => {
+    if (!estoque) return medicines;
+    const ordem = (m) => {
+      const item = estoque.get(String(m.id));
+      return item ? ORDEM_SITUACAO[item.situacao] ?? 2 : 3;
+    };
+    return [...medicines].sort((a, b) => ordem(a) - ordem(b));
+  }, [medicines, estoque]);
 
   function atualizar(key, campo, valor) {
     setItems((atual) => atual.map((item) => (item.key === key ? { ...item, [campo]: valor } : item)));
@@ -142,29 +195,34 @@ export default function SolicitarReposicao({
             {items.map((item, index) => {
               const erroRemedio = erros[`${item.key}-remedio`];
               const erroQuantidade = erros[`${item.key}-quantidade`];
+              const noEstoque = estoque && item.idRemedio ? estoque.get(item.idRemedio) : undefined;
               return (
-                <div className="emp-service-item" key={item.key}>
-                  <label>
-                    Remédio {index + 1}
-                    <select
-                      value={item.idRemedio}
-                      onChange={(e) => atualizar(item.key, "idRemedio", e.target.value)}
-                      aria-invalid={Boolean(erroRemedio)}
-                      aria-describedby={erroRemedio ? erroId(item.key, "remedio") : undefined}
-                    >
-                      <option value="">Selecione o remédio</option>
-                      {medicines.map((m) => (
-                        <option
-                          key={m.id}
-                          value={m.id}
-                          disabled={items.some((outro) => outro.key !== item.key && outro.idRemedio === m.id)}
-                        >
-                          {m.name}{m.dose ? ` · ${m.dose}` : ""}
-                        </option>
-                      ))}
-                    </select>
+                <div className="emp-service-item repo-item" key={item.key}>
+                  <BuscaSelect
+                    label={`Remédio ${index + 1}`}
+                    // um remédio só aparece uma vez no pedido
+                    itens={remediosOrdenados.filter(
+                      (m) => !items.some((outro) => outro.key !== item.key && outro.idRemedio === String(m.id)),
+                    )}
+                    valorId={item.idRemedio}
+                    onChange={(m) => atualizar(item.key, "idRemedio", m ? String(m.id) : "")}
+                    getId={(m) => m.id}
+                    rotulo={(m) => `${m.name}${m.dose ? ` · ${m.dose}` : ""}`}
+                    detalhe={estoque ? (m) => <EstoqueNaLista item={estoque.get(String(m.id))} /> : undefined}
+                    textoBusca={(m) => `${m.name} ${m.dose ?? ""}`}
+                    placeholder="Busque o remédio"
+                    invalido={Boolean(erroRemedio)}
+                    describedBy={erroRemedio ? erroId(item.key, "remedio") : undefined}
+                    semResultado="Nenhum remédio encontrado."
+                  >
+                    {estoque && item.idRemedio && (
+                      <div className="repo-estoque-atual">
+                        <span>{noEstoque ? "No estoque agora" : "Este remédio não tem na unidade"}</span>
+                        {noEstoque && <BarraEstoque quantidade={noEstoque.quantidade} minimo={noEstoque.estoqueMinimo} />}
+                      </div>
+                    )}
                     {erroRemedio && <small className="chamado-field-error" id={erroId(item.key, "remedio")}>{erroRemedio}</small>}
-                  </label>
+                  </BuscaSelect>
                   <label>
                     Quantidade
                     <input

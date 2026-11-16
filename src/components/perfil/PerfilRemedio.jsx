@@ -7,7 +7,7 @@ import ManagerIcon from "../ManagerIcon";
 import SolicitarReposicao from "../SolicitarReposicao";
 import { SituacaoBadges, TarjaBadge } from "../Remedios";
 import useApiList from "../../hooks/useApiList";
-import { useFuncionarioAtual } from "../../hooks/useChamados";
+import { useFarmaciaDoFuncionario } from "../../hooks/useChamados";
 import { avisarDadosAlterados, useFocoTitulo, usePerfilDados } from "../../hooks/useResumo";
 import { fotoUrl, listarRemedios } from "../../services/api";
 import {
@@ -57,7 +57,7 @@ function pedidoInicial(remedio, linha) {
 
 // Funcionário: abre o pedido de reposição (chamado) com este remédio já incluído
 function BotaoReposicao({ remedio, linha }) {
-  const funcionario = useFuncionarioAtual();
+  const funcionario = useFarmaciaDoFuncionario();
   const { items: catalogo } = useApiList(listarRemedios);
   const [aberto, setAberto] = useState(false);
   const pedido = pedidoInicial(remedio, linha);
