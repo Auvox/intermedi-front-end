@@ -35,6 +35,8 @@ const DesempenhoVisaoGeral = lazy(() => import("../pages/desempenho/DesempenhoVi
 const DesempenhoMapaCalor = lazy(() => import("../pages/desempenho/DesempenhoMapaCalor"));
 const DesempenhoRotas = lazy(() => import("../pages/desempenho/DesempenhoRotas"));
 const DesempenhoSaude = lazy(() => import("../pages/desempenho/DesempenhoSaude"));
+// Simulação em tempo real: mapa de SP (950 KB), carregado só quando aberto
+const AdminSimulacao = lazy(() => import("../pages/AdminSimulacao"));
 
 const carregando = (texto) => <p className="mgr-empty" role="status">{texto}</p>;
 
@@ -57,6 +59,7 @@ function Rotas() {
             <Route path="rotas" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoRotas /></Suspense>} />
             <Route path="saude" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoSaude /></Suspense>} />
           </Route>
+          <Route path="simulacao" element={<Suspense fallback={carregando("Carregando o mapa…")}><AdminSimulacao /></Suspense>} />
           {["gerentes", "farmacias", "pacientes"].map((section) => (
             <Route
               key={section}

@@ -90,6 +90,12 @@ function SidebarIcon({ name }) {
     ),
     arrow: <path d="m9 5 7 7-7 7" />,
     // aba Desempenho do admin
+    live: (
+      <>
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M7.8 7.8a6 6 0 0 0 0 8.4m8.4 0a6 6 0 0 0 0-8.4M4.9 4.9a10 10 0 0 0 0 14.2m14.2 0a10 10 0 0 0 0-14.2" />
+      </>
+    ),
     chart: (
       <>
         <path d="M4 20V10m6 10V4m6 16v-7m4 7H3" />
@@ -167,6 +173,7 @@ export default function ManagerSidebar({
     { path: "pacientes", label: "Pacientes", icon: "heart" },
     { path: "chamados", label: "Solicitações", icon: "ticket" },
     { path: "desempenho", label: "Desempenho", icon: "chart" },
+    { path: "simulacao", label: "Simulação em tempo real", icon: "live" },
   ];
   const menuLinks = admin
     ? adminLinks

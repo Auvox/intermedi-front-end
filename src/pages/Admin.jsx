@@ -232,6 +232,7 @@ const breadcrumbLabels = {
   pacientes: "Pacientes",
   chamados: "Solicitações",
   desempenho: "Desempenho",
+  simulacao: "Simulação em tempo real",
 };
 
 function Icon({ name, size = 17 }) {

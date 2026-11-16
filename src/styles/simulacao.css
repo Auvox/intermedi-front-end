@@ -1,0 +1,690 @@
+/* Aba "Simulação em tempo real" do admin: mapa grande, filtros ao lado e a
+   barra de tempo (ao vivo / voltar) embaixo do mapa */
+
+.sim {
+  display: grid;
+  gap: var(--space-5);
+}
+.sim-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.sim-cabecalho h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+.sim-cabecalho p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+}
+.sim-erro {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--text-small);
+}
+
+.sim-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-5);
+  align-items: start;
+}
+.sim-palco {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* --- mapa --- */
+.sim-mapa {
+  position: relative;
+}
+.sim-mapa-caixa {
+  position: relative;
+  aspect-ratio: 279280 / 186672;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: #eef3f6;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.sim-mapa-caixa:active {
+  cursor: grabbing;
+}
+.sim-mapa-base,
+.sim-mapa-camada,
+.sim-mapa-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sim-mapa-camada {
+  pointer-events: none;
+  overflow: visible;
+}
+/* recolore o SVG da Wikipédia: mar e estados vizinhos discretos */
+.sim-mapa-svg #path4698 {
+  fill: #eef3f6 !important;
+  stroke: none !important;
+}
+.sim-mapa-svg [id^="uf_"] {
+  fill: #f3f5f0 !important;
+  stroke: #c9d1c2 !important;
+  stroke-width: 1.2px !important;
+  vector-effect: non-scaling-stroke;
+}
+.sim-mapa-svg #uf_35 {
+  fill: #ffffff !important;
+  stroke: #9aa593 !important;
+}
+.sim-mapa-svg [id^="mun_"] {
+  stroke: #dfe4d9 !important;
+  stroke-width: 0.6px !important;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill 0.35s ease;
+}
+.sim-mapa-svg [id^="mun_"]:hover {
+  stroke: #6b7565 !important;
+  stroke-width: 1.2px !important;
+}
+.sim-mapa-svg [id^="mun_"].is-selecionado {
+  stroke: #1f2a1c !important;
+  stroke-width: 2px !important;
+}
+.sim-mapa-aviso {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.sim-zoom {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+}
+.sim-zoom button {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+.sim-zoom button:hover {
+  background: var(--color-fill);
+}
+.sim-zoom button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.sim-balao {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #1f2a1c;
+  color: #fff;
+  font-size: var(--text-caption);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(12px, -110%);
+}
+.sim-balao span {
+  opacity: 0.75;
+}
+
+/* camada: farmácias, trajetos e rótulos */
+.sim-rotulo {
+  fill: #1f2a1c;
+  font-family: inherit;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.sim-farmacia-halo {
+  opacity: 0.2;
+}
+.sim-farmacia-ponto {
+  stroke: #ffffff;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.sim-farmacia.is-sobra :is(.sim-farmacia-halo, .sim-farmacia-ponto) { fill: #22a35a; }
+.sim-farmacia.is-falta :is(.sim-farmacia-halo, .sim-farmacia-ponto) { fill: #ea7a1a; }
+.sim-farmacia.is-neutra :is(.sim-farmacia-halo, .sim-farmacia-ponto) { fill: #7c8778; }
+.sim-farmacia.is-ativa .sim-farmacia-ponto { stroke: #1f2a1c; }
+
+.sim-trajeto-linha {
+  fill: none;
+  stroke: #2e6ff2;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.sim-trajeto.is-ativo .sim-trajeto-linha {
+  opacity: 1;
+}
+.sim-trajeto-carga {
+  fill: #2e6ff2;
+  stroke: #ffffff;
+}
+.sim-trajeto-chegada {
+  fill: none;
+  stroke: #2e6ff2;
+  opacity: 0.35;
+}
+.sim-trajeto-alvo {
+  fill: none;
+  stroke: transparent;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+/* --- barra de tempo --- */
+.sim-tempo {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.sim-tempo-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.sim-ao-vivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+.sim-ao-vivo i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #9aa593;
+}
+.sim-tempo.is-ao-vivo .sim-ao-vivo {
+  border-color: #f3c9c4;
+  background: #fff3f1;
+  color: #c4291c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sim-tempo.is-ao-vivo .sim-ao-vivo i {
+  background: #e5372a;
+  animation: sim-pulso 1.4s ease-in-out infinite;
+}
+@keyframes sim-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(229 55 42 / 45%); }
+  50% { box-shadow: 0 0 0 6px rgb(229 55 42 / 0%); }
+}
+.sim-tempo-controles {
+  display: flex;
+  gap: 4px;
+}
+.sim-tempo-controles button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-fill);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+.sim-tempo-controles button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sim-tempo-controles .sim-tocar {
+  background: #1f2a1c;
+  color: #fff;
+}
+.sim-velocidade {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.sim-velocidade select {
+  height: 30px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-small);
+}
+.sim-tempo-quando {
+  margin: 0 0 0 auto;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.sim-tempo-quando strong {
+  color: var(--color-text-primary);
+}
+
+.sim-trilha {
+  position: relative;
+  height: 28px;
+}
+.sim-trilha-marcas,
+.sim-trilha-feito {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  height: 8px;
+  border-radius: 999px;
+}
+.sim-trilha-marcas {
+  right: 0;
+  background: var(--color-surface-sunken, #eef0eb);
+}
+.sim-trilha-feito {
+  background: color-mix(in srgb, #2e6ff2 22%, transparent);
+  pointer-events: none;
+}
+.sim-trilha-marcas i,
+.sim-trilha-legenda i {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 8px;
+  border-radius: 1px;
+}
+.sim-trilha-marcas i.is-envio,
+.sim-trilha-legenda i.is-envio { background: #2e6ff2; }
+.sim-trilha-marcas i.is-chegada,
+.sim-trilha-legenda i.is-chegada { background: #22a35a; }
+.sim-trilha input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+.sim-trilha input[type="range"]::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+.sim-trilha input[type="range"]::-webkit-slider-thumb {
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  background: #1f2a1c;
+  appearance: none;
+}
+.sim-tempo.is-ao-vivo .sim-trilha input[type="range"]::-webkit-slider-thumb {
+  background: #e5372a;
+}
+.sim-trilha input[type="range"]::-moz-range-thumb {
+  width: 4px;
+  height: 28px;
+  border: 0;
+  border-radius: 2px;
+  background: #1f2a1c;
+}
+.sim-trilha input[type="range"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.sim-trilha-legenda {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.sim-trilha-legenda span:nth-child(2) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sim-trilha-legenda i {
+  position: static;
+  display: inline-block;
+  height: 10px;
+}
+
+/* --- lateral --- */
+.sim-lateral {
+  display: grid;
+  gap: var(--space-3);
+}
+.sim-bloco {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.sim-rotulo-bloco {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.sim-segmentos {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--color-fill);
+}
+.sim-segmentos button {
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+.sim-segmentos button[aria-pressed="true"] {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgb(0 0 0 / 8%));
+}
+.sim-segmentos button:focus-visible,
+.sim-lateral button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+.sim-campo {
+  display: grid;
+  gap: 4px;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.sim-campo select {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-body);
+}
+
+.sim-escala {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+.sim-escala-valores {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.sim-legenda-itens {
+  display: grid;
+  gap: 4px;
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-small);
+  color: var(--color-text-secondary, var(--color-text-muted));
+}
+.sim-legenda-itens li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sim-ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.sim-ponto.is-sobra { background: #22a35a; }
+.sim-ponto.is-falta { background: #ea7a1a; }
+.sim-traco {
+  width: 18px;
+  border-top: 2px dashed #2e6ff2;
+}
+
+.sim-detalhe h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.sim-fechar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-fill);
+  color: var(--color-text-primary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sim-destaque {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.sim-destaque small {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+}
+.sim-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: 0;
+}
+.sim-numeros div {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: 10px;
+  background: var(--color-fill);
+}
+.sim-numeros dt {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.sim-numeros dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.sim-rota {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+.sim-rota small {
+  display: block;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+.sim-rota b {
+  color: #2e6ff2;
+}
+.sim-status {
+  margin: 0;
+  color: #2e6ff2;
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+.sim-vazio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+.sim-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary-ink, #2e6ff2);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sim-lista,
+.sim-ranking,
+.sim-barras ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sim-lista button,
+.sim-ranking button {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sim-lista button:hover,
+.sim-ranking button:hover {
+  background: var(--color-fill);
+}
+.sim-lista strong {
+  font-size: var(--text-small);
+}
+.sim-lista span {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.sim-ranking button {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  font-size: var(--text-small);
+}
+.sim-ranking i {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 6px;
+  border-radius: 999px;
+}
+.sim-ranking b,
+.sim-barras b {
+  font-variant-numeric: tabular-nums;
+}
+.sim-barras {
+  display: grid;
+  gap: 6px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.sim-barras li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  font-size: var(--text-small);
+}
+.sim-barras li i {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 5px;
+  border-radius: 999px;
+  background: #e0a213;
+}
+.sim-barras li.is-destaque span {
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .sim-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sim-lateral {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .sim-tempo-quando {
+    width: 100%;
+    margin-left: 0;
+  }
+  .sim-zoom button:nth-child(n + 3) {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sim-tempo.is-ao-vivo .sim-ao-vivo i {
+    animation: none;
+  }
+  .sim-mapa-svg [id^="mun_"] {
+    transition: none;
+  }
+}
