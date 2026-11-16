@@ -7,6 +7,7 @@ import { ENQUADRAMENTOS } from "../../services/rede";
 // por cima vem uma camada com a mesma viewBox para farmácias e trajetos.
 //   viewBox / onViewBox   enquadramento (zoom e arraste)
 //   vistaRede             enquadramento com todas as farmácias (botão "Farmácias")
+//   acoes                 controles no canto superior direito (ex.: filtro de remédio)
 //   cores                 Map código -> cor do município
 //   selecionado           código do município escolhido
 //   onSelecionar          clique num município (null = fora dele)
@@ -41,7 +42,7 @@ function cobrir([x, y, w, h], proporcao) {
   return [x - (nw - w) / 2, y, nw, h];
 }
 
-export default function MapaRede({ viewBox, onViewBox, vistaRede, cores, selecionado, onSelecionar, onElemento, dica, children }) {
+export default function MapaRede({ viewBox, onViewBox, vistaRede, acoes, cores, selecionado, onSelecionar, onElemento, dica, children }) {
   const caixa = useRef(null);
   const base = useRef(null);
   const svgRef = useRef(null);
@@ -201,6 +202,7 @@ export default function MapaRede({ viewBox, onViewBox, vistaRede, cores, selecio
         <button type="button" onClick={() => onViewBox(ENQUADRAMENTOS.grandeSp)}>Grande SP</button>
         <button type="button" onClick={() => onViewBox(vistaRede)}>Farmácias</button>
       </div>
+      {acoes && <div className="sim-mapa-acoes">{acoes}</div>}
     </div>
   );
 }

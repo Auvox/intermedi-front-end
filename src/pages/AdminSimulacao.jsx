@@ -303,6 +303,18 @@ export default function AdminSimulacao() {
             }}
             onElemento={aoClicarElemento}
             dica={dica}
+            acoes={
+              <label className="sim-filtro-remedio" style={{ "--chip": escala[3] }}>
+                <span>Remédio</span>
+                <i aria-hidden="true" />
+                <select value={idRemedio} onChange={(e) => setIdRemedio(e.target.value)}>
+                  <option value="">Todos os remédios</option>
+                  {remedios.map(([id, nome]) => (
+                    <option key={id} value={id} style={{ color: escalaDoRemedio(nome)[4] }}>● {nome}</option>
+                  ))}
+                </select>
+              </label>
+            }
           >
             {(px) => (
               <>
@@ -373,8 +385,8 @@ export default function AdminSimulacao() {
           />
         </section>
 
-        <aside className="sim-lateral" aria-label="Filtros e detalhes">
-          <div className="sim-bloco sim-filtros">
+        <section className="sim-painel" aria-label="Filtros, números e legenda">
+          <div className="sim-secao sim-filtros">
             <h2 className="sim-titulo-bloco">Mostrar no mapa</h2>
             <div className="sim-segmentos" role="group" aria-label="O que pintar no mapa">
               {Object.entries(METRICAS).map(([chave, info]) => (
@@ -382,26 +394,6 @@ export default function AdminSimulacao() {
                   {info.rotulo}
                 </button>
               ))}
-            </div>
-
-            <h2 className="sim-titulo-bloco">Remédio</h2>
-            <div className="sim-remedios" role="group" aria-label="Filtrar por remédio">
-              {[["", "Todos", "Todos"], ...remedios].map(([id, nome, curto]) => {
-                const tons = escalaDoRemedio(id ? nome : "");
-                return (
-                  <button
-                    key={id || "todos"}
-                    type="button"
-                    aria-pressed={idRemedio === id}
-                    onClick={() => setIdRemedio(id)}
-                    style={{ "--chip": tons[3], "--chip-claro": tons[0], "--chip-escuro": tons[4] }}
-                    title={nome}
-                  >
-                    <i aria-hidden="true" />
-                    <span>{curto}</span>
-                  </button>
-                );
-              })}
             </div>
 
             <h2 className="sim-titulo-bloco">Período</h2>
@@ -412,10 +404,24 @@ export default function AdminSimulacao() {
                 </button>
               ))}
             </div>
+
+            <h2 className="sim-titulo-bloco">Legenda</h2>
+            <div className="sim-escala" aria-hidden="true">
+              {escala.map((cor) => <i key={cor} style={{ background: cor }} />)}
+            </div>
+            <div className="sim-escala-valores">
+              <span>menos</span>
+              <span>{maximo ? `${numero(maximo)} ${m.unidade}` : "sem movimento"}</span>
+            </div>
+            <ul className="sim-legenda-itens">
+              <li><i className="sim-ponto is-sobra" /> Farmácia que mais envia (sobra)</li>
+              <li><i className="sim-ponto is-falta" /> Farmácia que mais recebe (falta)</li>
+              <li><i className="sim-traco" /> Remédio na estrada</li>
+            </ul>
           </div>
 
           {pedido ? (
-            <div className="sim-bloco sim-detalhe">
+            <div className="sim-secao sim-detalhe">
               <button type="button" className="sim-fechar" onClick={fecharDetalhe} aria-label="Fechar pedido">×</button>
               <h2 className="sim-titulo-bloco">Pedido #{pedido.idPedido}</h2>
               <p className="sim-nome">{nomeRemedio(pedido)}</p>
@@ -433,7 +439,7 @@ export default function AdminSimulacao() {
               {estaACaminho(pedido, momento) && <p className="sim-status">Na estrada neste momento</p>}
             </div>
           ) : municipio ? (
-            <div className="sim-bloco sim-detalhe">
+            <div className="sim-secao sim-detalhe">
               <button type="button" className="sim-fechar" onClick={fecharDetalhe} aria-label="Fechar município">×</button>
               <h2 className="sim-titulo-bloco">{m.titulo}{nomeDoFiltro ? ` · ${nomeDoFiltro}` : ""}</h2>
               <p className="sim-nome">{nomeDoMunicipio(municipio)}</p>
@@ -463,7 +469,7 @@ export default function AdminSimulacao() {
               )}
             </div>
           ) : (
-            <div className="sim-bloco sim-resumo">
+            <div className="sim-secao sim-resumo">
               <h2 className="sim-titulo-bloco">{aoVivo ? "Agora na rede" : "Neste momento"}{nomeDoFiltro ? ` · ${nomeDoFiltro}` : ""}</h2>
               <dl className="sim-resumo-numeros">
                 <div className="is-destaque"><dt>Na estrada</dt><dd>{numero(aCaminho.length)}</dd></div>
@@ -474,25 +480,7 @@ export default function AdminSimulacao() {
               <p className="sim-vazio">Clique num município, numa farmácia ou num traço para ver os números.</p>
             </div>
           )}
-          <div className="sim-bloco sim-legenda">
-            <h2 className="sim-titulo-bloco">Legenda</h2>
-            <div className="sim-escala" aria-hidden="true">
-              {escala.map((cor) => <i key={cor} style={{ background: cor }} />)}
-            </div>
-            <div className="sim-escala-valores">
-              <span>menos</span>
-              <span>{maximo ? `${numero(maximo)} ${m.unidade}` : "sem movimento"}</span>
-            </div>
-            <ul className="sim-legenda-itens">
-              <li><i className="sim-ponto is-sobra" /> Farmácia que mais envia (sobra)</li>
-              <li><i className="sim-ponto is-falta" /> Farmácia que mais recebe (falta)</li>
-              <li><i className="sim-traco" /> Remédio na estrada</li>
-            </ul>
-          </div>
-        </aside>
-
-        <div className="sim-baixo">
-          <div className="sim-bloco">
+          <div className="sim-secao">
             <h2 className="sim-titulo-bloco">Na estrada {aoVivo ? "agora" : "neste momento"} · {aCaminho.length}</h2>
             {aCaminho.length ? (
               <ul className="sim-lista">
@@ -513,7 +501,7 @@ export default function AdminSimulacao() {
             )}
           </div>
 
-          <div className="sim-bloco">
+          <div className="sim-secao">
             <h2 className="sim-titulo-bloco">{m.titulo}</h2>
             {ranking.length ? (
               <ol className="sim-ranking">
@@ -531,8 +519,7 @@ export default function AdminSimulacao() {
               <p className="sim-vazio">Sem movimento neste filtro até este momento.</p>
             )}
           </div>
-
-        </div>
+        </section>
       </div>
     </div>
   );

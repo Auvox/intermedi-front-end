@@ -31,22 +31,17 @@
   font-size: 15px;
 }
 
-/* tudo empilhado: mapa e barra de tempo na largura toda, cartões embaixo */
+/* tudo empilhado: mapa e barra de tempo na largura toda, painel embaixo */
 .sim-grade {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
+  container-type: inline-size;
 }
 .sim-palco {
   display: grid;
   gap: var(--space-4);
   min-width: 0;
-}
-.sim-baixo {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--space-5);
-  align-items: start;
 }
 
 /* --- mapa --- */
@@ -155,6 +150,49 @@
 .sim-zoom button:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
+}
+
+.sim-mapa-acoes {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+.sim-filtro-remedio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px 5px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
+  backdrop-filter: blur(6px);
+}
+.sim-filtro-remedio span {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #5a5f56);
+}
+.sim-filtro-remedio i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--chip);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip) 25%, transparent);
+}
+.sim-filtro-remedio select {
+  height: 40px;
+  min-width: 220px;
+  padding: 0 12px;
+  border: 1.5px solid var(--chip);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .sim-balao {
@@ -425,21 +463,34 @@
   border-radius: 2px;
 }
 
-/* --- cartões (lateral e faixa de baixo) --- */
-.sim-lateral {
+/* --- painel embaixo do mapa: uma seção só, dividida em partes iguais
+   (as linhas entre as partes são o fundo aparecendo no gap de 1px) --- */
+.sim-painel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--space-5);
-  align-items: start;
-}
-.sim-bloco {
-  position: relative;
-  display: grid;
-  gap: 14px;
-  padding: 22px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
   border: 1px solid var(--color-border-subtle);
   border-radius: 20px;
+  background: var(--color-border-subtle);
+}
+.sim-secao {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 24px;
   background: var(--color-surface);
+}
+@container (max-width: 1100px) {
+  .sim-painel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width: 560px) {
+  .sim-painel {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .sim-titulo-bloco {
   margin: 0;
@@ -477,54 +528,10 @@
   color: var(--color-text-primary);
   box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
 }
-.sim-lateral button:focus-visible,
-.sim-baixo button:focus-visible {
+.sim-painel button:focus-visible,
+.sim-filtro-remedio select:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
-
-/* chips de remédio: cada um com a sua cor */
-.sim-remedios {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.sim-remedios button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  min-height: 42px;
-  padding: 0 14px;
-  border: 1.5px solid var(--color-border-subtle);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.sim-remedios button span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sim-remedios button i {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--chip);
-}
-.sim-remedios button:hover {
-  border-color: var(--chip);
-}
-.sim-remedios button[aria-pressed="true"] {
-  border-color: var(--chip);
-  background: var(--chip-claro);
-  color: var(--chip-escuro);
-  box-shadow: inset 0 0 0 1px var(--chip);
 }
 
 .sim-escala {
@@ -777,10 +784,6 @@
 }
 
 @media (max-width: 640px) {
-  .sim-lateral,
-  .sim-baixo {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .sim-cabecalho h1 {
     font-size: 26px;
   }
@@ -793,6 +796,13 @@
   }
   .sim-zoom button:nth-child(n + 3) {
     display: none;
+  }
+  .sim-filtro-remedio span {
+    display: none;
+  }
+  .sim-filtro-remedio select {
+    min-width: 0;
+    max-width: 170px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
