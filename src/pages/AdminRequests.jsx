@@ -163,7 +163,7 @@ export default function AdminRequests() {
                       <small>{tempoDesde(c.dataAbertura)}</small>
                     </td>
                     <td><PrioridadeBadge prioridade={c.prioridade} /></td>
-                    <td><StatusChamadoBadge status={c.status} /></td>
+                    <td><StatusChamadoBadge status={c.status} chamado={c} /></td>
                   </tr>
                 ))}
               </tbody>

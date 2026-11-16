@@ -57,6 +57,8 @@ export function normalizeRemedio(item) {
     id: String(item.idRemedio ?? item.id_remedio ?? item.id ?? ""),
     name: item.nomeRemedio ?? item.nome ?? item.name ?? "Medicamento sem nome",
     dose: item.dosagemRemedio ?? item.dosagem ?? item.dose ?? "",
+    photo: item.fotoRemedio ?? item.foto ?? null,
+    presentation: item.apresentacaoRemedio ?? item.apresentacao ?? "",
     manufacturer: item.fabricanteRemedio ?? item.fabricante ?? "",
     description: item.descRemedio ?? item.descricao ?? "",
     categories: item.categorias ?? "",

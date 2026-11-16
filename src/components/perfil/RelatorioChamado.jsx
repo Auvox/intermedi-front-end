@@ -82,7 +82,9 @@ function Sumario({ raiz }) {
   function ir(id) {
     const alvo = raiz.current?.querySelector(`[data-secao="${id}"]`);
     if (!alvo) return;
-    window.scrollTo({ top: alvo.getBoundingClientRect().top + window.scrollY - 140, behavior: "smooth" });
+    // quem rola é a página do perfil (tela cheia), não a janela
+    const pagina = alvo.closest(".perfil-pagina");
+    pagina?.scrollTo({ top: pagina.scrollTop + alvo.getBoundingClientRect().top - 140, behavior: "smooth" });
     alvo.querySelector("h2")?.focus({ preventScroll: true });
     setAtiva(id);
   }

@@ -774,3 +774,176 @@
 .repo-estoque-atual .remedio-barra-wrap strong {
   font-size: var(--text-body);
 }
+
+/* Solicitar reposição: cada remédio escolhido vira um cartão com foto,
+   estoque atual e a quantidade com − / + */
+.repo-itens {
+  display: grid;
+  gap: 12px;
+}
+.repo-itens > legend,
+.repo-prioridade > legend {
+  margin-bottom: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.repo-escolher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.repo-cartao {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "foto info qtd" "foto acoes acoes";
+  gap: 10px 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+.repo-cartao > .remedio-foto {
+  grid-area: foto;
+  align-self: start;
+}
+.repo-cartao-info {
+  grid-area: info;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.repo-cartao-info strong {
+  font-size: 17px;
+  line-height: 1.25;
+}
+.repo-cartao-info > span {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.repo-cartao .repo-estoque-atual {
+  margin-top: 4px;
+}
+.repo-quantidade {
+  grid-area: qtd;
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+.repo-quantidade > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.repo-passos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.repo-passos button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-fill);
+  color: var(--color-text-primary);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.repo-cartao .repo-passos input {
+  flex: none;
+  width: 84px;
+  min-width: 0;
+  padding: 0 6px;
+  height: 44px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+.repo-cartao-acoes {
+  grid-area: acoes;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.repo-trocar,
+.repo-remover {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.repo-remover {
+  color: var(--color-danger);
+}
+.repo-adicionar {
+  height: 46px;
+  border: 1.5px dashed var(--color-border-subtle);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.repo-adicionar:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+.repo-prioridade {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.repo-prioridade-opcoes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.repo-prioridade-opcoes button {
+  height: 42px;
+  border: 1.5px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.repo-prioridade-opcoes button[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+.repo-prioridade-opcoes button.is-alta[aria-pressed="true"] {
+  border-color: #d98a12;
+  background: #fff4e0;
+  color: #8a5300;
+}
+.repo-prioridade-opcoes button.is-urgente[aria-pressed="true"] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft, #fdecec);
+  color: var(--color-danger);
+}
+@media (max-width: 560px) {
+  .repo-cartao {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "foto info" "qtd qtd" "acoes acoes";
+  }
+  .repo-quantidade {
+    justify-items: start;
+  }
+  .repo-prioridade-opcoes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

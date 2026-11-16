@@ -1,13 +1,13 @@
 import { PrioridadeBadge, SituacaoItemBadge } from "./Chamados";
 import { LinhaRastreavel, RastreioMini } from "./Rastreio";
 import { propsLinha } from "../services/perfil";
-import { formatarDataChamado, statusChamado } from "../services/chamados";
+import { formatarDataChamado, statusDoChamado } from "../services/chamados";
 import { etapasDoProcesso, protocoloDoChamado } from "../services/relatorio";
 
 // Um chamado da lista, no mesmo formato do relatório: protocolo, carimbo de status,
 // linha do processo, itens e a decisão. Clicar abre o relatório completo.
 export default function CartaoChamado({ chamado: c, onAbrir }) {
-  const { label, tone } = statusChamado(c.status);
+  const { label, tone } = statusDoChamado(c);
   const protocolo = protocoloDoChamado(c);
   const pedidosPorId = new Map((c.pedidos ?? []).map((p) => [p.idRedistribuicao, p]));
   const etapas = etapasDoProcesso(c);

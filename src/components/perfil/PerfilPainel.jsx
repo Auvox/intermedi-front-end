@@ -46,15 +46,17 @@ export default function PerfilPainel({ pilha, titulos, onFechar, onVoltar }) {
     const modais = [...document.querySelectorAll("dialog[open]")].filter((d) => !pagina.contains(d));
     modais.forEach((d) => d.close());
     area?.classList.add("perfil-aberto");
+    document.body.classList.add("perfil-tela-cheia");
     return () => {
       area?.classList.remove("perfil-aberto");
+      document.body.classList.remove("perfil-tela-cheia");
       window.scrollTo({ top: rolagem });
       modais.forEach((d) => { if (d.isConnected && !d.open) d.showModal(); });
     };
   }, []);
   // Cada perfil novo começa do topo (o foco vai para o título quando ele carrega)
   useLayoutEffect(() => {
-    window.scrollTo({ top: 0 });
+    ref.current?.scrollTo({ top: 0 });
   }, [chave]);
 
   // Esc = Voltar (a não ser que um modal por cima, como o de foto, esteja aberto)
@@ -79,6 +81,10 @@ export default function PerfilPainel({ pilha, titulos, onFechar, onVoltar }) {
         </button>
         <nav className="perfil-trilha" aria-label="Caminho">
           <ol>
+            {/* "Remédio › Dipirona 500mg": o tipo volta para a tela de onde o perfil abriu */}
+            <li>
+              <button type="button" onClick={onFechar}>{NOMES_TIPO[pilha[0].tipo]}</button>
+            </li>
             {pilha.map((item, i) => (
               <li key={`${item.tipo}:${item.id}`}>
                 {i < pilha.length - 1 ? (

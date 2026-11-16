@@ -358,7 +358,7 @@ export function UltimosChamados({ bloco, titulo = "Últimos chamados" }) {
           inicio: <span className="perfil-lista-icone"><ManagerIcon name="ticket" size={16} /></span>,
           titulo: `#${c.idChamado} · ${c.titulo}`,
           subtitulo: `${formatarDataChamado(c.dataAbertura)} · ${c.nomeFuncionario} · ${c.totalRemedios} ${c.totalRemedios === 1 ? "remédio" : "remédios"}`,
-          lateral: <><PrioridadeBadge prioridade={c.prioridade} /> <StatusChamadoBadge status={c.status} /></>,
+          lateral: <><PrioridadeBadge prioridade={c.prioridade} /> <StatusChamadoBadge status={c.status} chamado={c} /></>,
           rotulo: `Abrir chamado #${c.idChamado}`,
           onAbrir: () => abrirPerfil("chamado", c.idChamado),
         }))}

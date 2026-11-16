@@ -29,7 +29,7 @@ export const TURNO_FUNCIONARIO = {
 export const SITUACAO_ITEM = {
   aguardando_gerente: { label: "Aguardando gerente", tone: "yellow", icone: "clock" },
   aguardando_fornecedor: { label: "Aguardando farmácia fornecedora", tone: "blue", icone: "pharmacy" },
-  em_preparo: { label: "Em preparo na farmácia fornecedora", tone: "blue", icone: "box" },
+  em_preparo: { label: "Preparando na farmácia fornecedora", tone: "blue", icone: "box" },
   a_caminho: { label: "A caminho", tone: "purple", icone: "truck" },
   recebido: { label: "Recebido", tone: "green", icone: "check" },
   sem_fornecedor: { label: "Sem fornecedor", tone: "red", icone: "alert" },
@@ -38,8 +38,8 @@ export const SITUACAO_ITEM = {
 // Status de um pedido entre farmácias (redistribuição)
 export const STATUS_PEDIDO = {
   solicitada: { label: "Aguardando resposta", tone: "yellow" },
-  aprovada: { label: "Aguardando preparo", tone: "blue" },
-  preparando: { label: "Em preparo", tone: "blue" },
+  aprovada: { label: "Aguardando o preparo", tone: "blue" },
+  preparando: { label: "Preparando", tone: "blue" },
   enviada: { label: "A caminho", tone: "purple" },
   recebida: { label: "Entregue", tone: "green" },
   recusada: { label: "Recusado", tone: "red" },
@@ -48,6 +48,19 @@ export const STATUS_PEDIDO = {
 
 export const statusChamado = (status) =>
   STATUS_CHAMADO[status] ?? { label: status || "—", tone: "neutral" };
+// "Em andamento" dito pela etapa real dos pedidos às farmácias (a mais atrasada)
+const FASES_PEDIDO = [
+  ["solicitada", "Aguardando a farmácia", "yellow"],
+  ["aprovada", "Aguardando o preparo", "blue"],
+  ["preparando", "Preparando", "blue"],
+  ["enviada", "A caminho", "purple"],
+];
+export function statusDoChamado(c) {
+  const base = statusChamado(c?.status);
+  if (c?.status !== "em_andamento" || !c.pedidos?.length) return base;
+  const fase = FASES_PEDIDO.find(([status]) => c.pedidos.some((p) => p.status === status));
+  return fase ? { label: fase[1], tone: fase[2] } : base;
+}
 export const situacaoItem = (situacao) =>
   SITUACAO_ITEM[situacao] ?? { label: "—", tone: "neutral", icone: null };
 export const statusPedido = (status) =>

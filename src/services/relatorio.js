@@ -27,7 +27,8 @@ export function duracao(de, ate) {
   return `${dias} ${dias === 1 ? "dia" : "dias"}`;
 }
 
-// Etapas do processo: aberto → resposta → pedido à rede → trânsito → resolvido
+// Etapas do processo: aberto → gerente → pedido às farmácias → farmácia aceitou
+// → preparando → a caminho → resolvido
 export function etapasDoProcesso(c) {
   const pedidos = c.pedidos ?? [];
   const remedios = c.remedios ?? [];
@@ -50,15 +51,43 @@ export function etapasDoProcesso(c) {
   const algumChegou = remedios.some((r) => r.situacao === "recebido");
   // parte chegou e o resto ficou sem farmácia: o chamado espera uma nova tentativa
   const travado = !algoAndando && remedios.some((r) => r.situacao === "sem_fornecedor") && c.status !== "resolvido";
+  // cada etapa da entrega pelo pedido mais atrasado (ainda não aceito, esperando
+  // preparo, preparando, na estrada): o título diz o que está acontecendo de fato
+  const ativos = pedidos.filter((p) => !["recusada", "cancelada"].includes(p.status));
+  const algum = (...status) => ativos.some((p) => status.includes(p.status));
+  const todos = (...status) => ativos.length > 0 && ativos.every((p) => status.includes(p.status));
+  const primeiro = (campo) => hora(ativos.map((p) => p[campo]).filter(Boolean).sort()[0]);
+  const parcial = algumChegou && !todosChegaram && !algoAndando;
+  // etapa que ainda não chegou ganha o nome neutro (ex.: "Preparando", não "Aguardando o preparo")
+  const etapa = (id, titulo, quando, feito, atual, futuro = titulo) => ({
+    id, titulo: feito || atual ? titulo : futuro, quando, situacao: feito ? "feito" : atual ? "atual" : "futuro",
+  });
   etapas.push(
     { id: "aceito", titulo: respondido ? "Aceito pelo gerente" : "Aguardando o gerente", quando: respondido ? hora(c.resposta.dataResposta) : "", situacao: respondido ? "feito" : "atual" },
-    { id: "rede", titulo: "Pedido à rede", quando: hora(primeiroPedido), situacao: primeiroPedido ? "feito" : "futuro" },
-    {
-      id: "transito",
-      titulo: algumChegou && !todosChegaram && !algoAndando ? "Entregas parciais" : "Em trânsito",
-      quando: algumChegou && !algoAndando ? hora(ultimaChegada) : previsao ? `previsto ${hora(previsao)}` : "",
-      situacao: todosChegaram || (algumChegou && !algoAndando) ? "feito" : algoAndando && primeiroPedido ? "atual" : "futuro",
-    },
+    { id: "rede", titulo: "Pedido às farmácias", quando: hora(primeiroPedido), situacao: primeiroPedido ? "feito" : "futuro" },
+    etapa(
+      "farmacia",
+      algum("solicitada") || !primeiroPedido ? "Aguardando a farmácia aceitar" : "Farmácia aceitou",
+      primeiro("dataAprovacao"),
+      ativos.length > 0 && !algum("solicitada"),
+      algum("solicitada"),
+      "Farmácia aceita",
+    ),
+    etapa(
+      "preparo",
+      algum("preparando") || todos("enviada", "recebida") ? "Preparando" : "Aguardando o preparo",
+      primeiro("dataInicioPreparo"),
+      todos("enviada", "recebida"),
+      !algum("solicitada") && algum("aprovada", "preparando"),
+      "Preparando",
+    ),
+    etapa(
+      "caminho",
+      parcial ? "Entregas parciais" : todosChegaram ? "Entregue" : "A caminho",
+      parcial || todosChegaram ? hora(ultimaChegada) : previsao ? `chega ${hora(previsao)}` : "",
+      todosChegaram || parcial,
+      !algum("solicitada", "aprovada", "preparando") && algum("enviada"),
+    ),
     travado
       ? { id: "resolvido", titulo: "Sem fornecedor para um item", quando: "pedir de novo à rede", situacao: "erro" }
       : { id: "resolvido", titulo: "Resolvido", quando: c.status === "resolvido" ? hora(ultimaChegada) : "", situacao: c.status === "resolvido" ? "feito" : "futuro" },

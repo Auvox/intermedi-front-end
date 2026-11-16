@@ -14,8 +14,8 @@ import {
 import "../styles/rastreio.css";
 
 const ROTULO_ESTADO = {
-  aguardando: "Envio pendente",
-  preparando: "Em preparo",
+  aguardando: "Aguardando a farmácia aceitar",
+  preparando: "Preparando",
   a_caminho: "A caminho",
   entregue: "Entregue",
   recusado: "Pedido recusado",

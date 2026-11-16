@@ -9,6 +9,7 @@ import {
   progressoChamado,
   situacaoItem,
   statusChamado,
+  statusDoChamado,
   statusPedido,
   textoResposta,
 } from "../services/chamados";
@@ -36,8 +37,9 @@ export function ChamadoModal({ title, onClose, children, className = "" }) {
   );
 }
 
-export function StatusChamadoBadge({ status }) {
-  const { label, tone } = statusChamado(status);
+// com `chamado`, "Em andamento" vira a etapa real (aguardando preparo, a caminho…)
+export function StatusChamadoBadge({ status, chamado }) {
+  const { label, tone } = chamado ? statusDoChamado(chamado) : statusChamado(status);
   return <span className={`mgr-badge chamado-badge ${tone}`}>{label}</span>;
 }
 

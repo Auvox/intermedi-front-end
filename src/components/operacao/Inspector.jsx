@@ -369,7 +369,7 @@ function Chamado({ objeto: c, operacao, onSelecionar, acoes }) {
       <Cabecalho eyebrow="CHAMADO" titulo={c.titulo}>
         <div className="op-selos">
           <PrioridadeBadge prioridade={c.prioridade} />
-          <StatusChamadoBadge status={c.status} />
+          <StatusChamadoBadge status={c.status} chamado={c} />
         </div>
       </Cabecalho>
       <dl className="op-dados">

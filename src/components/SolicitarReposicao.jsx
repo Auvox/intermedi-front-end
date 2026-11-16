@@ -5,7 +5,7 @@ import { PRIORIDADE_CHAMADO } from "../services/chamados";
 import { comSituacao, situacao } from "../services/remedios";
 import BuscaSelect from "./BuscaSelect";
 import { ChamadoModal, RemediosChamadoTable, StatusChamadoBadge } from "./Chamados";
-import { BarraEstoque } from "./Remedios";
+import { BarraEstoque, FotoRemedio } from "./Remedios";
 
 const novoItem = (idRemedio = "", quantidade = "") => ({
   key: crypto.randomUUID(),
@@ -190,93 +190,129 @@ export default function SolicitarReposicao({
               </select>
             </label>
           )}
-          <fieldset className="emp-service-medicines">
-            <legend>Remédios para repor</legend>
+          <fieldset className="emp-service-medicines repo-itens">
+            <legend>O que está faltando?</legend>
             {items.map((item, index) => {
               const erroRemedio = erros[`${item.key}-remedio`];
               const erroQuantidade = erros[`${item.key}-quantidade`];
               const noEstoque = estoque && item.idRemedio ? estoque.get(item.idRemedio) : undefined;
+              const remedio = item.idRemedio ? medicines.find((m) => String(m.id) === item.idRemedio) : null;
+              const remover = items.length > 1 && (
+                <button
+                  className="repo-remover"
+                  type="button"
+                  aria-label={`Remover remédio ${index + 1}`}
+                  onClick={() => setItems((atual) => atual.filter((i) => i.key !== item.key))}
+                >
+                  Remover
+                </button>
+              );
+              const quantidade = Number(item.quantidade) || 0;
+              const passo = (delta) => atualizar(item.key, "quantidade", String(Math.max(1, quantidade + delta)));
+
+              // ainda sem remédio: a busca (com o estoque de cada um na lista)
+              if (!remedio) {
+                return (
+                  <div className="repo-escolher" key={item.key}>
+                    <BuscaSelect
+                      label={items.length > 1 ? `Remédio ${index + 1}` : "Qual remédio está faltando?"}
+                      // um remédio só aparece uma vez no pedido
+                      itens={remediosOrdenados.filter(
+                        (m) => !items.some((outro) => outro.key !== item.key && outro.idRemedio === String(m.id)),
+                      )}
+                      valorId={item.idRemedio}
+                      onChange={(m) => atualizar(item.key, "idRemedio", m ? String(m.id) : "")}
+                      getId={(m) => m.id}
+                      rotulo={(m) => `${m.name}${m.dose ? ` · ${m.dose}` : ""}`}
+                      detalhe={estoque ? (m) => <EstoqueNaLista item={estoque.get(String(m.id))} /> : undefined}
+                      textoBusca={(m) => `${m.name} ${m.dose ?? ""}`}
+                      placeholder="Digite o nome do remédio"
+                      invalido={Boolean(erroRemedio)}
+                      describedBy={erroRemedio ? erroId(item.key, "remedio") : undefined}
+                      semResultado="Nenhum remédio encontrado."
+                    >
+                      {erroRemedio && <small className="chamado-field-error" id={erroId(item.key, "remedio")}>{erroRemedio}</small>}
+                    </BuscaSelect>
+                    {remover}
+                  </div>
+                );
+              }
+
+              // remédio escolhido: cartão com foto, estoque atual e a quantidade
               return (
-                <div className="emp-service-item repo-item" key={item.key}>
-                  <BuscaSelect
-                    label={`Remédio ${index + 1}`}
-                    // um remédio só aparece uma vez no pedido
-                    itens={remediosOrdenados.filter(
-                      (m) => !items.some((outro) => outro.key !== item.key && outro.idRemedio === String(m.id)),
-                    )}
-                    valorId={item.idRemedio}
-                    onChange={(m) => atualizar(item.key, "idRemedio", m ? String(m.id) : "")}
-                    getId={(m) => m.id}
-                    rotulo={(m) => `${m.name}${m.dose ? ` · ${m.dose}` : ""}`}
-                    detalhe={estoque ? (m) => <EstoqueNaLista item={estoque.get(String(m.id))} /> : undefined}
-                    textoBusca={(m) => `${m.name} ${m.dose ?? ""}`}
-                    placeholder="Busque o remédio"
-                    invalido={Boolean(erroRemedio)}
-                    describedBy={erroRemedio ? erroId(item.key, "remedio") : undefined}
-                    semResultado="Nenhum remédio encontrado."
-                  >
-                    {estoque && item.idRemedio && (
+                <div className="repo-cartao" key={item.key}>
+                  <FotoRemedio foto={remedio.photo} nome={remedio.name} tamanho="md" />
+                  <div className="repo-cartao-info">
+                    <strong>{remedio.name}{remedio.dose ? ` ${remedio.dose}` : ""}</strong>
+                    {remedio.presentation && <span>{remedio.presentation}</span>}
+                    {estoque && (
                       <div className="repo-estoque-atual">
                         <span>{noEstoque ? "No estoque agora" : "Este remédio não tem na unidade"}</span>
                         {noEstoque && <BarraEstoque quantidade={noEstoque.quantidade} minimo={noEstoque.estoqueMinimo} />}
                       </div>
                     )}
-                    {erroRemedio && <small className="chamado-field-error" id={erroId(item.key, "remedio")}>{erroRemedio}</small>}
-                  </BuscaSelect>
-                  <label>
-                    Quantidade
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="1"
-                      step="1"
-                      value={item.quantidade}
-                      onChange={(e) => atualizar(item.key, "quantidade", e.target.value)}
-                      aria-invalid={Boolean(erroQuantidade)}
-                      aria-describedby={erroQuantidade ? erroId(item.key, "quantidade") : undefined}
-                    />
+                  </div>
+                  <div className="repo-quantidade">
+                    <label htmlFor={erroId(item.key, "qtd")}>Quantas unidades?</label>
+                    <div className="repo-passos">
+                      <button type="button" onClick={() => passo(-10)} aria-label="Menos 10">−</button>
+                      <input
+                        id={erroId(item.key, "qtd")}
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        step="1"
+                        placeholder="0"
+                        value={item.quantidade}
+                        onChange={(e) => atualizar(item.key, "quantidade", e.target.value)}
+                        aria-invalid={Boolean(erroQuantidade)}
+                        aria-describedby={erroQuantidade ? erroId(item.key, "quantidade") : undefined}
+                      />
+                      <button type="button" onClick={() => passo(10)} aria-label="Mais 10">+</button>
+                    </div>
                     {erroQuantidade && <small className="chamado-field-error" id={erroId(item.key, "quantidade")}>{erroQuantidade}</small>}
-                  </label>
-                  <button
-                    className="mgr-secondary"
-                    type="button"
-                    disabled={items.length === 1}
-                    aria-label={`Remover remédio ${index + 1}`}
-                    onClick={() => setItems((atual) => atual.filter((i) => i.key !== item.key))}
-                  >
-                    Remover
-                  </button>
+                  </div>
+                  <div className="repo-cartao-acoes">
+                    <button type="button" className="repo-trocar" onClick={() => atualizar(item.key, "idRemedio", "")}>Trocar</button>
+                    {remover}
+                  </div>
                 </div>
               );
             })}
             <button
               type="button"
-              className="mgr-secondary"
+              className="repo-adicionar"
               disabled={items.length >= medicines.length}
               onClick={() => setItems((atual) => [...atual, novoItem()])}
             >
-              + Adicionar remédio
+              + Adicionar outro remédio
             </button>
           </fieldset>
-          <div className="mgr-form-row">
-            <label>
-              Prioridade
-              <select value={prioridade} onChange={(e) => setPrioridade(e.target.value)}>
-                {Object.entries(PRIORIDADE_CHAMADO).map(([valor, { label }]) => (
-                  <option key={valor} value={valor}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Título (opcional)
-              <input
-                value={titulo}
-                maxLength={140}
-                onChange={(e) => setTitulo(e.target.value)}
-                placeholder="Gerado a partir dos remédios"
-              />
-            </label>
-          </div>
+          <fieldset className="repo-prioridade">
+            <legend>Quão urgente?</legend>
+            <div className="repo-prioridade-opcoes">
+              {Object.entries(PRIORIDADE_CHAMADO).map(([valor, { label }]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  className={`is-${valor}`}
+                  aria-pressed={prioridade === valor}
+                  onClick={() => setPrioridade(valor)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <label>
+            Título (opcional)
+            <input
+              value={titulo}
+              maxLength={140}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Gerado a partir dos remédios"
+            />
+          </label>
           <label>
             Descrição (opcional)
             <textarea
