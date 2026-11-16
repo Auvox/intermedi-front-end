@@ -34,8 +34,18 @@ function enquadrar(latNorte, lonOeste, latSul, lonLeste) {
 export const ENQUADRAMENTOS = {
   estado: [4140, 2966, 279280, 186672],
   grandeSp: enquadrar(-23.25, -47.0, -24.05, -45.95),
-  capital: enquadrar(-23.5, -46.48, -23.58, -46.36),
 };
+
+// enquadra todas as farmácias da rede, com folga (no mínimo ~3 km de largura)
+export function enquadrarFarmacias(farmacias) {
+  const comLugar = farmacias.filter((f) => f.latitude != null && f.longitude != null);
+  if (!comLugar.length) return ENQUADRAMENTOS.estado;
+  const lats = comLugar.map((f) => f.latitude);
+  const lons = comLugar.map((f) => f.longitude);
+  const [norte, sul, oeste, leste] = [Math.max(...lats), Math.min(...lats), Math.min(...lons), Math.max(...lons)];
+  const folga = Math.max(0.012, (leste - oeste) * 0.6, (norte - sul) * 0.6);
+  return enquadrar(norte + folga, oeste - folga, sul - folga, leste + folga);
+}
 
 const normalizar = (texto) =>
   String(texto ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -173,10 +183,38 @@ export function saldoPorFarmacia(pedidos, { idRemedio, inicio, fim }) {
   return saldo;
 }
 
-// tons de amarelo, do mais claro ao mais escuro
+// tons de amarelo, do mais claro ao mais escuro (todos os remédios)
 export const ESCALA_AMARELO = ["#fdf4cf", "#fae39a", "#f5c94f", "#e0a213", "#b27500"];
-export function corDoValor(valor, maximo) {
+
+// filtrando um remédio, o mapa ganha a cor dele: [matiz, saturação] em HSL
+const COR_REMEDIO = {
+  paracetamol: [270, 65], // roxo
+  dipirona: [215, 75], // azul
+  amoxicilina: [140, 55], // verde
+  losartana: [355, 70], // vermelho
+  metformina: [22, 85], // laranja
+  omeprazol: [325, 65], // rosa
+  ibuprofeno: [190, 75], // ciano
+  loratadina: [90, 55], // verde-limão
+  azitromicina: [240, 60], // índigo
+  nimesulida: [28, 40], // marrom
+  cetirizina: [168, 60], // turquesa
+  enalapril: [340, 55], // vinho
+  "vitamina c": [300, 55], // magenta
+  simeticona: [200, 60], // azul-céu
+  dexclorfeniramina: [152, 55], // esmeralda
+};
+const LUZ = [93, 81, 66, 50, 35];
+export function escalaDoRemedio(nome) {
+  if (!nome) return ESCALA_AMARELO;
+  const texto = normalizar(nome);
+  const chave = Object.keys(COR_REMEDIO).find((k) => texto.startsWith(k));
+  const [matiz, saturacao] = COR_REMEDIO[chave] ?? [[...texto].reduce((s, c) => s + c.charCodeAt(0) * 7, 0) % 360, 60];
+  return LUZ.map((luz) => `hsl(${matiz} ${saturacao}% ${luz}%)`);
+}
+
+export function corDoValor(valor, maximo, escala = ESCALA_AMARELO) {
   if (!valor || !maximo) return null;
-  const nivel = Math.min(ESCALA_AMARELO.length - 1, Math.floor(Math.sqrt(valor / maximo) * ESCALA_AMARELO.length));
-  return ESCALA_AMARELO[nivel];
+  const nivel = Math.min(escala.length - 1, Math.floor(Math.sqrt(valor / maximo) * escala.length));
+  return escala[nivel];
 }

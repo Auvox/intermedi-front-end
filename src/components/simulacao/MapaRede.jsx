@@ -6,6 +6,7 @@ import { ENQUADRAMENTOS } from "../../services/rede";
 // O SVG é posto direto na página para pintar cada município ("mun_<código IBGE>");
 // por cima vem uma camada com a mesma viewBox para farmácias e trajetos.
 //   viewBox / onViewBox   enquadramento (zoom e arraste)
+//   vistaRede             enquadramento com todas as farmácias (botão "Farmácias")
 //   cores                 Map código -> cor do município
 //   selecionado           código do município escolhido
 //   onSelecionar          clique num município (null = fora dele)
@@ -30,7 +31,17 @@ function limitar([x, y, largura, altura]) {
   return [nx, ny, w, h];
 }
 
-export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSelecionar, onElemento, dica, children }) {
+// estica o enquadramento para a proporção da caixa (sem faixas vazias nas bordas)
+function cobrir([x, y, w, h], proporcao) {
+  if (w / h > proporcao) {
+    const nh = w / proporcao;
+    return [x, y - (nh - h) / 2, w, nh];
+  }
+  const nw = h * proporcao;
+  return [x - (nw - w) / 2, y, nw, h];
+}
+
+export default function MapaRede({ viewBox, onViewBox, vistaRede, cores, selecionado, onSelecionar, onElemento, dica, children }) {
   const caixa = useRef(null);
   const base = useRef(null);
   const svgRef = useRef(null);
@@ -38,7 +49,8 @@ export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSel
   const [carregado, setCarregado] = useState(false);
   const [erro, setErro] = useState("");
   const [balao, setBalao] = useState(null);
-  const [largura, setLargura] = useState(1);
+  const [tamanho, setTamanho] = useState({ largura: 1, altura: 1 });
+  const vb = cobrir(viewBox, tamanho.largura / tamanho.altura);
 
   // põe o SVG na página e deixa os municípios clicáveis
   useEffect(() => {
@@ -62,14 +74,15 @@ export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSel
   }, []);
 
   useEffect(() => {
-    svgRef.current?.setAttribute("viewBox", viewBox.join(" "));
-  }, [viewBox, carregado]);
+    svgRef.current?.setAttribute("viewBox", vb.join(" "));
+  });
 
   // tamanho na tela: os pontos e traços têm o mesmo tamanho em qualquer zoom
   useEffect(() => {
     const el = caixa.current;
     if (!el) return undefined;
-    const observador = new ResizeObserver(([entrada]) => setLargura(entrada.contentRect.width || 1));
+    const observador = new ResizeObserver(([entrada]) =>
+      setTamanho({ largura: entrada.contentRect.width || 1, altura: entrada.contentRect.height || 1 }));
     observador.observe(el);
     return () => observador.disconnect();
   }, []);
@@ -83,16 +96,16 @@ export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSel
     }
   }, [cores, selecionado, carregado]);
 
-  const escala = viewBox[2] / largura;
+  const escala = vb[2] / tamanho.largura;
 
   // ponto da tela -> coordenada do mapa
   const noMapa = (clientX, clientY) => {
     const r = caixa.current.getBoundingClientRect();
-    return [viewBox[0] + ((clientX - r.left) / r.width) * viewBox[2], viewBox[1] + ((clientY - r.top) / r.height) * viewBox[3]];
+    return [vb[0] + ((clientX - r.left) / r.width) * vb[2], vb[1] + ((clientY - r.top) / r.height) * vb[3]];
   };
 
   function zoom(fator, cx, cy) {
-    const [x, y, w, h] = viewBox;
+    const [x, y, w, h] = vb;
     const [px, py] = cx == null ? [x + w / 2, y + h / 2] : noMapa(cx, cy);
     const nw = w * fator;
     const nh = h * fator;
@@ -118,7 +131,7 @@ export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSel
 
   function aoApertar(e) {
     if (e.button !== 0) return;
-    arraste.current = { x: e.clientX, y: e.clientY, inicio: viewBox, moveu: false };
+    arraste.current = { x: e.clientX, y: e.clientY, inicio: vb, moveu: false };
     caixa.current.setPointerCapture(e.pointerId);
   }
 
@@ -168,7 +181,7 @@ export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSel
       >
         <div ref={base} className="sim-mapa-base" />
         {carregado && (
-          <svg className="sim-mapa-camada" viewBox={viewBox.join(" ")} preserveAspectRatio="xMidYMid meet">
+          <svg className="sim-mapa-camada" viewBox={vb.join(" ")} preserveAspectRatio="xMidYMid meet">
             {children(escala)}
           </svg>
         )}
@@ -186,7 +199,7 @@ export default function MapaRede({ viewBox, onViewBox, cores, selecionado, onSel
         <button type="button" onClick={() => zoom(1.6)} aria-label="Afastar">−</button>
         <button type="button" onClick={() => onViewBox(ENQUADRAMENTOS.estado)}>Estado</button>
         <button type="button" onClick={() => onViewBox(ENQUADRAMENTOS.grandeSp)}>Grande SP</button>
-        <button type="button" onClick={() => onViewBox(ENQUADRAMENTOS.capital)}>Guaianases</button>
+        <button type="button" onClick={() => onViewBox(vistaRede)}>Farmácias</button>
       </div>
     </div>
   );

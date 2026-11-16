@@ -3,11 +3,12 @@ import MapaRede from "../components/simulacao/MapaRede";
 import LinhaDoTempo from "../components/simulacao/LinhaDoTempo";
 import {
   ENQUADRAMENTOS,
-  ESCALA_AMARELO,
   METRICAS,
   agregarPorMunicipio,
   buscarRede,
   corDoValor,
+  enquadrarFarmacias,
+  escalaDoRemedio,
   estaACaminho,
   eventosDoPedido,
   nomeDoMunicipio,
@@ -74,7 +75,7 @@ export default function AdminSimulacao() {
   const [t, setT] = useState(() => Date.now());
   const [tocando, setTocando] = useState(false);
   const [velocidade, setVelocidade] = useState(600);
-  const [viewBox, setViewBox] = useState(ENQUADRAMENTOS.estado);
+  const [viewBox, setViewBox] = useState(null); // null: enquadra nas farmácias quando os dados chegam
   const [municipio, setMunicipio] = useState(null);
   const [idPedido, setIdPedido] = useState(null);
   const [idFarmacia, setIdFarmacia] = useState(null);
@@ -89,6 +90,7 @@ export default function AdminSimulacao() {
       buscarRede(dias, { signal })
         .then((resposta) => {
           setDados(resposta);
+          setViewBox((atual) => atual ?? enquadrarFarmacias(resposta.farmacias));
           setDiferencaRelogio(Date.parse(resposta.agora) - Date.now());
           setErro("");
         })
@@ -152,8 +154,9 @@ export default function AdminSimulacao() {
 
   const remedios = useMemo(() => {
     const mapa = new Map();
-    for (const p of rede.pedidos) mapa.set(String(p.idRemedio), nomeRemedio(p));
-    return [...mapa].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+    // [id, nome com dosagem, nome curto (nos chips)]
+    for (const p of rede.pedidos) mapa.set(String(p.idRemedio), [nomeRemedio(p), p.nomeRemedio]);
+    return [...mapa].map(([id, [nome, curto]]) => [id, nome, curto]).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
   }, [rede]);
 
   // o mapa de calor só muda de minuto em minuto (tocando rápido fica leve)
@@ -169,12 +172,16 @@ export default function AdminSimulacao() {
     [rede, idRemedio, minuto, dias],
   );
   const maximo = Math.max(0, ...[...porMunicipio.values()].map((m) => m.valor));
+  // cada remédio pinta o mapa com a sua cor (todos: amarelo)
+  const nomeDoFiltro = idRemedio ? remedios.find(([id]) => id === idRemedio)?.[1] ?? "" : "";
+  const escala = useMemo(() => escalaDoRemedio(nomeDoFiltro), [nomeDoFiltro]);
+  const corForte = idRemedio ? escala[3] : "#2e6ff2";
   const cores = useMemo(() => {
     const mapa = new Map();
     for (const f of rede.farmacias) if (f.codigo) mapa.set(f.codigo, COR_COM_FARMACIA);
-    for (const [codigo, m] of porMunicipio) mapa.set(codigo, corDoValor(m.valor, maximo) ?? COR_COM_FARMACIA);
+    for (const [codigo, m] of porMunicipio) mapa.set(codigo, corDoValor(m.valor, maximo, escala) ?? COR_COM_FARMACIA);
     return mapa;
-  }, [rede, porMunicipio, maximo]);
+  }, [rede, porMunicipio, maximo, escala]);
 
   const minutoAgora = Math.floor(agora / MINUTO);
   const aCaminho = rede.pedidos.filter((p) => doRemedio(p) && estaACaminho(p, momento));
@@ -215,6 +222,15 @@ export default function AdminSimulacao() {
     return [...grupos.values()].map((g) => ({ ...g, x: g.x / g.n, y: g.y / g.n, nome: nomeDoMunicipio(g.codigo) }));
   }, [rede]);
 
+  // com zoom de bairro, o nome de cada farmácia; de longe, o do município
+  const vistaRede = useMemo(() => enquadrarFarmacias(rede.farmacias), [rede]);
+  const vista = viewBox ?? ENQUADRAMENTOS.estado;
+  const dePerto = vista[2] < 20000;
+  const rotulosFarmacias = useMemo(
+    () => rede.farmacias.filter((f) => f.x != null).map((f) => ({ codigo: `f${f.idFarmacia}`, idFarmacia: f.idFarmacia, x: f.x, y: f.y, nome: f.nome })),
+    [rede],
+  );
+
   const m = METRICAS[metrica];
   const ranking = ordenar(new Map([...porMunicipio].map(([codigo, dadosMun]) => [codigo, dadosMun.valor]))).slice(0, 5);
   const pedido = idPedido ? rede.pedidos.find((p) => p.idPedido === idPedido) : null;
@@ -254,13 +270,20 @@ export default function AdminSimulacao() {
 
   const dadosMunicipio = municipio ? porMunicipio.get(municipio) : null;
   const farmaciasDoMunicipio = municipio ? rede.farmacias.filter((f) => f.codigo === municipio) : [];
+  const totalNoPeriodo = [...porMunicipio.values()].reduce((s, d) => s + d.valor, 0);
+  const pedidosNoPeriodo = [...porMunicipio.values()].reduce((s, d) => s + d.pedidos, 0);
+  const fecharDetalhe = () => {
+    setMunicipio(null);
+    setIdPedido(null);
+    setIdFarmacia(null);
+  };
 
   return (
-    <div className="sim">
+    <div className="sim" style={{ "--sim-cor": corForte, "--sim-cor-clara": escala[0] }}>
       <header className="sim-cabecalho">
         <div>
           <h1>Simulação em tempo real</h1>
-          <p>A rede de farmácias no mapa de São Paulo: o que está na estrada agora e o que já passou.</p>
+          <p>As farmácias da rede no mapa de São Paulo: o que está na estrada agora e o que já passou.</p>
         </div>
         {erro && <p className="sim-erro" role="alert">{erro} <button type="button" onClick={() => carregar()}>Tentar de novo</button></p>}
       </header>
@@ -268,8 +291,9 @@ export default function AdminSimulacao() {
       <div className="sim-grade">
         <section className="sim-palco" aria-label="Mapa da rede">
           <MapaRede
-            viewBox={viewBox}
+            viewBox={vista}
             onViewBox={setViewBox}
+            vistaRede={vistaRede}
             cores={cores}
             selecionado={municipio}
             onSelecionar={(codigo) => {
@@ -280,7 +304,7 @@ export default function AdminSimulacao() {
             onElemento={aoClicarElemento}
             dica={dica}
           >
-            {(escala) => (
+            {(px) => (
               <>
                 {aCaminho.map((p) => {
                   const a = p.origem;
@@ -289,16 +313,16 @@ export default function AdminSimulacao() {
                   const c = curva(a, b);
                   const d = `M${a.x},${a.y} Q${c.cx},${c.cy} ${b.x},${b.y}`;
                   const s = progresso(p, momento);
-                  const [px, py] = pontoNaCurva(a, b, c, s ?? 0.5);
+                  const [cx, cy] = pontoNaCurva(a, b, c, s ?? 0.5);
                   const ativo = p.idPedido === idPedido;
                   return (
                     <g key={p.idPedido} className={`sim-trajeto${ativo ? " is-ativo" : ""}`}>
-                      <path d={d} className="sim-trajeto-linha" strokeWidth={(ativo ? 3 : 2) * escala} strokeDasharray={`${7 * escala} ${5 * escala}`}>
-                        {aoVivo && <animate attributeName="stroke-dashoffset" from={12 * escala} to="0" dur="0.9s" repeatCount="indefinite" />}
+                      <path d={d} className="sim-trajeto-linha" strokeWidth={(ativo ? 4 : 3) * px} strokeDasharray={`${9 * px} ${6 * px}`}>
+                        {aoVivo && <animate attributeName="stroke-dashoffset" from={15 * px} to="0" dur="0.9s" repeatCount="indefinite" />}
                       </path>
-                      <circle cx={b.x} cy={b.y} r={9 * escala} className="sim-trajeto-chegada" />
-                      <circle cx={px} cy={py} r={5 * escala} className="sim-trajeto-carga" />
-                      <path d={d} className="sim-clicavel sim-trajeto-alvo" data-pedido={p.idPedido} strokeWidth={14 * escala}>
+                      <circle cx={b.x} cy={b.y} r={12 * px} className="sim-trajeto-chegada" strokeWidth={2 * px} />
+                      <circle cx={cx} cy={cy} r={7 * px} className="sim-trajeto-carga" strokeWidth={2 * px} />
+                      <path d={d} className="sim-clicavel sim-trajeto-alvo" data-pedido={p.idPedido} strokeWidth={18 * px}>
                         <title>{`${nomeRemedio(p)} · ${numero(p.quantidade)} un. · ${a.nome} → ${b.nome}`}</title>
                       </path>
                     </g>
@@ -311,15 +335,18 @@ export default function AdminSimulacao() {
                   const ativa = f.idFarmacia === idFarmacia;
                   return (
                     <g key={f.idFarmacia} className={`sim-farmacia is-${tom}${ativa ? " is-ativa" : ""}`} transform={`translate(${f.x},${f.y})`}>
-                      <circle r={10 * escala} className="sim-farmacia-halo" />
-                      <circle r={(ativa ? 6 : 4.5) * escala} strokeWidth={1.5 * escala} className="sim-clicavel sim-farmacia-ponto" data-farmacia={f.idFarmacia}>
+                      <circle r={14 * px} className="sim-farmacia-halo" />
+                      <circle r={(ativa ? 8 : 6.5) * px} strokeWidth={2 * px} className="sim-clicavel sim-farmacia-ponto" data-farmacia={f.idFarmacia}>
                         <title>{`${f.nome} · ${f.bairro ? `${f.bairro}, ` : ""}${f.cidade}`}</title>
                       </circle>
                     </g>
                   );
                 })}
-                {semSobrepor(rotulos, escala, (r) => (r.codigo === municipio ? Infinity : porMunicipio.get(r.codigo)?.valor ?? 0)).map((r) => (
-                  <text key={r.codigo} x={r.x + 9 * escala} y={r.y + 4 * escala} fontSize={11 * escala} strokeWidth={3 * escala} className="sim-rotulo">
+                {(dePerto
+                  ? semSobrepor(rotulosFarmacias, px * 1.3, (r) => (r.idFarmacia === idFarmacia ? Infinity : Math.abs(saldo.get(r.idFarmacia) ?? 0)))
+                  : semSobrepor(rotulos, px * 1.3, (r) => (r.codigo === municipio ? Infinity : porMunicipio.get(r.codigo)?.valor ?? 0))
+                ).map((r) => (
+                  <text key={r.codigo} x={r.x + 12 * px} y={r.y + 5 * px} fontSize={15 * px} strokeWidth={4 * px} className="sim-rotulo">
                     {r.nome}
                   </text>
                 ))}
@@ -347,8 +374,8 @@ export default function AdminSimulacao() {
         </section>
 
         <aside className="sim-lateral" aria-label="Filtros e detalhes">
-          <div className="sim-bloco">
-            <span className="sim-rotulo-bloco">Mostrar</span>
+          <div className="sim-bloco sim-filtros">
+            <h2 className="sim-titulo-bloco">Mostrar no mapa</h2>
             <div className="sim-segmentos" role="group" aria-label="O que pintar no mapa">
               {Object.entries(METRICAS).map(([chave, info]) => (
                 <button key={chave} type="button" aria-pressed={metrica === chave} onClick={() => setMetrica(chave)}>
@@ -356,16 +383,28 @@ export default function AdminSimulacao() {
                 </button>
               ))}
             </div>
-            <label className="sim-campo">
-              <span>Remédio</span>
-              <select value={idRemedio} onChange={(e) => setIdRemedio(e.target.value)}>
-                <option value="">Todos os remédios</option>
-                {remedios.map(([id, nome]) => (
-                  <option key={id} value={id}>{nome}</option>
-                ))}
-              </select>
-            </label>
-            <span className="sim-rotulo-bloco">Período</span>
+
+            <h2 className="sim-titulo-bloco">Remédio</h2>
+            <div className="sim-remedios" role="group" aria-label="Filtrar por remédio">
+              {[["", "Todos", "Todos"], ...remedios].map(([id, nome, curto]) => {
+                const tons = escalaDoRemedio(id ? nome : "");
+                return (
+                  <button
+                    key={id || "todos"}
+                    type="button"
+                    aria-pressed={idRemedio === id}
+                    onClick={() => setIdRemedio(id)}
+                    style={{ "--chip": tons[3], "--chip-claro": tons[0], "--chip-escuro": tons[4] }}
+                    title={nome}
+                  >
+                    <i aria-hidden="true" />
+                    <span>{curto}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <h2 className="sim-titulo-bloco">Período</h2>
             <div className="sim-segmentos" role="group" aria-label="Período">
               {PERIODOS.map(([valor, rotulo]) => (
                 <button key={valor} type="button" aria-pressed={dias === valor} onClick={() => setDias(valor)}>
@@ -375,10 +414,70 @@ export default function AdminSimulacao() {
             </div>
           </div>
 
+          {pedido ? (
+            <div className="sim-bloco sim-detalhe">
+              <button type="button" className="sim-fechar" onClick={fecharDetalhe} aria-label="Fechar pedido">×</button>
+              <h2 className="sim-titulo-bloco">Pedido #{pedido.idPedido}</h2>
+              <p className="sim-nome">{nomeRemedio(pedido)}</p>
+              <p className="sim-destaque">{numero(pedido.quantidade)} <small>unidades</small></p>
+              <p className="sim-rota">
+                <span>{pedido.origem.nome}<small>{pedido.origem.cidade}</small></span>
+                <b aria-label="para">→</b>
+                <span>{pedido.destino.nome}<small>{pedido.destino.cidade}</small></span>
+              </p>
+              <dl className="sim-numeros">
+                <div><dt>Pedido</dt><dd>{horario(pedido.sol)}</dd></div>
+                <div><dt>Saiu</dt><dd>{horario(pedido.env)}</dd></div>
+                <div><dt>{pedido.rec ? "Chegou" : "Previsto"}</dt><dd>{horario(pedido.rec ?? pedido.prev)}</dd></div>
+              </dl>
+              {estaACaminho(pedido, momento) && <p className="sim-status">Na estrada neste momento</p>}
+            </div>
+          ) : municipio ? (
+            <div className="sim-bloco sim-detalhe">
+              <button type="button" className="sim-fechar" onClick={fecharDetalhe} aria-label="Fechar município">×</button>
+              <h2 className="sim-titulo-bloco">{m.titulo}{nomeDoFiltro ? ` · ${nomeDoFiltro}` : ""}</h2>
+              <p className="sim-nome">{nomeDoMunicipio(municipio)}</p>
+              {dadosMunicipio ? (
+                <>
+                  <p className="sim-destaque">{numero(dadosMunicipio.valor)} <small>{m.unidade}</small></p>
+                  <dl className="sim-numeros">
+                    <div><dt>Pedidos</dt><dd>{numero(dadosMunicipio.pedidos)}</dd></div>
+                    <div><dt>Farmácias</dt><dd>{numero(farmaciasDoMunicipio.length)}</dd></div>
+                    <div><dt>Posição</dt><dd>{ordenar(new Map([...porMunicipio].map(([c, d]) => [c, d.valor]))).findIndex(([c]) => c === municipio) + 1}º</dd></div>
+                  </dl>
+                  <ListaBarras titulo="Por farmácia" itens={ordenar(dadosMunicipio.porFarmacia).map(([id, v]) => [rede.porId.get(id)?.nome ?? `#${id}`, v])} destaque={farmacia?.nome} cor={escala[3]} />
+                  {!idRemedio && <ListaBarras titulo="Remédios" itens={ordenar(dadosMunicipio.porRemedio).slice(0, 5)} cor={escala[3]} />}
+                  <ListaBarras titulo={m.parceiro === "origem" ? "De onde veio" : "Para onde foi"} itens={ordenar(dadosMunicipio.parceiros).slice(0, 5)} cor={escala[3]} />
+                </>
+              ) : (
+                <>
+                  <p className="sim-vazio">
+                    {farmaciasDoMunicipio.length
+                      ? `Sem ${m.unidade} neste filtro até este momento.`
+                      : "Nenhuma farmácia da rede neste município."}
+                  </p>
+                  {farmaciasDoMunicipio.length > 0 && (
+                    <ListaBarras titulo="Farmácias da rede" itens={farmaciasDoMunicipio.map((f) => [f.nome, 0])} semValor />
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="sim-bloco sim-resumo">
+              <h2 className="sim-titulo-bloco">{aoVivo ? "Agora na rede" : "Neste momento"}{nomeDoFiltro ? ` · ${nomeDoFiltro}` : ""}</h2>
+              <dl className="sim-resumo-numeros">
+                <div className="is-destaque"><dt>Na estrada</dt><dd>{numero(aCaminho.length)}</dd></div>
+                <div><dt>{m.unidade.replace(/^\w/, (c) => c.toUpperCase())}</dt><dd>{numero(totalNoPeriodo)}</dd></div>
+                <div><dt>Pedidos no período</dt><dd>{numero(pedidosNoPeriodo)}</dd></div>
+                <div><dt>Farmácias</dt><dd>{numero(rede.farmacias.length)}</dd></div>
+              </dl>
+              <p className="sim-vazio">Clique num município, numa farmácia ou num traço para ver os números.</p>
+            </div>
+          )}
           <div className="sim-bloco sim-legenda">
-            <span className="sim-rotulo-bloco">{m.titulo}</span>
+            <h2 className="sim-titulo-bloco">Legenda</h2>
             <div className="sim-escala" aria-hidden="true">
-              {ESCALA_AMARELO.map((cor) => <i key={cor} style={{ background: cor }} />)}
+              {escala.map((cor) => <i key={cor} style={{ background: cor }} />)}
             </div>
             <div className="sim-escala-valores">
               <span>menos</span>
@@ -390,113 +489,67 @@ export default function AdminSimulacao() {
               <li><i className="sim-traco" /> Remédio na estrada</li>
             </ul>
           </div>
-
-          {pedido ? (
-            <div className="sim-bloco sim-detalhe">
-              <button type="button" className="sim-fechar" onClick={() => setIdPedido(null)} aria-label="Fechar pedido">×</button>
-              <span className="sim-rotulo-bloco">Pedido #{pedido.idPedido}</span>
-              <h2>{nomeRemedio(pedido)}</h2>
-              <p className="sim-destaque">{numero(pedido.quantidade)} unidades</p>
-              <p className="sim-rota">
-                <span>{pedido.origem.nome}<small>{pedido.origem.cidade}</small></span>
-                <b aria-label="para">→</b>
-                <span>{pedido.destino.nome}<small>{pedido.destino.cidade}</small></span>
-              </p>
-              <dl className="sim-numeros">
-                <div><dt>Pedido</dt><dd>{horario(pedido.sol)}</dd></div>
-                <div><dt>Saiu</dt><dd>{horario(pedido.env)}</dd></div>
-                <div><dt>{pedido.rec ? "Chegou" : "Chegada prevista"}</dt><dd>{horario(pedido.rec ?? pedido.prev)}</dd></div>
-              </dl>
-              {estaACaminho(pedido, momento) && <p className="sim-status">Na estrada neste momento</p>}
-            </div>
-          ) : municipio ? (
-            <div className="sim-bloco sim-detalhe">
-              <button type="button" className="sim-fechar" onClick={() => { setMunicipio(null); setIdFarmacia(null); }} aria-label="Fechar município">×</button>
-              <span className="sim-rotulo-bloco">{m.titulo}{idRemedio ? ` · ${remedios.find(([id]) => id === idRemedio)?.[1]}` : ""}</span>
-              <h2>{nomeDoMunicipio(municipio)}</h2>
-              {dadosMunicipio ? (
-                <>
-                  <p className="sim-destaque">{numero(dadosMunicipio.valor)} <small>{m.unidade}</small></p>
-                  <dl className="sim-numeros">
-                    <div><dt>Pedidos</dt><dd>{numero(dadosMunicipio.pedidos)}</dd></div>
-                    <div><dt>Farmácias da rede</dt><dd>{numero(farmaciasDoMunicipio.length)}</dd></div>
-                    <div><dt>Posição</dt><dd>{ordenar(new Map([...porMunicipio].map(([c, d]) => [c, d.valor]))).findIndex(([c]) => c === municipio) + 1}º</dd></div>
-                  </dl>
-                  <ListaBarras titulo="Por farmácia" itens={ordenar(dadosMunicipio.porFarmacia).map(([id, v]) => [rede.porId.get(id)?.nome ?? `#${id}`, v])} destaque={farmacia?.nome} />
-                  {!idRemedio && <ListaBarras titulo="Remédios" itens={ordenar(dadosMunicipio.porRemedio).slice(0, 5)} />}
-                  <ListaBarras titulo={m.parceiro === "origem" ? "De onde veio" : "Para onde foi"} itens={ordenar(dadosMunicipio.parceiros).slice(0, 5)} />
-                </>
-              ) : (
-                <p className="sim-vazio">
-                  {farmaciasDoMunicipio.length
-                    ? `Sem ${m.unidade} neste filtro até este momento.`
-                    : "Nenhuma farmácia da rede neste município."}
-                </p>
-              )}
-              {!dadosMunicipio && farmaciasDoMunicipio.length > 0 && (
-                <ListaBarras titulo="Farmácias da rede" itens={farmaciasDoMunicipio.map((f) => [f.nome, 0])} semValor />
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="sim-bloco">
-                <span className="sim-rotulo-bloco">Na estrada {aoVivo ? "agora" : "neste momento"} · {aCaminho.length}</span>
-                {aCaminho.length ? (
-                  <ul className="sim-lista">
-                    {aCaminho.slice(0, 6).map((p) => (
-                      <li key={p.idPedido}>
-                        <button type="button" onClick={() => setIdPedido(p.idPedido)}>
-                          <strong>{nomeRemedio(p)} · {numero(p.quantidade)} un.</strong>
-                          <span>{p.origem.cidade === p.destino.cidade ? `${p.origem.nome} → ${p.destino.nome}` : `${p.origem.cidade} → ${p.destino.cidade}`}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="sim-vazio">
-                    Nenhum remédio na estrada{aoVivo ? " agora" : " neste momento"}.{" "}
-                    <button type="button" className="sim-link" onClick={() => pular("anterior")}>Ver o último envio</button>
-                  </p>
-                )}
-              </div>
-              <div className="sim-bloco">
-                <span className="sim-rotulo-bloco">{m.titulo}</span>
-                {ranking.length ? (
-                  <ol className="sim-ranking">
-                    {ranking.map(([codigo, valor]) => (
-                      <li key={codigo}>
-                        <button type="button" onClick={() => focarMunicipio(codigo)}>
-                          <span>{nomeDoMunicipio(codigo)}</span>
-                          <i style={{ width: `${(valor / maximo) * 100}%`, background: corDoValor(valor, maximo) }} aria-hidden="true" />
-                          <b>{numero(valor)}</b>
-                        </button>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="sim-vazio">Sem movimento neste filtro até este momento.</p>
-                )}
-              </div>
-            </>
-          )}
         </aside>
+
+        <div className="sim-baixo">
+          <div className="sim-bloco">
+            <h2 className="sim-titulo-bloco">Na estrada {aoVivo ? "agora" : "neste momento"} · {aCaminho.length}</h2>
+            {aCaminho.length ? (
+              <ul className="sim-lista">
+                {aCaminho.slice(0, 8).map((p) => (
+                  <li key={p.idPedido}>
+                    <button type="button" onClick={() => setIdPedido(p.idPedido)} aria-pressed={p.idPedido === idPedido}>
+                      <strong>{nomeRemedio(p)} · {numero(p.quantidade)} un.</strong>
+                      <span>{p.origem.nome} → {p.destino.nome}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="sim-vazio">
+                Nenhum remédio na estrada{aoVivo ? " agora" : " neste momento"}.{" "}
+                <button type="button" className="sim-link" onClick={() => pular("anterior")}>Ver o último envio</button>
+              </p>
+            )}
+          </div>
+
+          <div className="sim-bloco">
+            <h2 className="sim-titulo-bloco">{m.titulo}</h2>
+            {ranking.length ? (
+              <ol className="sim-ranking">
+                {ranking.map(([codigo, valor]) => (
+                  <li key={codigo}>
+                    <button type="button" onClick={() => focarMunicipio(codigo)} aria-pressed={codigo === municipio}>
+                      <span>{nomeDoMunicipio(codigo)}</span>
+                      <b>{numero(valor)}</b>
+                      <i style={{ width: `${(valor / maximo) * 100}%`, background: corDoValor(valor, maximo, escala) }} aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="sim-vazio">Sem movimento neste filtro até este momento.</p>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   );
 }
 
-function ListaBarras({ titulo, itens, destaque, semValor = false }) {
+function ListaBarras({ titulo, itens, destaque, cor, semValor = false }) {
   if (!itens.length) return null;
   const maior = Math.max(1, ...itens.map(([, v]) => v));
   return (
     <div className="sim-barras">
-      <span className="sim-rotulo-bloco">{titulo}</span>
+      <h3 className="sim-titulo-bloco">{titulo}</h3>
       <ul>
         {itens.map(([nome, valor]) => (
           <li key={nome} className={nome === destaque ? "is-destaque" : undefined}>
             <span>{nome}</span>
-            {!semValor && <i style={{ width: `${(valor / maior) * 100}%` }} aria-hidden="true" />}
             {!semValor && <b>{numero(valor)}</b>}
+            {!semValor && <i style={{ width: `${(valor / maior) * 100}%`, background: cor }} aria-hidden="true" />}
           </li>
         ))}
       </ul>
