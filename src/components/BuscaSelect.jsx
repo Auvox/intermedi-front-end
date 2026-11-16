@@ -12,6 +12,7 @@ const normalizar = (texto) => String(texto ?? "").normalize("NFD").replace(/[̀-
 //   rotulo       texto que fica no campo depois de escolher
 //   detalhe      linha menor embaixo do nome, na lista (opcional)
 //   textoBusca   em que texto a busca procura (padrão: rotulo + detalhe)
+//   limite       quantos itens a lista mostra no máximo (listas longas)
 export default function BuscaSelect({
   label,
   itens,
@@ -27,6 +28,7 @@ export default function BuscaSelect({
   invalido = false,
   describedBy,
   semResultado = "Nenhum resultado para esta busca.",
+  limite = Infinity,
   children,
 }) {
   const selecionado = itens.find((item) => String(getId(item)) === String(valorId ?? ""));
@@ -40,7 +42,7 @@ export default function BuscaSelect({
   const termo = selecionado && busca === rotulo(selecionado) ? "" : normalizar(busca.trim());
   const opcoes = itens.filter((item) =>
     normalizar(textoBusca ? textoBusca(item) : `${rotulo(item)} ${detalhe?.(item) ?? ""}`).includes(termo),
-  );
+  ).slice(0, limite);
 
   useEffect(() => {
     lista.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });

@@ -4,10 +4,12 @@ import mapaSvg from "../../assets/mapa-svg.svg";
 // Mapa de SP (o mesmo da página inicial) com os 645 municípios clicáveis.
 // O SVG é posto direto na página para pintar cada município ("mun_<código IBGE>");
 // por cima vem uma camada com a mesma viewBox para distritos, farmácias e trajetos.
-// O mapa é fixo: não arrasta nem dá zoom com o mouse; quem muda o enquadramento
-// é a página (zoom animado ao abrir uma cidade).
-//   viewBox               enquadramento
-//   apiRef                recebe { caixaDoMunicipio(código) } quando o mapa carrega
+// Arrasta com a mão (cursor de mãozinha); o zoom é da página (abrir uma cidade,
+// a busca ou o − / +), sem a roda do mouse.
+//   viewBox / onViewBox   enquadramento; o arraste devolve o novo
+//   apiRef                recebe { caixaDoMunicipio(código), contornoDoMunicipio(código) }
+//   cidade                código da cidade aberta: as outras ficam esmaecidas
+//   aviso                 texto no canto inferior esquerdo (ex.: sem farmácia cadastrada)
 //   navegacao / acoes     controles nos cantos superiores esquerdo / direito
 //   rodape                controle no canto inferior direito (zoom manual)
 //   cores                 Map código -> cor do município
@@ -33,10 +35,11 @@ function cobrir([x, y, w, h], proporcao) {
   return [x - (nw - w) / 2, y, nw, h];
 }
 
-export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, cores, selecionado, onSelecionar, onElemento, dica, children }) {
+export default function MapaRede({ viewBox, onViewBox, apiRef, cidade, aviso, navegacao, acoes, rodape, cores, selecionado, onSelecionar, onElemento, dica, children }) {
   const caixa = useRef(null);
   const base = useRef(null);
   const svgRef = useRef(null);
+  const arraste = useRef(null);
   const [carregado, setCarregado] = useState(false);
   const [erro, setErro] = useState("");
   const [balao, setBalao] = useState(null);
@@ -71,6 +74,7 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, co
         const b = svgRef.current?.querySelector(`#mun_${codigo}`)?.getBBox();
         return b ? [b.x, b.y, b.width, b.height] : null;
       },
+      contornoDoMunicipio: (codigo) => svgRef.current?.querySelector(`#mun_${codigo}`)?.getAttribute("d") ?? null,
     };
   }, [carregado, apiRef]);
 
@@ -94,8 +98,10 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, co
       const codigo = el.id.slice(4);
       el.style.fill = cores.get(codigo) ?? COR_BASE;
       el.classList.toggle("is-selecionado", codigo === selecionado);
+      el.classList.toggle("is-cidade", codigo === cidade);
     }
-  }, [cores, selecionado, carregado]);
+    svgRef.current.classList.toggle("com-cidade", Boolean(cidade));
+  }, [cores, selecionado, cidade, carregado]);
 
   const escala = vb[2] / tamanho.largura;
 
@@ -108,7 +114,27 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, co
     return municipio ? { municipio } : null;
   }
 
+  // arrastar: segura e move; um arraste não conta como clique
+  function aoApertar(e) {
+    if (e.button !== 0 || !onViewBox) return;
+    arraste.current = { x: e.clientX, y: e.clientY, inicio: vb, moveu: false };
+  }
+
   function aoMover(e) {
+    const a = arraste.current;
+    if (a) {
+      const dx = e.clientX - a.x;
+      const dy = e.clientY - a.y;
+      if (a.moveu || Math.hypot(dx, dy) > 4) {
+        if (!a.moveu) caixa.current.setPointerCapture?.(e.pointerId);
+        a.moveu = true;
+        setBalao(null);
+        const r = caixa.current.getBoundingClientRect();
+        const [x, y, w, h] = a.inicio;
+        onViewBox([x - (dx / r.width) * w, y - (dy / r.height) * h, w, h]);
+        return;
+      }
+    }
     const alvo = alvoEm(e);
     const texto = alvo ? dica(alvo) : null;
     if (!texto) return setBalao(null);
@@ -116,7 +142,17 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, co
     setBalao({ texto, x: e.clientX - r.left, y: e.clientY - r.top });
   }
 
+  function aoSoltar() {
+    const a = arraste.current;
+    arraste.current = null;
+    if (a?.moveu) arraste.ultimoFoiArraste = true;
+  }
+
   function aoClicar(e) {
+    if (arraste.ultimoFoiArraste) {
+      arraste.ultimoFoiArraste = false;
+      return;
+    }
     const alvo = alvoEm(e);
     if (alvo && !alvo.municipio) return onElemento?.(alvo);
     onSelecionar(alvo?.municipio ?? null);
@@ -126,12 +162,15 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, co
     <div className="sim-mapa">
       <div
         ref={caixa}
-        className="sim-mapa-caixa"
+        className={`sim-mapa-caixa${onViewBox ? " pode-arrastar" : ""}`}
         onClick={aoClicar}
+        onPointerDown={aoApertar}
         onPointerMove={aoMover}
-        onPointerLeave={() => setBalao(null)}
+        onPointerUp={aoSoltar}
+        onPointerCancel={aoSoltar}
+        onPointerLeave={() => !arraste.current && setBalao(null)}
         role="application"
-        aria-label="Mapa de São Paulo. Clique numa cidade para ver de perto."
+        aria-label="Mapa de São Paulo. Arraste para mover, clique numa cidade para ver de perto."
       >
         <div ref={base} className="sim-mapa-base" />
         {carregado && (
@@ -151,6 +190,7 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, co
       {navegacao && <div className="sim-mapa-navegacao">{navegacao}</div>}
       {acoes && <div className="sim-mapa-acoes">{acoes}</div>}
       {rodape && <div className="sim-mapa-rodape">{rodape}</div>}
+      {aviso && <p className="sim-mapa-aviso-cidade" role="status">{aviso}</p>}
     </div>
   );
 }

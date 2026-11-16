@@ -916,3 +916,48 @@
     display: none;
   }
 }
+
+/* arrastar o mapa com a mão */
+.sim-mapa-caixa.pode-arrastar {
+  cursor: grab;
+  touch-action: none;
+}
+.sim-mapa-caixa.pode-arrastar:active {
+  cursor: grabbing;
+}
+/* cidade aberta: as outras esmaecem e ela ganha um contorno forte */
+.sim-mapa-svg.com-cidade [id^="mun_"]:not(.is-cidade) {
+  opacity: 0.38;
+}
+.sim-contorno path {
+  fill: none;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.sim-contorno-halo {
+  stroke: #ffffff;
+  opacity: 0.9;
+}
+.sim-contorno-linha {
+  stroke: var(--sim-tinta);
+}
+.sim-mapa-aviso-cidade {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  max-width: min(420px, calc(100% - 200px));
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--sim-tinta);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.4;
+}
+@media (max-width: 640px) {
+  .sim-mapa-aviso-cidade {
+    right: 16px;
+    bottom: 76px;
+    max-width: none;
+  }
+}

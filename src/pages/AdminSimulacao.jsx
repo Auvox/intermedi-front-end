@@ -13,7 +13,7 @@ import {
   escalaDoRemedio,
   estaACaminho,
   eventosDoPedido,
-  LISTA_MUNICIPIOS,
+  LISTA_BUSCA,
   nomeDivisao,
   nomeDoMunicipio,
   prepararRede,
@@ -88,6 +88,12 @@ export default function AdminSimulacao() {
   const apiMapa = useRef(null);
   const animacao = useRef(null);
   const cidadeAberta = useRef(null);
+  const [contorno, setContorno] = useState(null);
+  // o enquadramento de agora, para a animação partir de onde o mapa está
+  const viewBoxAtual = useRef(viewBox);
+  useEffect(() => {
+    viewBoxAtual.current = viewBox;
+  });
   const [municipio, setMunicipio] = useState(null);
   const [idPedido, setIdPedido] = useState(null);
   const [idFarmacia, setIdFarmacia] = useState(null);
@@ -274,7 +280,7 @@ export default function AdminSimulacao() {
   // zoom animado (o mapa não arrasta: só a página muda o enquadramento)
   function animarPara(alvo) {
     cancelAnimationFrame(animacao.current);
-    const de = viewBox;
+    const de = viewBoxAtual.current;
     const inicioAnimacao = performance.now();
     const passo = (agoraAnimacao) => {
       const k = Math.min(1, (agoraAnimacao - inicioAnimacao) / 900);
@@ -285,13 +291,31 @@ export default function AdminSimulacao() {
     animacao.current = requestAnimationFrame(passo);
   }
 
-  async function abrirCidade(codigo) {
+  // zoom num bairro/distrito já carregado, com a cidade em volta
+  function focarDivisao(lista, nome) {
+    const alvo = lista?.find((d) => d.nome === nome);
+    if (!alvo) return;
+    setDistrito(nome);
+    const [x, y, w, h] = alvo.caixa;
+    const folga = Math.max(w, h) * 1.4;
+    animarPara([x - folga, y - folga, w + 2 * folga, h + 2 * folga]);
+  }
+
+  // abre a cidade (zoom animado, contorno forte, divisões); `divisao` já seleciona
+  // um bairro ou distrito dela (vindo da busca)
+  async function abrirCidade(codigo, divisao = null) {
+    if (codigo === cidade && distritos) {
+      if (divisao) focarDivisao(distritos, divisao);
+      return;
+    }
     const caixa = apiMapa.current?.caixaDoMunicipio(codigo);
     if (!caixa) return;
-    const folga = Math.max(caixa[2], caixa[3]) * 0.12;
-    animarPara([caixa[0] - folga, caixa[1] - folga, caixa[2] + 2 * folga, caixa[3] + 2 * folga]);
+    // folga para a cidade não ficar atrás da busca e do zoom nos cantos
+    const folga = Math.max(caixa[2], caixa[3]) * 0.24;
+    if (!divisao) animarPara([caixa[0] - folga, caixa[1] - folga, caixa[2] + 2 * folga, caixa[3] + 2 * folga]);
     cidadeAberta.current = codigo;
     setCidade(codigo);
+    setContorno(apiMapa.current?.contornoDoMunicipio(codigo) ?? null);
     setMunicipio(codigo);
     setDistrito(null);
     setIdPedido(null);
@@ -299,7 +323,9 @@ export default function AdminSimulacao() {
     setDistritos(null);
     if (!temDistritos(codigo)) return;
     const lista = await carregarDistritos(codigo);
-    if (cidadeAberta.current === codigo) setDistritos(lista);
+    if (cidadeAberta.current !== codigo) return;
+    setDistritos(lista);
+    if (divisao) focarDivisao(lista, divisao);
   }
 
   // zoom manual (− / +): aproxima ou afasta em volta do centro do que está na tela;
@@ -318,6 +344,7 @@ export default function AdminSimulacao() {
     cidadeAberta.current = null;
     animarPara(ENQUADRAMENTOS.estado);
     setCidade(null);
+    setContorno(null);
     setDistritos(null);
     setDistrito(null);
     setMunicipio(null);
@@ -358,9 +385,20 @@ export default function AdminSimulacao() {
     const dadosMun = porMunicipio.get(alvo.municipio);
     return {
       titulo: nomeDoMunicipio(alvo.municipio),
-      detalhe: dadosMun ? `${numero(dadosMun.valor)} ${m.unidade}` : cidade ? null : "Clique para ver de perto",
+      detalhe: dadosMun
+        ? `${numero(dadosMun.valor)} ${m.unidade}`
+        : rede.farmacias.some((f) => f.codigo === alvo.municipio)
+          ? "Sem movimento neste filtro"
+          : "Sem farmácia cadastrada",
     };
   };
+
+  const farmaciasNaCidade = cidade ? rede.farmacias.filter((f) => f.codigo === cidade).length : 0;
+  const avisoCidade = cidade && !farmaciasNaCidade
+    ? `Nenhuma farmácia cadastrada em ${nomeDoMunicipio(cidade)}.${temDistritos(cidade) ? "" : " O IBGE não divide esta cidade em bairros ou distritos."}`
+    : cidade && !temDistritos(cidade)
+      ? "O IBGE não divide esta cidade em bairros ou distritos."
+      : null;
 
   // área do detalhe: o distrito escolhido ou o município
   const area = distrito
@@ -391,26 +429,33 @@ export default function AdminSimulacao() {
         <section className="sim-palco" aria-label="Mapa da rede">
           <MapaRede
             viewBox={viewBox}
+            onViewBox={(novo) => {
+              cancelAnimationFrame(animacao.current);
+              setViewBox(novo);
+            }}
             apiRef={apiMapa}
+            cidade={cidade}
+            aviso={avisoCidade}
             navegacao={
               <div className="sim-navegacao">
                 {cidade && <button type="button" className="sim-voltar" onClick={voltarAoEstado}>← Estado</button>}
                 <div className="sim-busca">
                   <BuscaSelect
-                    key={cidade ?? "estado"}
-                    label="Buscar cidade"
-                    itens={LISTA_MUNICIPIOS}
-                    valorId={cidade ?? ""}
-                    onChange={(m) => m && abrirCidade(m.codigo)}
-                    getId={(m) => m.codigo}
-                    rotulo={(m) => m.nome}
-                    detalhe={(m) => nomeDivisao(m.codigo) || undefined}
-                    textoBusca={(m) => m.nome}
-                    placeholder="Buscar cidade ou município"
-                    semResultado="Nenhuma cidade com esse nome."
+                    key={`${cidade ?? "estado"}:${distrito ?? ""}`}
+                    label="Buscar cidade, distrito ou bairro"
+                    itens={LISTA_BUSCA}
+                    valorId={cidade ? (distrito ? `${cidade}:${distrito}` : cidade) : ""}
+                    onChange={(item) => item && abrirCidade(item.codigo, item.divisao ?? null)}
+                    getId={(item) => item.id}
+                    rotulo={(item) => item.nome}
+                    detalhe={(item) => item.detalhe}
+                    textoBusca={(item) => item.nome}
+                    placeholder="Buscar cidade, distrito ou bairro"
+                    semResultado="Nada com esse nome."
+                    limite={60}
                   />
                 </div>
-                {cidade && distritos && <span className="sim-divisao">{nomeDivisao(cidade)}</span>}
+                {cidade && <span className="sim-divisao">{nomeDivisao(cidade) || "sem divisão no IBGE"}</span>}
               </div>
             }
             cores={cores}
@@ -456,6 +501,12 @@ export default function AdminSimulacao() {
                     />
                   );
                 })}
+                {cidade && contorno && (
+                  <g className="sim-contorno" aria-hidden="true">
+                    <path d={contorno} strokeWidth={9 * px} className="sim-contorno-halo" />
+                    <path d={contorno} strokeWidth={3.5 * px} className="sim-contorno-linha" />
+                  </g>
+                )}
                 {aCaminho.map((p) => {
                   const a = p.origem;
                   const b = p.destino;

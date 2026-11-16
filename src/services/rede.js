@@ -236,6 +236,16 @@ export const nomeDivisao = (codigo) => {
   return divisao ? `${divisao[1]} ${divisao[0]}` : "";
 };
 
+// busca do mapa: as 645 cidades e, depois, cada bairro ou distrito desenhado
+const SINGULAR = { bairros: "Bairro", distritos: "Distrito" };
+export const LISTA_BUSCA = [
+  ...LISTA_MUNICIPIOS.map((m) => ({ id: m.codigo, codigo: m.codigo, nome: m.nome, detalhe: nomeDivisao(m.codigo) || "Cidade" })),
+  ...Object.entries(DIVISOES_MUNICIPIOS)
+    .flatMap(([codigo, [tipo, , nomes]]) =>
+      nomes.map((nome) => ({ id: `${codigo}:${nome}`, codigo, divisao: nome, nome, detalhe: `${SINGULAR[tipo]} de ${MUNICIPIOS_SP[codigo]}` })))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+];
+
 export async function carregarDistritos(codigo) {
   if (!temDistritos(codigo)) return null;
   const resposta = await fetch(`/divisoes/${codigo}.json`);
