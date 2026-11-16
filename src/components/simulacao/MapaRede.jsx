@@ -9,6 +9,7 @@ import mapaSvg from "../../assets/mapa-svg.svg";
 //   viewBox               enquadramento
 //   apiRef                recebe { caixaDoMunicipio(código) } quando o mapa carrega
 //   navegacao / acoes     controles nos cantos superiores esquerdo / direito
+//   rodape                controle no canto inferior direito (zoom manual)
 //   cores                 Map código -> cor do município
 //   selecionado           código do município escolhido
 //   onSelecionar          clique num município (null = fora dele)
@@ -32,7 +33,7 @@ function cobrir([x, y, w, h], proporcao) {
   return [x - (nw - w) / 2, y, nw, h];
 }
 
-export default function MapaRede({ viewBox, apiRef, navegacao, acoes, cores, selecionado, onSelecionar, onElemento, dica, children }) {
+export default function MapaRede({ viewBox, apiRef, navegacao, acoes, rodape, cores, selecionado, onSelecionar, onElemento, dica, children }) {
   const caixa = useRef(null);
   const base = useRef(null);
   const svgRef = useRef(null);
@@ -149,6 +150,7 @@ export default function MapaRede({ viewBox, apiRef, navegacao, acoes, cores, sel
       </div>
       {navegacao && <div className="sim-mapa-navegacao">{navegacao}</div>}
       {acoes && <div className="sim-mapa-acoes">{acoes}</div>}
+      {rodape && <div className="sim-mapa-rodape">{rodape}</div>}
     </div>
   );
 }

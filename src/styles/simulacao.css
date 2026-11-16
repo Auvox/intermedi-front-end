@@ -831,3 +831,88 @@
     animation: none;
   }
 }
+
+/* busca de cidade (no canto do mapa) e zoom manual − / + */
+.sim-navegacao .sim-voltar {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sim-tinta);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sim-busca {
+  width: min(320px, 52vw);
+}
+.sim-busca .busca-select > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.sim-busca input {
+  height: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  font-size: 16px;
+}
+.sim-busca .busca-select-list {
+  max-height: 320px;
+}
+.sim-divisao {
+  padding-right: 6px;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.sim-mapa-rodape {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+}
+.sim-zoom-manual {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
+}
+.sim-zoom-manual button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sim-zoom-manual button:hover:not(:disabled) {
+  background: var(--color-fill);
+}
+.sim-zoom-manual button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.sim-zoom-manual output {
+  min-width: 64px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .sim-divisao {
+    display: none;
+  }
+}

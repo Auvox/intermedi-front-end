@@ -1,6 +1,7 @@
 import { apiRequest } from "./api";
 import { tokenAdmin } from "./desempenho";
 import MUNICIPIOS_SP from "../data/municipiosSP";
+import DIVISOES_MUNICIPIOS from "../data/divisoesMunicipios";
 
 // Aba "Simulação em tempo real" do admin: as farmácias no mapa de SP e os
 // pedidos entre elas, ao vivo ou em qualquer momento do passado.
@@ -52,6 +53,10 @@ const normalizar = (texto) =>
 const CODIGO_POR_NOME = new Map(Object.entries(MUNICIPIOS_SP).map(([codigo, nome]) => [normalizar(nome), codigo]));
 export const codigoDoMunicipio = (cidade) => CODIGO_POR_NOME.get(normalizar(cidade)) ?? null;
 export const nomeDoMunicipio = (codigo) => MUNICIPIOS_SP[codigo] ?? "";
+// todas as cidades, em ordem alfabética (busca no mapa)
+export const LISTA_MUNICIPIOS = Object.entries(MUNICIPIOS_SP)
+  .map(([codigo, nome]) => ({ codigo, nome }))
+  .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
 // --- pedidos no tempo ----------------------------------------------------
 
@@ -222,16 +227,20 @@ export function corDoValor(valor, maximo, escala = ESCALA_AMARELO) {
 
 // --- distritos (zoom numa cidade) ------------------------------------------
 
-// cidades com o desenho dos distritos (carregado só quando a cidade é aberta)
-// São Paulo: 96 distritos do GeoSampa (Prefeitura), já nas coordenadas do mapa
-const DISTRITOS = {
-  3550308: () => import("../data/distritosSaoPaulo.json").then((m) => m.default),
+// cidades com divisão interna desenhada (bairros ou distritos do Censo 2022 do
+// IBGE, já nas coordenadas do mapa), baixada só quando a cidade é aberta
+export const temDistritos = (codigo) => Boolean(DIVISOES_MUNICIPIOS[codigo]);
+// "96 distritos", "23 bairros"
+export const nomeDivisao = (codigo) => {
+  const divisao = DIVISOES_MUNICIPIOS[codigo];
+  return divisao ? `${divisao[1]} ${divisao[0]}` : "";
 };
-export const temDistritos = (codigo) => Boolean(DISTRITOS[codigo]);
 
 export async function carregarDistritos(codigo) {
-  const lista = await DISTRITOS[codigo]?.();
-  if (!lista) return null;
+  if (!temDistritos(codigo)) return null;
+  const resposta = await fetch(`/divisoes/${codigo}.json`);
+  if (!resposta.ok) return null;
+  const lista = await resposta.json();
   return lista.map(({ nome, d }) => {
     const aneis = d.split("Z").filter(Boolean).map((anel) =>
       anel.replace("M", "").split("L").map((par) => par.split(",").map(Number)));

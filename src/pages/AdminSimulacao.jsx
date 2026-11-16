@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapaRede from "../components/simulacao/MapaRede";
+import BuscaSelect from "../components/BuscaSelect";
 import LinhaDoTempo from "../components/simulacao/LinhaDoTempo";
 import {
   ENQUADRAMENTOS,
@@ -12,6 +13,8 @@ import {
   escalaDoRemedio,
   estaACaminho,
   eventosDoPedido,
+  LISTA_MUNICIPIOS,
+  nomeDivisao,
   nomeDoMunicipio,
   prepararRede,
   progresso,
@@ -249,8 +252,11 @@ export default function AdminSimulacao() {
   );
   const maximoDistrito = Math.max(0, ...[...porDistrito.values()].map((d) => d.valor));
   const distritosComFarmacia = new Set(distritoDe.values());
+  // nomes só nos distritos/bairros grandes para a cidade (e onde há farmácia)
+  const larguraCidade = Math.max(1, ...(distritos ?? []).map((d) => d.caixa[0] + d.caixa[2])) -
+    Math.min(...(distritos ?? [{ caixa: [0] }]).map((d) => d.caixa[0]));
   const rotulosDistritos = (distritos ?? [])
-    .filter((d) => d.caixa[2] > 2600 || distritosComFarmacia.has(d.nome))
+    .filter((d) => d.caixa[2] > larguraCidade * 0.16 || distritosComFarmacia.has(d.nome))
     .map((d) => ({ codigo: `d:${d.nome}`, distrito: d.nome, x: d.caixa[0] + d.caixa[2] / 2, y: d.caixa[1] + d.caixa[3] / 2, nome: d.nome }));
   const rotulosFarmacias = useMemo(
     () => rede.farmacias.filter((f) => f.x != null).map((f) => ({ codigo: `f${f.idFarmacia}`, idFarmacia: f.idFarmacia, x: f.x, y: f.y, nome: f.nome })),
@@ -294,6 +300,18 @@ export default function AdminSimulacao() {
     if (!temDistritos(codigo)) return;
     const lista = await carregarDistritos(codigo);
     if (cidadeAberta.current === codigo) setDistritos(lista);
+  }
+
+  // zoom manual (− / +): aproxima ou afasta em volta do centro do que está na tela;
+  // 100% é o estado inteiro
+  const ZOOM_MAXIMO = 6000;
+  const zoomAtual = Math.round((ENQUADRAMENTOS.estado[2] / viewBox[2]) * 100);
+  function zoomPor(fator) {
+    const [x, y, w, h] = viewBox;
+    const minimo = ENQUADRAMENTOS.estado[2] / (ZOOM_MAXIMO / 100);
+    const nw = Math.min(ENQUADRAMENTOS.estado[2], Math.max(minimo, w / fator));
+    const nh = (h * nw) / w;
+    animarPara([x + (w - nw) / 2, y + (h - nh) / 2, nw, nh]);
   }
 
   function voltarAoEstado() {
@@ -376,14 +394,23 @@ export default function AdminSimulacao() {
             apiRef={apiMapa}
             navegacao={
               <div className="sim-navegacao">
-                {cidade ? (
-                  <>
-                    <button type="button" onClick={voltarAoEstado}>← Estado</button>
-                    <span><b>{nomeDoMunicipio(cidade)}</b>{distritos ? ` · ${distritos.length} distritos` : ""}</span>
-                  </>
-                ) : (
-                  <span>Clique numa cidade para ver de perto</span>
-                )}
+                {cidade && <button type="button" className="sim-voltar" onClick={voltarAoEstado}>← Estado</button>}
+                <div className="sim-busca">
+                  <BuscaSelect
+                    key={cidade ?? "estado"}
+                    label="Buscar cidade"
+                    itens={LISTA_MUNICIPIOS}
+                    valorId={cidade ?? ""}
+                    onChange={(m) => m && abrirCidade(m.codigo)}
+                    getId={(m) => m.codigo}
+                    rotulo={(m) => m.nome}
+                    detalhe={(m) => nomeDivisao(m.codigo) || undefined}
+                    textoBusca={(m) => m.nome}
+                    placeholder="Buscar cidade ou município"
+                    semResultado="Nenhuma cidade com esse nome."
+                  />
+                </div>
+                {cidade && distritos && <span className="sim-divisao">{nomeDivisao(cidade)}</span>}
               </div>
             }
             cores={cores}
@@ -394,6 +421,13 @@ export default function AdminSimulacao() {
             }}
             onElemento={aoClicarElemento}
             dica={dica}
+            rodape={
+              <div className="sim-zoom-manual" role="group" aria-label="Zoom do mapa">
+                <button type="button" onClick={() => zoomPor(1 / 1.5)} disabled={zoomAtual <= 100} aria-label="Afastar">−</button>
+                <output aria-live="polite">{zoomAtual}%</output>
+                <button type="button" onClick={() => zoomPor(1.5)} disabled={zoomAtual >= ZOOM_MAXIMO} aria-label="Aproximar">+</button>
+              </div>
+            }
             acoes={
               <label className="sim-filtro-remedio" style={{ "--chip": escala[3] }}>
                 <span>Remédio</span>
