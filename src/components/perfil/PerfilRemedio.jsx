@@ -3,9 +3,7 @@ import GraficoBarras from "./GraficoBarras";
 import ListaCompacta from "./ListaCompacta";
 import { usePerfil } from "./perfilContext";
 import { EstoqueNaRede, PerfilLayout, Secao } from "./Blocos";
-import ManagerIcon from "../ManagerIcon";
 import SolicitarReposicao from "../SolicitarReposicao";
-import { SituacaoBadges, TarjaBadge } from "../Remedios";
 import useApiList from "../../hooks/useApiList";
 import { useFarmaciaDoFuncionario } from "../../hooks/useChamados";
 import { avisarDadosAlterados, useFocoTitulo, usePerfilDados } from "../../hooks/useResumo";
@@ -24,23 +22,23 @@ import { numero } from "../../services/perfil";
 
 const plural = (n, um, varios) => `${numero(n)} ${Number(n) === 1 ? um : varios}`;
 
-// Foto grande do produto; sem foto, uma caixinha ilustrada com o nome
-function FotoProduto({ remedio: r }) {
+// Capa pequena do cabeçalho: a foto do remédio ou, sem foto, a embalagem em
+// tipo (nome e dosagem) com a faixa da tarja embaixo, como na caixa de verdade
+function CapaRemedio({ remedio: r }) {
   const [falhou, setFalhou] = useState(false);
   const src = fotoUrl(r.fotoRemedio);
-  const { label, tone } = tarja(r.tarjaRemedio);
+  const { tone } = tarja(r.tarjaRemedio);
   return (
-    <div className={`prod-foto tarja-${tone}`}>
+    <div className={`ficha-capa tarja-${tone}`}>
       {src && !falhou ? (
         <img src={src} alt={nomeComDosagem(r)} onError={() => setFalhou(true)} />
       ) : (
-        <div className="prod-caixa" role="img" aria-label={`${nomeComDosagem(r)} sem foto`}>
+        <span className="ficha-capa-caixa" role="img" aria-label={`${nomeComDosagem(r)} sem foto`}>
           <b>{r.nomeRemedio}</b>
-          <span>{[r.dosagemRemedio, r.apresentacaoRemedio].filter(Boolean).join(" · ")}</span>
-          <i />
-        </div>
+          <small>{r.dosagemRemedio}</small>
+        </span>
       )}
-      <p className="prod-tarja">{label}</p>
+      <i aria-hidden="true" />
     </div>
   );
 }
@@ -65,12 +63,11 @@ function BotaoReposicao({ remedio, linha }) {
     <>
       <button
         type="button"
-        className="prod-botao"
+        className="ficha-acao"
         disabled={!funcionario.idFuncionario || !catalogo.length}
         onClick={() => setAberto(true)}
       >
-        <ManagerIcon name="ticket" size={18} />
-        Solicitar reposição de {remedio.nomeRemedio}
+        Solicitar reposição
       </button>
       {aberto && (
         <SolicitarReposicao
@@ -86,128 +83,146 @@ function BotaoReposicao({ remedio, linha }) {
   );
 }
 
-// Quadro de estoque (o "preço" da página de produto): a farmácia de quem vê e a rede.
-// Admin, sem farmácia, vê o total da rede no lugar da farmácia.
-function QuadroEstoque({ rede, linha, idFarmaciaAtual }) {
-  const { abrirPerfil } = usePerfil();
-  const farmacias = rede.farmacias.map(comSituacao);
-  const maior = Math.max(1, ...farmacias.map((f) => Number(f.quantidade) || 0));
-  const criticas = farmacias.filter((f) => f.situacao !== "ok" || f.vencido).length;
-  const qtd = Number(linha?.quantidade) || 0;
-  const minimo = Number(linha?.estoqueMinimo) || 0;
-  const pct = minimo > 0 ? Math.min(100, Math.round((qtd / (minimo * 2)) * 100)) : qtd > 0 ? 100 : 0;
-  const tom = !linha || linha.vencido ? "zerado" : linha.situacao;
-  const minha = (f) => idFarmaciaAtual && String(f.idFarmacia) === String(idFarmaciaAtual);
-  const ordenadas = [...farmacias.filter(minha), ...farmacias.filter((f) => !minha(f))];
+const SINAL = { critico: "Abaixo do mínimo", zerado: "Zerado" };
 
+// Régua do estoque: a quantidade contra o mínimo (a marca fica no mínimo; a
+// régua inteira é o dobro dele). Só a parte cheia leva a cor da plataforma.
+function Regua({ quantidade, minimo, tom }) {
+  const escala = Math.max(minimo * 2, quantidade, 1);
+  const pct = (v) => `${Math.min(100, (v / escala) * 100)}%`;
   return (
-    <div className="prod-compra">
-      {idFarmaciaAtual ? (
-        <div className={`prod-meu ${tom}`} role="group" aria-label="Estoque da sua farmácia">
-          <span className="prod-rotulo">Estoque da sua farmácia</span>
-          <div className="prod-qtd"><strong>{numero(qtd)}</strong><span>{qtd === 1 ? "unidade" : "unidades"}</span></div>
-          {linha ? (
-            <>
-              <span
-                className="prod-barra"
-                role="meter"
-                aria-valuemin={0}
-                aria-valuemax={Math.max(minimo * 2, qtd, 1)}
-                aria-valuenow={qtd}
-                aria-label={`${qtd} unidades, mínimo ${minimo}`}
-              >
-                <i style={{ width: `${pct}%` }} />
-                {minimo > 0 && <b />}
-              </span>
-              <span className="prod-meta">Mínimo {numero(minimo)} · lote {linha.lote || "—"} · validade {formatarValidade(linha.validade)}</span>
-              <SituacaoBadges item={linha} />
-            </>
-          ) : (
-            <span className="prod-meta">Este remédio não está cadastrado no estoque da sua farmácia.</span>
-          )}
-        </div>
-      ) : (
-        <div className="prod-meu ok" role="group" aria-label="Estoque na rede">
-          <span className="prod-rotulo">Estoque na rede</span>
-          <div className="prod-qtd"><strong>{numero(rede.unidadesNaRede)}</strong><span>unidades</span></div>
-          <span className="prod-meta">Em estoque em {numero(rede.farmaciasComEstoque)} de {plural(rede.farmaciasComCadastro, "farmácia", "farmácias")}</span>
-          {criticas > 0 && <span className="mgr-badge chamado-badge orange">{plural(criticas, "farmácia precisa", "farmácias precisam")} de reposição</span>}
-        </div>
-      )}
-      <div className="prod-rede">
-        <span className="prod-rotulo">Disponível na rede</span>
-        {ordenadas.length ? (
-          <ul>
-            {ordenadas.slice(0, 4).map((f) => (
-              <li key={f.idFarmacia}>
-                <button type="button" onClick={(e) => abrirPerfil("farmacia", f.idFarmacia, e.currentTarget)} title={f.nomeFarmacia}>
-                  {f.nomeFarmacia}{minha(f) && <em>sua</em>}
-                </button>
-                <span className="prod-mini" aria-hidden="true">
-                  <i className={f.situacao !== "ok" || f.vencido ? "alerta" : undefined} style={{ width: `${Math.max(3, (Number(f.quantidade) / maior) * 100)}%` }} />
-                </span>
-                <strong>{numero(f.quantidade)}</strong>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="prod-meta">Nenhuma farmácia tem este remédio.</p>
-        )}
-        <p className="prod-total">
-          <b>{plural(rede.unidadesNaRede, "unidade", "unidades")}</b> em {numero(rede.farmaciasComEstoque)} de {plural(rede.farmaciasComCadastro, "farmácia", "farmácias")}
-        </p>
-      </div>
-    </div>
+    <span
+      className={`ficha-regua is-${tom}`}
+      role="meter"
+      aria-valuemin={0}
+      aria-valuemax={escala}
+      aria-valuenow={quantidade}
+      aria-label={`${quantidade} unidades, mínimo ${minimo}`}
+    >
+      <i style={{ width: pct(quantidade) }} />
+      {minimo > 0 && <b style={{ left: pct(minimo) }} />}
+    </span>
   );
 }
 
-// Topo em formato de vitrine: foto à esquerda (com a ação e os dados rápidos
-// embaixo, sem deixar vazio), identificação, ficha rápida e o quadro de estoque
+// Estoque da unidade de quem vê (admin, sem farmácia: o total da rede)
+function EstoqueDaUnidade({ rede, linha, idFarmaciaAtual }) {
+  if (!idFarmaciaAtual) {
+    return (
+      <section className="ficha-card ficha-unidade" aria-label="Estoque na rede">
+        <h2>Estoque na rede</h2>
+        <p className="ficha-numero">{numero(rede.unidadesNaRede)} <small>unidades</small></p>
+        <p className="ficha-nota">Em estoque em {numero(rede.farmaciasComEstoque)} de {plural(rede.farmaciasComCadastro, "farmácia", "farmácias")}.</p>
+      </section>
+    );
+  }
+  if (!linha) {
+    return (
+      <section className="ficha-card ficha-unidade" aria-label="Estoque da sua farmácia">
+        <h2>Estoque da sua farmácia</h2>
+        <p className="ficha-numero is-vazio">— <small>não cadastrado</small></p>
+        <p className="ficha-nota">Este remédio não está no estoque da sua farmácia.</p>
+      </section>
+    );
+  }
+  const qtd = Number(linha.quantidade) || 0;
+  const minimo = Number(linha.estoqueMinimo) || 0;
+  const tom = linha.vencido ? "zerado" : linha.situacao;
+  return (
+    <section className="ficha-card ficha-unidade" aria-label="Estoque da sua farmácia">
+      <h2>
+        Estoque da sua farmácia
+        {(SINAL[tom] || linha.vencido) && <span className={`ficha-sinal is-${tom}`}>{linha.vencido ? "Lote vencido" : SINAL[tom]}</span>}
+      </h2>
+      <p className="ficha-numero">{numero(qtd)} <small>{qtd === 1 ? "unidade" : "unidades"}</small></p>
+      <Regua quantidade={qtd} minimo={minimo} tom={tom} />
+      <dl className="ficha-linha">
+        <div><dt>Mínimo</dt><dd>{numero(minimo)}</dd></div>
+        <div><dt>Lote</dt><dd>{linha.lote || "—"}</dd></div>
+        <div><dt>Validade</dt><dd className={linha.vencido ? "is-alerta" : undefined}>{formatarValidade(linha.validade)}</dd></div>
+      </dl>
+    </section>
+  );
+}
+
+// A rede: quanto cada farmácia tem (a sua primeiro, na cor da plataforma)
+function NaRede({ rede, idFarmaciaAtual }) {
+  const { abrirPerfil } = usePerfil();
+  const farmacias = rede.farmacias.map(comSituacao);
+  const maior = Math.max(1, ...farmacias.map((f) => Number(f.quantidade) || 0));
+  const minha = (f) => idFarmaciaAtual && String(f.idFarmacia) === String(idFarmaciaAtual);
+  const ordenadas = [...farmacias.filter(minha), ...farmacias.filter((f) => !minha(f)).sort((a, b) => b.quantidade - a.quantidade)];
+  return (
+    <section className="ficha-card ficha-rede" aria-label="Disponível na rede">
+      <h2>
+        Disponível na rede
+        <span className="ficha-total">{plural(rede.unidadesNaRede, "unidade", "unidades")}</span>
+      </h2>
+      {ordenadas.length ? (
+        <ul>
+          {ordenadas.slice(0, 5).map((f) => (
+            <li key={f.idFarmacia} className={minha(f) ? "is-minha" : undefined}>
+              <button type="button" onClick={(e) => abrirPerfil("farmacia", f.idFarmacia, e.currentTarget)} title={f.nomeFarmacia}>
+                {f.nomeFarmacia}{minha(f) && <em> · sua</em>}
+              </button>
+              <span className="ficha-mini" aria-hidden="true">
+                <i style={{ width: `${Math.max(2, (Number(f.quantidade) / maior) * 100)}%` }} />
+              </span>
+              <strong className={f.situacao !== "ok" || f.vencido ? "is-alerta" : undefined}>{numero(f.quantidade)}</strong>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="ficha-nota">Nenhuma farmácia da rede tem este remédio.</p>
+      )}
+      <p className="ficha-nota">Em estoque em {numero(rede.farmaciasComEstoque)} de {plural(rede.farmaciasComCadastro, "farmácia", "farmácias")}.</p>
+    </section>
+  );
+}
+
+// Topo da ficha: o remédio como cabeçalho (capa, nome, uma linha de dados e a
+// ação), e embaixo o estoque da unidade ao lado da rede, e a ficha rápida.
 function TopoProduto({ remedio: r, rede, idFarmaciaAtual, plataforma }) {
   const titulo = useFocoTitulo();
   const linhaBruta = idFarmaciaAtual && rede.farmacias.find((f) => String(f.idFarmacia) === String(idFarmaciaAtual));
   const linha = linhaBruta ? comSituacao(linhaBruta) : null;
-  const aviso = [
-    r.exigeReceita
-      ? `Exige receita médica${r.retemReceita ? "; a receita fica retida na farmácia" : ""}.`
-      : "Não exige receita.",
-    r.armazenamentoRemedio && `Armazenamento: ${r.armazenamentoRemedio}`,
-  ].filter(Boolean).join(" ");
+  const { label: tarjaLabel } = tarja(r.tarjaRemedio);
+  const dados = [r.principioAtivoRemedio, r.apresentacaoRemedio, r.formaFarmaceuticaRemedio, r.viaAdministracaoRemedio && `via ${r.viaAdministracaoRemedio}`]
+    .filter(Boolean);
+  const fatos = [
+    ["Fabricante", r.fabricanteRemedio],
+    ["Registro ANVISA", r.registroAnvisaRemedio],
+    ["Categorias", r.categorias],
+    ["Receita", r.exigeReceita ? `Exige receita${r.retemReceita ? ", fica retida" : ""}` : "Não exige"],
+    ["Armazenamento", r.armazenamentoRemedio],
+    ["No catálogo desde", r.createdAtRemedio && formatarDataHora(r.createdAtRemedio).slice(0, 10)],
+  ];
 
   return (
-    <header className="prod-topo">
-      <div className="prod-galeria">
-        <FotoProduto remedio={r} />
+    <header className="ficha">
+      <div className="ficha-cabecalho">
+        <CapaRemedio remedio={r} />
+        <div className="ficha-titulo">
+          <h1 ref={titulo} className="perfil-foco-inicial" tabIndex={-1}>{nomeComDosagem(r)}</h1>
+          <p className="ficha-dados">{dados.join(" · ")}</p>
+          <p className="ficha-selos">
+            <span className={`ficha-selo tarja-${tarja(r.tarjaRemedio).tone}`}>{tarjaLabel}</span>
+            {r.tipoRemedio && <span className="ficha-selo">{tipo(r.tipoRemedio)}</span>}
+          </p>
+        </div>
         {plataforma === "funcionario" && <BotaoReposicao remedio={r} linha={linha} />}
-        <p className={`prod-aviso${r.exigeReceita ? " receita" : ""}`}>
-          <ManagerIcon name={r.exigeReceita ? "alert" : "info"} size={16} />
-          <span>{aviso}</span>
-        </p>
-        <dl className="prod-fatos">
-          <div><dt>Registro ANVISA</dt><dd>{r.registroAnvisaRemedio || "—"}</dd></div>
-          <div><dt>Categorias</dt><dd>{r.categorias || "—"}</dd></div>
-          <div><dt>No catálogo desde</dt><dd>{r.createdAtRemedio ? formatarDataHora(r.createdAtRemedio).slice(0, 10) : "—"}</dd></div>
-        </dl>
       </div>
 
-      <div className="prod-info">
-        <h1 ref={titulo} className="perfil-foco-inicial" tabIndex={-1}>{nomeComDosagem(r)}</h1>
-        {(r.principioAtivoRemedio || r.fabricanteRemedio) && (
-          <p className="prod-ativo">
-            {[r.principioAtivoRemedio, r.fabricanteRemedio && `fabricado por ${r.fabricanteRemedio}`].filter(Boolean).join(" · ")}
-          </p>
-        )}
-        <div className="prod-selos">
-          <TarjaBadge valor={r.tarjaRemedio} />
-          {r.tipoRemedio && <span className="remedio-tipo">{tipo(r.tipoRemedio)}</span>}
-          {r.exigeReceita ? <span className="remedio-tipo">Exige receita</span> : null}
-        </div>
-        <div className="prod-specs">
-          <div><small>Apresentação</small><span>{r.apresentacaoRemedio || "—"}</span></div>
-          <div><small>Forma</small><span>{r.formaFarmaceuticaRemedio || "—"}</span></div>
-          <div><small>Via</small><span>{r.viaAdministracaoRemedio || "—"}</span></div>
-        </div>
-        <QuadroEstoque rede={rede} linha={linha} idFarmaciaAtual={idFarmaciaAtual} />
+      <div className="ficha-grade">
+        <EstoqueDaUnidade rede={rede} linha={linha} idFarmaciaAtual={idFarmaciaAtual} />
+        <NaRede rede={rede} idFarmaciaAtual={idFarmaciaAtual} />
+        <section className="ficha-card ficha-fatos" aria-label="Ficha rápida">
+          <dl>
+            {fatos.map(([rotulo, valor]) => (
+              <div key={rotulo}><dt>{rotulo}</dt><dd>{valor || "—"}</dd></div>
+            ))}
+          </dl>
+        </section>
       </div>
     </header>
   );
