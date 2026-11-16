@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import logoIntermedi from "../assets/logoIntermedi.png";
+import logoIntermedi from "../assets/logoIntermedi.webp";
 import ManagerIcon from "./ManagerIcon";
 import NumeroAnimado from "./NumeroAnimado";
 import PersonaAvatar from "./PersonaAvatar";
@@ -11,8 +11,8 @@ import "../styles/boasVindas.css";
 // Guia de boas-vindas no primeiro acesso do gerente ou do funcionário (um por
 // pessoa, guardado no navegador). Duas fases:
 //   1. painel grande: boas-vindas, a Intermedi, a farmácia e as tarefas;
-//   2. passeio pela tela de verdade: a parte explicada fica nítida e o resto
-//      desfocado, com um balão contando o que fazer ali.
+//   2. passeio pela tela de verdade: a parte explicada fica em destaque e o resto
+//      escurecido, com um balão contando o que fazer ali.
 // Para rever numa apresentação, abra a página com ?boas-vindas na URL.
 
 const chaveVisto = (papel, id) => `intermedi.boasVindas.v1:${papel}:${id}`;

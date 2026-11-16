@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, PointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import logo from "../assets/logoIntermedi.png";
-import notebookMockup from "../assets/mockupLogin.png";
-import adminPortrait from "../assets/adminFoto.png";
-import managerPortrait from "../assets/gerenteFoto.png";
-import employeePortrait from "../assets/funcFoto.png";
+import logo from "../assets/logoIntermedi.webp";
+import notebookMockup from "../assets/mockupLogin.webp";
+import adminPortrait from "../assets/adminFoto.webp";
+import managerPortrait from "../assets/gerenteFoto.webp";
+import employeePortrait from "../assets/funcFoto.webp";
 import { entrarComoGerente } from "../services/sessaoGerente";
 import PersonaIcon from "../components/PersonaIcon";
 import "../styles/auth.css";
 import { apiRequest } from "../services/api";
 import { entrarComoAdmin } from "../services/desempenho";
 import { guardarTokenSessao } from "../services/presenca";
+import { precarregarArea } from "../router/telas";
 
 type Role = "gerente" | "funcionario" | "admin";
 // Gerente e funcionário entram com CPF + matrícula (G000123 / 000123);
@@ -116,6 +117,10 @@ export default function LoginUser() {
   }, []);
   useEffect(() => {
     if (role) heading.current?.focus();
+  }, [role]);
+  useEffect(() => {
+    // enquanto a pessoa digita, a área dela já vai sendo baixada
+    if (role) precarregarArea(role);
   }, [role]);
   useEffect(() => {
     if (!leaving) return;

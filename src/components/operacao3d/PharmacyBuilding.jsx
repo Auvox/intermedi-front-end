@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { SRGBColorSpace } from "three";
 import { useTexture } from "@react-three/drei";
-import logo from "../../assets/logoIntermedi.png";
+import logo from "../../assets/logoIntermedi.webp";
 import { Bloco } from "./Pecas";
 import { COR } from "./paleta";
 import { MESA_EQUIPE, PALETES_DOCA, PORTAS_DOCA, PREDIO, ZONAS } from "./layout";

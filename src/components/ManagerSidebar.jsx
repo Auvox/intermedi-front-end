@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import PersonaIcon from "./PersonaIcon";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import logo from "../assets/logoIntermedi.png";
+import logo from "../assets/logoIntermedi.webp";
 import "../styles/managerSidebar.css";
 
 const links = [

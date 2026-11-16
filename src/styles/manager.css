@@ -105,9 +105,9 @@
   height: var(--topbar-height);
   padding: 0 var(--space-10);
   border-bottom: 1px solid rgb(0 0 0 / 0.06);
-  background: rgb(245 245 247 / 0.8);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  /* fundo quase opaco no lugar do vidro desfocado: o blur era refeito a cada
+     quadro de rolagem, em todas as telas */
+  background: rgb(245 245 247 / 0.97);
   font-size: var(--text-small);
   color: var(--color-text-muted);
 }
@@ -777,8 +777,6 @@
 }
 .mgr-modal::backdrop {
   background: var(--color-overlay);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
 }
 .mgr-modal-head {
   display: flex;

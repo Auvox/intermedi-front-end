@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import pillImage from "../../assets/pilula.png";
+import pillImage from "../../assets/pilula.webp";
 
 const vertexSource = `
   attribute vec3 position;

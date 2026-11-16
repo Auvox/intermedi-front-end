@@ -53,10 +53,11 @@
   width: 46vw;
   height: 46vw;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--color-primary) 0%, transparent 62%);
+  /* degradê radial já esfumado: sem filter: blur, que era refeito a cada quadro */
+  background: radial-gradient(circle, var(--color-primary) 0%, color-mix(in srgb, var(--color-primary) 40%, transparent) 30%, transparent 70%);
   opacity: 0.16;
-  filter: blur(40px);
   animation: bv-flutuar 18s ease-in-out infinite alternate;
+  will-change: transform;
 }
 .bv-fundo i:nth-child(1) { top: -28vw; left: -10vw; }
 .bv-fundo i:nth-child(2) { top: -24vw; right: -14vw; opacity: 0.11; animation-duration: 22s; animation-delay: -6s; }
@@ -307,9 +308,7 @@
   padding: 6px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
-  background: rgb(255 255 255 / 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgb(255 255 255 / 0.94);
   box-shadow: 0 20px 50px -30px rgb(0 0 0 / 0.35);
   list-style: none;
   text-align: left;
@@ -404,9 +403,7 @@
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--color-border-subtle);
   border-radius: 20px;
-  background: rgb(255 255 255 / 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgb(255 255 255 / 0.94);
   animation: bv-subir 640ms var(--bv-mola) both;
   animation-delay: calc(var(--i) * 120ms + 420ms);
   transition: transform 200ms var(--bv-mola), box-shadow 200ms ease;
@@ -510,8 +507,21 @@
   padding: 8px;
   border-radius: 10px;
   background: var(--color-surface-sunken);
+  position: relative;
   animation: bv-mini-foco 8s ease-in-out infinite;
   animation-delay: calc(var(--i) * 2s - 8s);
+}
+/* o contorno do cartão em foco: só a opacidade anima */
+.bv-mini-cartao::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 10px 24px -8px var(--color-primary);
+  opacity: 0;
+  pointer-events: none;
+  animation: bv-mini-contorno 8s ease-in-out infinite;
+  animation-delay: inherit;
 }
 .bv-mini-cartao i {
   flex: none;
@@ -633,9 +643,7 @@
 .bv-veu {
   position: fixed;
   inset: 0;
-  background: rgb(10 12 16 / 0.3);
-  backdrop-filter: blur(7px) saturate(0.85);
-  -webkit-backdrop-filter: blur(7px) saturate(0.85);
+  background: rgb(10 12 16 / 0.46);
   transition: clip-path 560ms var(--bv-mola);
   animation: bv-aparecer 360ms ease both;
 }
@@ -645,6 +653,15 @@
   pointer-events: none;
   box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 8px var(--color-primary-ring), 0 24px 60px -18px rgb(0 0 0 / 0.45);
   transition: left 560ms var(--bv-mola), top 560ms var(--bv-mola), width 560ms var(--bv-mola), height 560ms var(--bv-mola);
+}
+.bv-anel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  outline: 5px solid var(--color-primary-ring);
+  outline-offset: 8px;
+  opacity: 0;
   animation: bv-anel-pulso 2.4s ease-in-out infinite;
 }
 /* "toque aqui": um dedo invisível tocando o atalho */
@@ -797,13 +814,13 @@
 /* ── Animações ──────────────────────────────────────────── */
 @keyframes bv-aparecer { from { opacity: 0; } }
 @keyframes bv-surgir {
-  from { opacity: 0; transform: translate3d(32px, 10px, 0); filter: blur(8px); }
+  from { opacity: 0; transform: translate3d(32px, 10px, 0); }
 }
 @keyframes bv-surgir-volta {
-  from { opacity: 0; transform: translate3d(-32px, 10px, 0); filter: blur(8px); }
+  from { opacity: 0; transform: translate3d(-32px, 10px, 0); }
 }
 @keyframes bv-subir {
-  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+  from { opacity: 0; transform: translateY(18px); }
 }
 @keyframes bv-estalar {
   from { opacity: 0; transform: scale(0.4); }
@@ -828,25 +845,19 @@
   to { transform: translate(8vw, 5vw) scale(1.15); }
 }
 @keyframes bv-mini-foco {
-  0%, 22% {
-    filter: none;
-    opacity: 1;
-    transform: scale(1.06);
-    box-shadow: 0 0 0 2px var(--color-primary), 0 10px 24px -8px var(--color-primary);
-  }
-  30%, 100% {
-    filter: blur(1.5px);
-    opacity: 0.45;
-    transform: none;
-    box-shadow: none;
-  }
+  0%, 22% { opacity: 1; transform: scale(1.06); }
+  30%, 100% { opacity: 0.45; transform: none; }
+}
+@keyframes bv-mini-contorno {
+  0%, 22% { opacity: 1; }
+  30%, 100% { opacity: 0; }
 }
 @keyframes bv-estourar {
   0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); }
   100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0.4); }
 }
 @keyframes bv-anel-pulso {
-  50% { box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 13px var(--color-primary-ring), 0 24px 60px -18px rgb(0 0 0 / 0.45); }
+  50% { opacity: 1; }
 }
 @keyframes bv-tocar {
   0%, 100% { transform: scale(1); }

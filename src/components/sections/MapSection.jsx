@@ -79,6 +79,16 @@ export default function MapSection({ paused = false }) {
     return () => obs.disconnect();
   }, []);
 
+  // As conexões só são sorteadas com o mapa na tela: fora dela não há trabalho
+  const [naTela, setNaTela] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => setNaTela(entry.isIntersecting), { rootMargin: "200px 0px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   // Inicialização e atribuição das cores das farmácias
   useEffect(() => {
     const assigned = CITIES.map((c) => {
@@ -95,8 +105,7 @@ export default function MapSection({ paused = false }) {
 
   // Controle de conexões e animações em tempo real (Sem Warnings)
   useEffect(() => {
-    if (paused) return;
-    const activeIntervals = [];
+    if (paused || !naTela) return;
     const activeTimeouts = [];
     let isMounted = true;
 
@@ -132,56 +141,17 @@ export default function MapSection({ paused = false }) {
         { id: pid, cx: a.x, cy: a.y, r: 4, opacity: 0.8 },
       ]);
 
-      const gp = setInterval(() => {
-        if (!isMounted) return;
-        setPulses((prev) =>
-          prev
-            .map((p) =>
-              p.id === pid
-                ? { ...p, r: p.r + 1.2, opacity: p.opacity - 0.05 }
-                : p
-            )
-            .filter((p) => p.opacity > 0)
-        );
-      }, 30);
-      activeIntervals.push(gp);
-
-      const tGp = setTimeout(() => {
-        clearInterval(gp);
-        const index = activeIntervals.indexOf(gp);
-        if (index > -1) activeIntervals.splice(index, 1);
-      }, 600);
-      activeTimeouts.push(tGp);
+      // o pulso cresce e some em CSS (map-pulso); aqui só sai da lista no fim
+      activeTimeouts.push(setTimeout(() => {
+        if (isMounted) setPulses((prev) => prev.filter((p) => p.id !== pid));
+      }, 600));
 
       // Trajetória da linha
-      setLines((prev) => [
-        ...prev,
-        { id: lid, x1: a.x, y1: a.y, x2: a.x, y2: a.y, prog: 0 },
-      ]);
-
-      const al = setInterval(() => {
-        if (!isMounted) return;
-        setLines((prev) =>
-          prev.map((l) => {
-            if (l.id !== lid) return l;
-            const prog = Math.min(l.prog + 0.025, 1);
-            return {
-              ...l,
-              x2: a.x + (b.x - a.x) * prog,
-              y2: a.y + (b.y - a.y) * prog,
-              prog,
-            };
-          })
-        );
-      }, 20);
-      activeIntervals.push(al);
+      // a linha sai de a e cresce até b em CSS (map-linha), sem redesenhar o React
+      setLines((prev) => [...prev, { id: lid, x: a.x, y: a.y, dx: b.x - a.x, dy: b.y - a.y }]);
 
       // Finalização do trajeto e inserção no feed
       const tAl = setTimeout(() => {
-        clearInterval(al);
-        const index = activeIntervals.indexOf(al);
-        if (index > -1) activeIntervals.splice(index, 1);
-
         if (!isMounted) return;
         setLines((prev) => prev.filter((l) => l.id !== lid));
         setActivityCounts((counts) => ({ ...counts, [activity.id]: counts[activity.id] + 1 }));
@@ -207,10 +177,9 @@ export default function MapSection({ paused = false }) {
     return () => {
       isMounted = false;
       clearInterval(interval);
-      activeIntervals.forEach(clearInterval);
       activeTimeouts.forEach(clearTimeout);
     };
-  }, [paused]);
+  }, [paused, naTela]);
 
   return (
     <section className="section mapsection" id="mapa" ref={sectionRef}>
@@ -238,35 +207,41 @@ export default function MapSection({ paused = false }) {
                 src={mapaSvg}
                 alt="Mapa de São Paulo"
                 className="sp-map-image"
+                loading="lazy"
+                decoding="async"
               />
 
               <svg className="map-overlay" viewBox="0 0 800 480">
                 {pulses.map((p) => (
                   <circle
                     key={p.id}
+                    className="map-pulso"
                     cx={p.cx}
                     cy={p.cy}
                     r={p.r}
                     fill="none"
                     stroke="#2e6ff2" /* Azul sutil para os pulsos */
                     strokeWidth="1.5"
-                    opacity={p.opacity}
                   />
                 ))}
 
                 {lines.map((l) => (
-                  <g key={l.id}>
+                  <g key={l.id} transform={`translate(${l.x},${l.y})`}>
                     <line
-                      x1={l.x1}
-                      y1={l.y1}
-                      x2={l.x2}
-                      y2={l.y2}
+                      className="map-linha"
+                      x2={l.dx}
+                      y2={l.dy}
                       stroke="#2e6ff2"
                       strokeWidth="1.5"
                       strokeDasharray="4,3"
                       opacity="0.7"
                     />
-                    <circle cx={l.x2} cy={l.y2} r="3" fill="#2e6ff2" />
+                    <circle
+                      className="map-linha-ponta"
+                      r="3"
+                      fill="#2e6ff2"
+                      style={{ "--dx": `${l.dx}px`, "--dy": `${l.dy}px` }}
+                    />
                   </g>
                 ))}
 

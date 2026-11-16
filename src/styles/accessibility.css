@@ -10,7 +10,7 @@
 .accessibility-trigger:hover { background: #065f34; }
 .accessibility-trigger svg { width: 32px; height: 32px; }
 .accessibility-panel { position: fixed; inset: 0 24px 0 auto; margin: auto 0; width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 26px 22px 20px; border: 1px solid #e4ece7; border-radius: 26px; background: #fff; color: #243e31; box-shadow: 0 24px 80px #18392b26; overflow: auto; scrollbar-width: thin; scrollbar-color: #d0ddd4 transparent; }
-.accessibility-panel::backdrop { background: #172f2533; backdrop-filter: blur(3px); }
+.accessibility-panel::backdrop { background: #172f2540; }
 .accessibility-header { display: flex; align-items: center; gap: 12px; padding: 0; background: transparent; }
 .accessibility-header h2 { font-size: 18px; font-weight: 600; letter-spacing: -.035em; line-height: 1.4; margin: 0; color: #213d2e; }
 .accessibility-header button { display: grid; place-items: center; flex-shrink: 0; margin-left: auto; width: 38px; height: 38px; background: #f2f6f3; color: #52695c; border: 0; border-radius: 50%; transition: background .18s; }

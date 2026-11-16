@@ -77,3 +77,12 @@
   .map-feed-item { animation: none; }
   .mapsection .reveal { opacity: 1; transform: none; transition: none; }
 }
+
+/* Conexões do mapa: animadas em CSS (o React só põe e tira cada uma) */
+.map-pulso { transform-box: fill-box; transform-origin: center; vector-effect: non-scaling-stroke; animation: mapPulso .5s ease-out forwards; }
+@keyframes mapPulso { from { opacity: .8; transform: scale(1); } to { opacity: 0; transform: scale(5.75); } }
+.map-linha { vector-effect: non-scaling-stroke; animation: mapLinha .8s linear forwards; }
+@keyframes mapLinha { from { transform: scale(0); } }
+.map-linha-ponta { animation: mapLinhaPonta .8s linear forwards; }
+@keyframes mapLinhaPonta { to { transform: translate(var(--dx), var(--dy)); } }
+@media (prefers-reduced-motion: reduce) { .map-pulso, .map-linha, .map-linha-ponta { animation: none; } .map-linha-ponta { transform: translate(var(--dx), var(--dy)); } }

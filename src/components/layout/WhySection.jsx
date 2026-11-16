@@ -1,7 +1,7 @@
 import { useState } from "react";
-import stockImage from "../../assets/benefit-stock.png";
-import securityImage from "../../assets/benefit-security.png";
-import deliveryImage from "../../assets/benefit-delivery.png";
+import stockImage from "../../assets/benefit-stock.webp";
+import securityImage from "../../assets/benefit-security.webp";
+import deliveryImage from "../../assets/benefit-delivery.webp";
 import "../../styles/whySection.css";
 
 const benefits = [
@@ -65,7 +65,7 @@ export default function WhySection() {
                 <p id={`benefit-detail-${benefit.id}`} aria-hidden={activeCard !== benefit.id}>{benefit.description}</p>
               </div>
               <div className="benefit-stage" aria-hidden="true" />
-              <img className="benefit-art" src={benefit.image} alt="" width="1254" height="1254" loading="lazy" decoding="async" />
+              <img className="benefit-art" src={benefit.image} alt="" width="720" height="720" loading="lazy" decoding="async" />
             </article>
           ))}
         </div>

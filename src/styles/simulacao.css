@@ -182,9 +182,8 @@
   gap: 10px;
   padding: 5px 6px 5px 16px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 97%, transparent);
   box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
-  backdrop-filter: blur(6px);
 }
 .sim-filtro-remedio span {
   font-size: 14px;

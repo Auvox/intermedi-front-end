@@ -3,8 +3,6 @@
    internas dependem deles). O visual da landing, com Poppins e os verdes
    da branch porta, fica preso dentro de .lp-root. */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-@import url('https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css');
 
 :root {
   --green: #22b45e;
@@ -345,7 +343,7 @@ body:has(.lp-root[data-lp-volta]) { background: #f3faf6; }
 }
 
 .lp-float-icon-wrapper { display: flex; align-items: center; }
-.lp-float-icon-wrapper i { font-size: 19px; color: #16a34a; }
+.lp-float-icon { width: 19px; height: 19px; fill: #16a34a; }
 
 /* Ícone de imagem customizado (logoI) */
 .lp-float-custom-icon {
@@ -404,7 +402,7 @@ body:has(.lp-root[data-lp-volta]) { background: #f3faf6; }
   .lp-hamburger { display: flex; flex-shrink: 0; width: 44px; height: 44px; align-items: center; justify-content: center; }
   .lp-mobile-menu { display: flex; }
   .lp-float-card { padding: 9px 12px; gap: 6px; font-size: 13px; border-radius: 12px; }
-  .lp-float-icon-wrapper i { font-size: 16px; }
+  .lp-float-icon { width: 16px; height: 16px; }
   .card-medicamento { left: -35px; }
   .card-conexao { right: -25px; }
 }

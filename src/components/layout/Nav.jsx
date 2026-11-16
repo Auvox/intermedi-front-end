@@ -1,4 +1,4 @@
-import logoIntermedi from "../../assets/logoIntermedi.png";
+import logoIntermedi from "../../assets/logoIntermedi.webp";
 import { NavLink } from "react-router-dom";
 import { useLayoutEffect, useRef } from "react";
 

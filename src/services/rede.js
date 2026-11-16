@@ -251,9 +251,19 @@ export async function carregarDistritos(codigo) {
   const resposta = await fetch(`/divisoes/${codigo}.json`);
   if (!resposta.ok) return null;
   const lista = await resposta.json();
-  return lista.map(({ nome, d }) => {
-    const aneis = d.split("Z").filter(Boolean).map((anel) =>
-      anel.replace("M", "").split("L").map((par) => par.split(",").map(Number)));
+  // cada anel vem em deltas para o arquivo ficar com metade do tamanho:
+  // [x0, y0, dx1, dy1, dx2, dy2, ...] (coordenadas da viewBox do mapa)
+  return lista.map(({ nome, a }) => {
+    const aneis = a.map((plano) => {
+      const anel = [];
+      for (let i = 0, x = 0, y = 0; i < plano.length; i += 2) {
+        x += plano[i];
+        y += plano[i + 1];
+        anel.push([x, y]);
+      }
+      return anel;
+    });
+    const d = aneis.map((anel) => `M${anel.map((p) => p.join(",")).join("L")}Z`).join("");
     const pontos = aneis.flat();
     const xs = pontos.map(([x]) => x);
     const ys = pontos.map(([, y]) => y);
