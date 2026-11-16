@@ -930,3 +930,39 @@ button.perfil-lista-item:hover { background: var(--persona-tint, #f5faf7); borde
 
 /* com o perfil em tela cheia, a página de trás não rola */
 body.perfil-tela-cheia { overflow: hidden; }
+
+/* ---------- Telas internas sem cara de gerado ----------
+   Rótulos em frase (sem caixa-alta espaçada), superfícies planas (sem sombra
+   no que está parado), nada de etiqueta acima do título e nada de enfeite:
+   a cor fica nos dados (estoque, situação), não na moldura. */
+.perfil-pagina { --perfil-sombra: none; }
+.perfil-barra-tipo { display: none; } /* a trilha já diz o tipo: "Remédio › Dipirona" */
+.perfil-hero-destaque-rotulo,
+.perfil-subtitulo-card,
+.perfil-detalhes dt,
+.inst-sobre,
+.inst-faixa-rotulo,
+.prod-rotulo,
+.prod-specs small {
+  font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--perfil-suave);
+}
+.perfil-subtitulo-card { font-size: 14px; color: var(--perfil-texto); }
+
+/* remédio: foto plana; sem foto, a embalagem desenhada reta, sem giro nem sombra */
+.prod-foto { border: 1px solid var(--perfil-borda); border-radius: 12px; }
+.prod-caixa { width: 72%; transform: none; box-shadow: none; border-radius: 6px; }
+.prod-tarja { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.tarja-livre .prod-tarja, .tarja-vermelha .prod-tarja, .tarja-retencao .prod-tarja { border-radius: 0 0 11px 11px; }
+.prod-info h1 { font-size: 32px; letter-spacing: -0.6px; }
+.prod-ativo { margin: 6px 0 16px; font-size: 16px; }
+.prod-specs span { font-size: 15px; }
+/* receita e armazenamento: texto, não um quadro tingido */
+.prod-aviso { padding: 0; border: 0; border-radius: 0; background: none; font-size: 14px; line-height: 1.5; color: var(--perfil-texto); }
+.prod-aviso svg { color: var(--perfil-suave); }
+.prod-aviso.receita { background: none; color: #8a5300; }
+.prod-aviso.receita svg { color: #b86a05; }
+.prod-compra { border-radius: 12px; }
+.prod-qtd strong { font-size: 40px; letter-spacing: -1px; }
+.prod-meta, .prod-rede li { font-size: 14px; }
+.prod-total { font-size: 13.5px; }
+.prod-botao { border-radius: 10px; font-size: 15px; }

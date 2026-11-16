@@ -191,9 +191,12 @@ function TopoProduto({ remedio: r, rede, idFarmaciaAtual, plataforma }) {
       </div>
 
       <div className="prod-info">
-        {r.fabricanteRemedio && <p className="prod-marca">{r.fabricanteRemedio}</p>}
         <h1 ref={titulo} className="perfil-foco-inicial" tabIndex={-1}>{nomeComDosagem(r)}</h1>
-        {r.principioAtivoRemedio && <p className="prod-ativo">{r.principioAtivoRemedio}</p>}
+        {(r.principioAtivoRemedio || r.fabricanteRemedio) && (
+          <p className="prod-ativo">
+            {[r.principioAtivoRemedio, r.fabricanteRemedio && `fabricado por ${r.fabricanteRemedio}`].filter(Boolean).join(" · ")}
+          </p>
+        )}
         <div className="prod-selos">
           <TarjaBadge valor={r.tarjaRemedio} />
           {r.tipoRemedio && <span className="remedio-tipo">{tipo(r.tipoRemedio)}</span>}
