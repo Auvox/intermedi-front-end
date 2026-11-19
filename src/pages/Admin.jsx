@@ -17,6 +17,8 @@ import { useAlertas } from "../hooks/useAlertas";
 import { useToast } from "../hooks/useChamados";
 import {
   API_URL,
+  desativarCadastro,
+  reativarCadastro,
   listarFarmacias,
   listarFuncionarios,
   listarGerentes,
@@ -87,22 +89,25 @@ const sections = {
     label: "Gerentes",
     title: "Gerentes",
     description: "Responsáveis por cada farmácia da rede.",
-    action: "Excluir gerente",
-    result: "excluído",
+    action: "Desativar gerente",
+    result: "desativado",
+    tipo: "gerente",
   },
   farmacias: {
     label: "Farmácias",
     title: "Farmácias",
     description: "Farmácias cadastradas na rede, com contato e endereço.",
-    action: "Excluir farmácia",
-    result: "excluída",
+    action: "Desativar farmácia",
+    result: "desativada",
+    tipo: "farmacia",
   },
   pacientes: {
     label: "Pacientes",
     title: "Pacientes",
     description: "Pacientes cadastrados na plataforma.",
-    action: "Bloquear paciente",
-    result: "bloqueado",
+    action: "Desativar paciente",
+    result: "desativado",
+    tipo: "paciente",
   },
   chamados: {
     label: "Solicitações",
@@ -147,7 +152,6 @@ const normalizeFarmacias = (payload = []) =>
       photo: fotoPessoa(farmacia.fotoFarmacia),
       idEndereco: farmacia.idEndereco ?? null,
       unit,
-      status: "Ativo",
       cepFarmacia: farmacia.cepFarmacia ?? farmacia.cep ?? "",
       enderecoFarmacia: farmacia.enderecoFarmacia ?? farmacia.endereco ?? "",
       numeroFarmacia: farmacia.numeroFarmacia ?? farmacia.numero ?? "",
@@ -156,6 +160,9 @@ const normalizeFarmacias = (payload = []) =>
       bairroFarmacia: farmacia.bairroFarmacia ?? farmacia.bairro ?? "",
       cidadeFarmacia: farmacia.cidadeFarmacia ?? farmacia.cidade ?? "",
       ufFarmacia: farmacia.ufFarmacia ?? farmacia.estadoFarmacia ?? "",
+      ativo: farmacia.ativo !== 0,
+      status: farmacia.ativo === 0 ? "Desativado" : "Ativo",
+      desativadoEm: farmacia.desativadoEm ?? null,
     };
   });
 
@@ -182,7 +189,9 @@ const normalizePacientes = (payload = []) =>
       email,
       unit,
       photo: fotoPessoa(paciente.fotoPerfilPaciente) ?? paciente.photo,
-      status: paciente.status || "Ativo",
+      ativo: paciente.ativo !== 0,
+      status: paciente.ativo === 0 ? "Desativado" : paciente.status || "Ativo",
+      desativadoEm: paciente.desativadoEm ?? null,
       createdAt: paciente.createdAt ?? paciente.created_at ?? null,
       role: paciente.role ?? "Paciente",
       phone:
@@ -232,7 +241,6 @@ const breadcrumbLabels = {
   pacientes: "Pacientes",
   chamados: "Solicitações",
   desempenho: "Desempenho",
-  simulacao: "Simulação em tempo real",
 };
 
 function Icon({ name, size = 17 }) {
@@ -629,118 +637,30 @@ export function AdminDirectory({ section }) {
     }),
   );
 
+  // Desativar não apaga do banco: o cadastro fica na lista, em cinza
   async function confirmAction() {
     const record = modal.record;
 
-    if (managers) {
+    if (crud) {
       try {
-        const response = await fetch(
-          `${API_URL}/gerente/${encodeURIComponent(record.id)}`,
-          {
-            method: "DELETE",
-            headers: {
-              Accept: "application/json",
-            },
-          },
-        );
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => ({}));
-          throw new Error(
-            errorPayload.message ||
-              errorPayload.error ||
-              "Erro ao excluir gerente",
-          );
-        }
-
+        await desativarCadastro(config.tipo, record.id);
         setData((current) => ({
           ...current,
-          gerentes: current.gerentes.filter((item) => item.id !== record.id),
+          [section]: current[section].map((item) =>
+            item.id === record.id ? { ...item, ativo: false, status: "Desativado", desativadoEm: new Date().toISOString() } : item,
+          ),
         }));
-
-        setNotice(`${record.name}: excluído com sucesso no banco.`);
-        setModal(null);
-        return;
-      } catch (error) {
-        console.error("Erro ao excluir gerente:", error);
-        setNotice(error.message || "Erro ao excluir gerente.");
-        setModal(null);
-        return;
-      }
-    }
-
-    if (pharmacies) {
-      try {
-        const response = await fetch(
-          `${API_URL}/farmacia/${encodeURIComponent(record.id)}`,
-          {
-            method: "DELETE",
-            headers: {
-              Accept: "application/json",
-            },
-          },
+        setNotice(
+          pharmacies
+            ? `${record.name}: desativada. Os gerentes e funcionários dela não conseguem mais entrar até você reativar.`
+            : `${record.name}: ${config.result}. O cadastro continua salvo e pode ser reativado.`,
         );
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => ({}));
-          throw new Error(
-            errorPayload.message ||
-              errorPayload.error ||
-              "Erro ao excluir farmácia",
-          );
-        }
-
-        setData((current) => ({
-          ...current,
-          farmacias: current.farmacias.filter((item) => item.id !== record.id),
-        }));
-
-        setNotice(`${record.name}: excluída com sucesso no banco.`);
-        setModal(null);
-        return;
       } catch (error) {
-        console.error("Erro ao excluir farmácia:", error);
-        setNotice(error.message || "Erro ao excluir farmácia.");
-        setModal(null);
-        return;
+        console.error("Erro ao desativar:", error);
+        setNotice(error.message || "Não foi possível desativar.");
       }
-    }
-
-    if (patients) {
-      try {
-        const response = await fetch(
-          `${API_URL}/paciente/${encodeURIComponent(record.id)}`,
-          {
-            method: "DELETE",
-            headers: {
-              Accept: "application/json",
-            },
-          },
-        );
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => ({}));
-          throw new Error(
-            errorPayload.message ||
-              errorPayload.error ||
-              "Erro ao excluir paciente",
-          );
-        }
-
-        setData((current) => ({
-          ...current,
-          pacientes: current.pacientes.filter((item) => item.id !== record.id),
-        }));
-
-        setNotice(`${record.name}: removido com sucesso no banco.`);
-        setModal(null);
-        return;
-      } catch (error) {
-        console.error("Erro ao excluir paciente:", error);
-        setNotice(error.message || "Erro ao excluir paciente.");
-        setModal(null);
-        return;
-      }
+      setModal(null);
+      return;
     }
 
     setData((current) => ({
@@ -1019,7 +939,28 @@ export function AdminDirectory({ section }) {
     pacientes: { total: "pacientes", active: "Pacientes ativos" },
   }[section] || { total: config.label.toLowerCase(), active: "Ativos" };
 
-  const rowActionLabel = managers ? "Excluir" : tickets ? "Banir" : "Bloquear";
+  const rowActionLabel = crud ? "Desativar" : "Banir";
+
+  // Devolve o acesso (farmácia: gerentes e funcionários voltam a entrar)
+  async function reativar(record) {
+    try {
+      await reativarCadastro(config.tipo, record.id);
+      setData((current) => ({
+        ...current,
+        [section]: current[section].map((item) =>
+          item.id === record.id ? { ...item, ativo: true, status: "Ativo", desativadoEm: null } : item,
+        ),
+      }));
+      setNotice(`${record.name}: reativado(a). O acesso foi liberado de novo.`);
+    } catch (error) {
+      setNotice(error.message || "Não foi possível reativar.");
+    }
+    setModal(null);
+  }
+
+  // Clique num cadastro desativado: avisa que está desativado (e oferece reativar)
+  const abrirRegistro = (record, el) =>
+    record.ativo === false ? setModal({ type: "desativado", record }) : abrirPerfil(tipoPerfil, record.id, el);
 
   return (
     <>
@@ -1123,7 +1064,7 @@ export function AdminDirectory({ section }) {
                 onChange={(event) => setStatus(event.target.value)}
               >
                 <option value="">Todos os status</option>
-                {(managers ? ["Ativo"] : ["Ativo", "Bloqueado"]).map(
+                {["Ativo", "Desativado"].map(
                   (value) => (
                     <option key={value}>{value}</option>
                   ),
@@ -1133,23 +1074,23 @@ export function AdminDirectory({ section }) {
             {managers || patients ? (
               <GradePessoas rotulo={config.label}>
                 {paginated.map((record) => {
-                  const blocked = ["Bloqueado", "Banido"].includes(record.status);
+                  const desativado = record.ativo === false;
                   return (
                     <li key={record.id}>
                       <CartaoPessoa
                         role={managers ? "gerente" : "paciente"}
                         nome={record.name}
                         foto={record.photo}
+                        desativado={desativado}
                         papel={managers ? ["Gerente", record.crf].filter(Boolean).join(" · ") : "Paciente"}
-                        // só mostra a situação quando foge do normal (todos ativos = nenhum selo)
-                        selo={blocked ? <span className="mgr-badge red">{record.status}</span> : null}
                         linhas={[
                           ["pharmacy", managers ? record.unit : null],
                           ["map", patients && record.unit !== "Unidade não informada" ? record.unit : null],
                           ["mail", record.email],
                           ["phone", record.phone],
                         ]}
-                        onAbrir={(el) => abrirPerfil(tipoPerfil, record.id, el)}
+                        onAbrir={(el) => abrirRegistro(record, el)}
+                        onAbrirDesativado={(el) => abrirRegistro(record, el)}
                         acoes={(
                           <div className="adm-row-menu-wrap">
                             <button
@@ -1170,23 +1111,28 @@ export function AdminDirectory({ section }) {
                                     role="menuitem"
                                     onClick={(event) => {
                                       setOpenRowMenu(null);
-                                      abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("article"));
+                                      abrirRegistro(record, event.currentTarget.closest("article"));
                                     }}
                                   >
                                     Consultar
                                   </button>
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="is-danger"
-                                    disabled={blocked}
-                                    onClick={() => {
-                                      setModal({ type: "confirm", record });
-                                      setOpenRowMenu(null);
-                                    }}
-                                  >
-                                    {rowActionLabel}
-                                  </button>
+                                  {desativado ? (
+                                    <button type="button" role="menuitem" onClick={() => { setOpenRowMenu(null); reativar(record); }}>
+                                      Reativar
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      className="is-danger"
+                                      onClick={() => {
+                                        setModal({ type: "confirm", record });
+                                        setOpenRowMenu(null);
+                                      }}
+                                    >
+                                      {rowActionLabel}
+                                    </button>
+                                  )}
                                 </div>
                               </>
                             )}
@@ -1210,13 +1156,12 @@ export function AdminDirectory({ section }) {
                   </thead>
                   <tbody>
                     {paginated.map((record) => {
-                      const blocked = ["Bloqueado", "Banido"].includes(
-                        record.status,
-                      );
+                      const desativado = record.ativo === false;
                       return (
                         <tr
                           key={record.id}
-                          {...propsLinha((el) => abrirPerfil(tipoPerfil, record.id, el), `Abrir perfil de ${record.name}`)}
+                          {...propsLinha((el) => abrirRegistro(record, el), desativado ? `${record.name} (desativada)` : `Abrir perfil de ${record.name}`)}
+                          className={`perfil-linha${desativado ? " is-desativado" : ""}`}
                         >
                           <td>
                             <div className="adm-name-cell">
@@ -1242,7 +1187,7 @@ export function AdminDirectory({ section }) {
                           <td>{record.unit}</td>
                           <td>
                             <span
-                              className={`mgr-badge ${blocked ? "red" : "green"}`}
+                              className={desativado ? "selo-desativado" : "mgr-badge green"}
                             >
                               {record.status}
                             </span>
@@ -1275,12 +1220,12 @@ export function AdminDirectory({ section }) {
                                       role="menuitem"
                                       onClick={(event) => {
                                         setOpenRowMenu(null);
-                                        abrirPerfil(tipoPerfil, record.id, event.currentTarget.closest("tr"));
+                                        abrirRegistro(record, event.currentTarget.closest("tr"));
                                       }}
                                     >
                                       Consultar
                                     </button>
-                                    {pharmacies && (
+                                    {pharmacies && !desativado && (
                                       <button
                                         type="button"
                                         role="menuitem"
@@ -1292,18 +1237,23 @@ export function AdminDirectory({ section }) {
                                         Editar
                                       </button>
                                     )}
-                                    <button
-                                      type="button"
-                                      role="menuitem"
-                                      className="is-danger"
-                                      disabled={blocked}
-                                      onClick={() => {
-                                        setModal({ type: "confirm", record });
-                                        setOpenRowMenu(null);
-                                      }}
-                                    >
-                                      {rowActionLabel}
-                                    </button>
+                                    {desativado ? (
+                                      <button type="button" role="menuitem" onClick={() => { setOpenRowMenu(null); reativar(record); }}>
+                                        Reativar
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="is-danger"
+                                        onClick={() => {
+                                          setModal({ type: "confirm", record });
+                                          setOpenRowMenu(null);
+                                        }}
+                                      >
+                                        {rowActionLabel}
+                                      </button>
+                                    )}
                                   </div>
                                 </>
                               )}
@@ -2116,15 +2066,35 @@ export function AdminDirectory({ section }) {
           </button>
         </Dialog>
       )}
+      {modal?.type === "desativado" && (
+        <Dialog title={modal.record.name} onClose={() => setModal(null)}>
+          <div className="aviso-desativado-modal">
+            <span className="selo-desativado">Desativado</span>
+            <p>
+              {pharmacies
+                ? "Esta farmácia está desativada. Os gerentes e funcionários dela veem um aviso ao tentar entrar."
+                : "Este cadastro está desativado e não tem acesso à plataforma."}
+              {modal.record.desativadoEm && <> Desde {new Date(modal.record.desativadoEm).toLocaleString("pt-BR")}.</>}
+            </p>
+          </div>
+          <div className="mgr-modal-actions">
+            <button className="mgr-secondary" onClick={() => setModal(null)} autoFocus>Fechar</button>
+            <button className="mgr-primary" onClick={() => reativar(modal.record)}>Reativar</button>
+          </div>
+        </Dialog>
+      )}
       {modal?.type === "confirm" && (
         <Dialog title={config.action} onClose={() => setModal(null)}>
           <p>
-            Deseja {managers ? "excluir" : tickets ? "banir" : "bloquear"}{" "}
+            Deseja {crud ? "desativar" : "banir"}{" "}
             <strong>{modal.record.name}</strong>?
           </p>
           <p className="adm-hint">
-            Esta ação altera apenas os dados da demonstração. Ao recarregar a
-            página, os dados iniciais são restaurados.
+            {pharmacies
+              ? "Os gerentes e funcionários desta farmácia não vão conseguir entrar na plataforma. Nada é apagado: você pode reativar quando quiser."
+              : crud
+                ? "A pessoa perde o acesso, mas o cadastro continua na lista (em cinza) e pode ser reativado."
+                : "Esta ação altera apenas os dados da demonstração."}
           </p>
           <div className="mgr-modal-actions">
             <button

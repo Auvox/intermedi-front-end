@@ -1,7 +1,11 @@
 import { Suspense, lazy, useEffect } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AccessibleArea from "../components/layout/AccessibleArea";
 import RastreadorCliques from "../components/RastreadorCliques";
+import TelaCarregando, { CarregandoTela } from "../components/TelaCarregando";
+import { AcessoDesativado, GuardaSistema, LimiteDeErro } from "../components/aviso/GuardaSistema";
+import PaginaAviso from "../pages/PaginaAviso";
+import { marcarNavegacao } from "../services/carregamento";
 import {
   Admin, AdminDashboard, AdminDirectory, AdminMedicines, AdminRequests,
   Employee, EmployeeMedicines, EmployeeOverview, EmployeePatients, EmployeeServices, EmployeeTickets,
@@ -21,10 +25,10 @@ const DesempenhoVisaoGeral = lazy(() => import("../pages/desempenho/DesempenhoVi
 const DesempenhoMapaCalor = lazy(() => import("../pages/desempenho/DesempenhoMapaCalor"));
 const DesempenhoRotas = lazy(() => import("../pages/desempenho/DesempenhoRotas"));
 const DesempenhoSaude = lazy(() => import("../pages/desempenho/DesempenhoSaude"));
-// Simulação em tempo real: mapa de SP (950 KB), carregado só quando aberto
-const AdminSimulacao = lazy(() => import("../pages/AdminSimulacao"));
 
-const carregando = (texto) => <p className="mgr-empty" role="status">{texto}</p>;
+// Enquanto uma tela é baixada, a camada de carregamento (pílula) aparece
+const carregando = <CarregandoTela />;
+const naoEncontrada = <PaginaAviso tipo="nao-encontrada" />;
 
 // Abre a área e baixa as outras abas dela em segundo plano
 function Area({ nome, children }) {
@@ -38,30 +42,40 @@ function Inicio() {
   return <LandingPage />;
 }
 
+// A cada troca de tela, as leituras que ela fizer mostram o carregamento
+function MarcarNavegacao() {
+  const { pathname } = useLocation();
+  useEffect(() => marcarNavegacao(), [pathname]);
+  return null;
+}
+
 function Rotas() {
   return (
     // v7_startTransition: ao trocar de tela, a anterior continua na frente até a
     // nova estar baixada (sem tela branca nem "Carregando" piscando)
     <BrowserRouter future={{ v7_startTransition: true }}>
+      <MarcarNavegacao />
+      <TelaCarregando />
+      <LimiteDeErro>
+      <GuardaSistema>
       <RastreadorCliques>
-      {/* só aparece na primeira tela aberta, enquanto ela é baixada */}
-      <Suspense fallback={null}>
+      <Suspense fallback={carregando}>
       <Routes>
         <Route path="/" element={<Inicio />} />
         <Route path="/login" element={<LoginUser />} />
+        <Route path="/acesso-desativado" element={<AcessoDesativado />} />
         {/* gerente não cria conta: quem cadastra é o admin */}
         <Route path="/cadastro" element={<Navigate to="/login?perfil=gerente" replace />} />
         <Route path="/admin" element={<Area nome="admin"><Admin /></Area>}>
           <Route index element={<AdminDashboard />} />
           <Route path="medicamentos" element={<AdminMedicines />} />
           <Route path="chamados" element={<AdminRequests />} />
-          <Route path="desempenho" element={<Suspense fallback={carregando("Carregando o desempenho…")}><Desempenho /></Suspense>}>
-            <Route index element={<Suspense fallback={carregando("Carregando…")}><DesempenhoVisaoGeral /></Suspense>} />
-            <Route path="mapa-de-calor" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoMapaCalor /></Suspense>} />
-            <Route path="rotas" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoRotas /></Suspense>} />
-            <Route path="saude" element={<Suspense fallback={carregando("Carregando…")}><DesempenhoSaude /></Suspense>} />
+          <Route path="desempenho" element={<Suspense fallback={carregando}><Desempenho /></Suspense>}>
+            <Route index element={<Suspense fallback={carregando}><DesempenhoVisaoGeral /></Suspense>} />
+            <Route path="mapa-de-calor" element={<Suspense fallback={carregando}><DesempenhoMapaCalor /></Suspense>} />
+            <Route path="rotas" element={<Suspense fallback={carregando}><DesempenhoRotas /></Suspense>} />
+            <Route path="saude" element={<Suspense fallback={carregando}><DesempenhoSaude /></Suspense>} />
           </Route>
-          <Route path="simulacao" element={<Suspense fallback={carregando("Carregando o mapa…")}><AdminSimulacao /></Suspense>} />
           {["gerentes", "farmacias", "pacientes"].map((section) => (
             <Route
               key={section}
@@ -69,7 +83,6 @@ function Rotas() {
               element={<AdminDirectory key={section} section={section} />}
             />
           ))}
-          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
         <Route path="/funcionario" element={<Area nome="funcionario"><Employee /></Area>}>
           <Route index element={<EmployeeOverview />} />
@@ -77,10 +90,6 @@ function Rotas() {
           <Route path="servicos" element={<EmployeeServices />} />
           <Route path="remedios" element={<EmployeeMedicines />} />
           <Route path="chamados" element={<EmployeeTickets />} />
-          <Route
-            path="*"
-            element={<Navigate to="/funcionario" replace />}
-          />
         </Route>
         <Route path="/gerente" element={<Area nome="gerente"><Manager /></Area>}>
           <Route index element={<ManagerDashboard />} />
@@ -93,15 +102,22 @@ function Rotas() {
           <Route
             path="operacao"
             element={
-              <Suspense fallback={<p className="mgr-empty" role="status">Carregando a operação…</p>}>
+              <Suspense fallback={carregando}>
                 <ManagerOperacao />
               </Suspense>
             }
           />
         </Route>
+        {/* endereço que não existe (inclusive dentro das áreas) */}
+        <Route path="/admin/*" element={naoEncontrada} />
+        <Route path="/funcionario/*" element={naoEncontrada} />
+        <Route path="/gerente/*" element={naoEncontrada} />
+        <Route path="*" element={naoEncontrada} />
       </Routes>
       </Suspense>
       </RastreadorCliques>
+      </GuardaSistema>
+      </LimiteDeErro>
     </BrowserRouter>
   );
 }

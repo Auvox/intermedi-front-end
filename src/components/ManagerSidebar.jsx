@@ -173,7 +173,6 @@ export default function ManagerSidebar({
     { path: "pacientes", label: "Pacientes", icon: "heart" },
     { path: "chamados", label: "Solicitações", icon: "ticket" },
     { path: "desempenho", label: "Desempenho", icon: "chart" },
-    { path: "simulacao", label: "Simulação em tempo real", icon: "live" },
   ];
   const menuLinks = admin
     ? adminLinks

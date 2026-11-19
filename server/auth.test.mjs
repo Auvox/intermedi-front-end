@@ -173,6 +173,7 @@ test("normaliza a lista de gerentes recebida do endpoint GET", () => {
       farmaciaId: null,
       idEndereco: null,
       unit: "São Paulo",
+      ativo: true,
       status: "Ativo",
     },
     {
@@ -183,9 +184,16 @@ test("normaliza a lista de gerentes recebida do endpoint GET", () => {
       farmaciaId: null,
       idEndereco: null,
       unit: "Farmácia Jardim",
+      ativo: true,
       status: "Ativo",
     },
   ]);
+});
+
+test("gerente desativado no banco vem com ativo: false e status Desativado", () => {
+  const [gerente] = normalizeGerentes([{ idGerente: 3, nomeGerente: "Ana", ativo: 0 }]);
+  assert.equal(gerente.ativo, false);
+  assert.equal(gerente.status, "Desativado");
 });
 
 test("limita tentativas e rejeita payload inválido", async () => {

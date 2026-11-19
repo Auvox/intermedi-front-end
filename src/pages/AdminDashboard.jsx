@@ -8,6 +8,7 @@ import useApiList from "../hooks/useApiList";
 import { listarFarmacias, listarPacientes, listarRemedios, resumoFarmacia } from "../services/api";
 import { PERIODOS, numero, propsLinha } from "../services/perfil";
 import Ferramentas from "../components/Ferramentas";
+import BotaoExportarPdf from "../components/BotaoExportarPdf";
 import "../styles/adminDashboard.css";
 
 /*
@@ -185,6 +186,12 @@ export default function AdminDashboard() {
             ))}
           </select>
         </label>
+        {/* relatório geral em PDF: farmácias, equipes, pacientes, catálogo e solicitações */}
+        <BotaoExportarPdf
+          track="exportar-visao-geral-pdf"
+          // o gerador de PDF (jsPDF) só é baixado no clique
+          exportar={() => import("../services/exportarRelatorios").then((m) => m.exportarVisaoGeralPdf())}
+        />
       </header>
 
       {rede.error ? (

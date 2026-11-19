@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Ícone da Intermedi: o "i" em forma de pílula, branco sobre o verde da marca -->
+  <defs>
+    <clipPath id="metade-de-baixo"><rect x="0" y="40" width="64" height="24" /></clipPath>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#087f45" />
+  <circle cx="32" cy="13.5" r="6.5" fill="#fff" />
+  <rect x="23" y="24" width="18" height="33" rx="9" fill="none" stroke="#fff" stroke-width="4" />
+  <rect x="23" y="24" width="18" height="33" rx="9" fill="#fff" clip-path="url(#metade-de-baixo)" />
+</svg>

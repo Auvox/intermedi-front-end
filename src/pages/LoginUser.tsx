@@ -161,6 +161,16 @@ export default function LoginUser() {
     }
   }
 
+  // 423: credencial certa, mas a farmácia (ou a própria conta) foi desativada
+  // pelo admin. Em vez de uma frase no formulário, abre a página de aviso.
+  function abrirAvisoDesativado(error: any) {
+    if (error?.status !== 423) return false;
+    const conta = error?.dados?.codigo === "CONTA_DESATIVADA";
+    const nome = error?.dados?.nomeFarmacia ? `&nome=${encodeURIComponent(error.dados.nomeFarmacia)}` : "";
+    navigate(`/acesso-desativado?tipo=${conta ? "conta" : "farmacia"}${nome}`);
+    return true;
+  }
+
   async function processSubmit(event: FormEvent<HTMLFormElement>) {
 
     const form = event.currentTarget;
@@ -223,6 +233,7 @@ export default function LoginUser() {
         setMessage("");
         navigate("/funcionario", { replace: true });
       } catch (error: any) {
+        if (abrirAvisoDesativado(error)) return;
         setMessage(
           error?.status === 401
             ? "CPF ou matrícula incorretos."
@@ -295,6 +306,7 @@ export default function LoginUser() {
       await entrarComoGerente({ cpf, matricula });
       navigate("/gerente", { replace: true });
     } catch (error: any) {
+      if (abrirAvisoDesativado(error)) return;
       setMessage(
         error?.status === 401
           ? "CPF ou matrícula incorretos."

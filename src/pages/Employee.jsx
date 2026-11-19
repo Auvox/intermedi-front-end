@@ -32,6 +32,8 @@ import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 import "../styles/employee.css";
 import { SkeletonCartoes } from "../components/Skeleton";
+import useFarmaciaAtiva from "../hooks/useFarmaciaAtiva";
+import PaginaAviso from "./PaginaAviso";
 
 // Visual preview only. Replace these fixtures with intermedi-back-end data
 // when integrating authentication and server-side permissions.
@@ -90,6 +92,10 @@ export default function Employee() {
       document.title = "Intermedi";
     };
   }, []);
+
+  // farmácia desativada pelo admin: ninguém dela usa a plataforma
+  const farmacia = useFarmaciaAtiva(funcionario.idFarmacia ?? session?.farmaciasId);
+  if (farmacia.desativada) return <PaginaAviso tipo="farmacia-desativada" nomeFarmacia={farmacia.nome} />;
 
   return (
     <div className="mgr-shell emp-shell">
@@ -247,6 +253,7 @@ export function EmployeePatients() {
                 role="paciente"
                 nome={patient.name}
                 foto={patient.photo}
+                desativado={patient.ativo === false}
                 papel={`Paciente · código ${String(patient.id).toUpperCase()}`}
                 linhas={[
                   ["mail", patient.email],

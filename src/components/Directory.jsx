@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import ManagerIcon from "./ManagerIcon";
 import PersonaAvatar from "./PersonaAvatar";
@@ -36,14 +37,18 @@ const ROTULO_PAPEL = { paciente: "Paciente", funcionario: "Funcionário", gerent
 // Cartão de pessoa no formato do perfil dela: faixa colorida, avatar sobre a
 // faixa, nome, papel e dados de contato. O cartão inteiro abre o perfil.
 // linhas: [[ícone, texto]] · selo: status no canto · acoes: botões extras no rodapé
-export function CartaoPessoa({ role, nome, foto, papel, linhas = [], selo, acoes, onAbrir }) {
+// desativado: cartão em cinza com o selo "Desativado" (o cadastro continua no banco).
+// Clicar num desativado avisa que ele está desativado (ou chama onAbrirDesativado).
+export function CartaoPessoa({ role, nome, foto, papel, linhas = [], selo, acoes, onAbrir, desativado = false, onAbrirDesativado }) {
+  const [aviso, setAviso] = useState(false);
+  const abrir = !desativado ? onAbrir : onAbrirDesativado ?? (() => setAviso(true));
   return (
     <article
-      {...propsLinha((el) => onAbrir(el), `Abrir perfil de ${nome}`)}
-      className={`perfil-linha cartao-pessoa cartao-pessoa-${role}`}
+      {...propsLinha((el) => abrir(el), desativado ? `${nome} (desativado)` : `Abrir perfil de ${nome}`)}
+      className={`perfil-linha cartao-pessoa cartao-pessoa-${role}${desativado ? " is-desativado" : ""}`}
     >
       <div className="cartao-pessoa-faixa" aria-hidden="true" />
-      {selo && <span className="cartao-pessoa-selo">{selo}</span>}
+      {(selo || desativado) && <span className="cartao-pessoa-selo">{desativado ? <span className="selo-desativado">Desativado</span> : selo}</span>}
       <div className="cartao-pessoa-corpo">
         <PersonaAvatar className="cartao-pessoa-avatar" role={role} photo={foto} name={nome} />
         <p className="cartao-pessoa-papel">{papel || ROTULO_PAPEL[role]}</p>
@@ -57,11 +62,16 @@ export function CartaoPessoa({ role, nome, foto, papel, linhas = [], selo, acoes
         )}
       </div>
       <footer className="cartao-pessoa-rodape">
-        <button type="button" className="cartao-pessoa-ver" onClick={(e) => onAbrir(e.currentTarget.closest("article"))}>
-          Ver perfil <span aria-hidden="true">→</span>
+        <button type="button" className="cartao-pessoa-ver" onClick={(e) => abrir(e.currentTarget.closest("article"))}>
+          {desativado ? "Ver situação" : "Ver perfil"} <span aria-hidden="true">→</span>
         </button>
         {acoes}
       </footer>
+      {aviso && (
+        <p className="cartao-pessoa-aviso" role="alert" data-sem-perfil onClick={(e) => { e.stopPropagation(); setAviso(false); }}>
+          Este cadastro está desativado e não tem acesso à plataforma. <u>Ok</u>
+        </p>
+      )}
     </article>
   );
 }
@@ -73,36 +83,46 @@ export function GradePessoas({ children, rotulo }) {
 
 // Funcionários em cartões.
 // onAbrir(funcionario, elemento): o cartão e "Ver perfil" abrem o perfil.
-// onExcluir(funcionario): botão extra no rodapé.
-export function TeamTable({ employees, onAbrir, onExcluir }) {
+// onExcluir(funcionario): desativa (botão extra no rodapé).
+// onReativar(funcionario): aparece no lugar de "Desativar" quando já está desativado.
+export function TeamTable({ employees, onAbrir, onExcluir, onReativar }) {
   return (
     <GradePessoas rotulo="Funcionários">
-      {employees.map((employee) => (
-        <li key={employee.id}>
-          <CartaoPessoa
-            role="funcionario"
-            nome={employee.name}
-            foto={employee.photo}
-            papel={[employee.role, turno(employee.shift)].filter((v) => v && v !== "—").join(" · ")}
-            linhas={[
-              ["id", employee.matricula && `Matrícula ${employee.matricula}`],
-              ["mail", employee.email],
-              ["phone", employee.phone],
-            ]}
-            onAbrir={(el) => onAbrir?.(employee, el)}
-            acoes={onExcluir && (
-              <button
-                type="button"
-                className="cartao-pessoa-acao perigo"
-                aria-label={`Excluir ${employee.name}`}
-                onClick={() => onExcluir(employee)}
-              >
-                Excluir
-              </button>
-            )}
-          />
-        </li>
-      ))}
+      {employees.map((employee) => {
+        const desativado = employee.ativo === false;
+        return (
+          <li key={employee.id}>
+            <CartaoPessoa
+              role="funcionario"
+              nome={employee.name}
+              foto={employee.photo}
+              desativado={desativado}
+              papel={[employee.role, turno(employee.shift)].filter((v) => v && v !== "—").join(" · ")}
+              linhas={[
+                ["id", employee.matricula && `Matrícula ${employee.matricula}`],
+                ["mail", employee.email],
+                ["phone", employee.phone],
+              ]}
+              onAbrir={(el) => onAbrir?.(employee, el)}
+              onAbrirDesativado={(el) => onAbrir?.(employee, el)}
+              acoes={desativado ? onReativar && (
+                <button type="button" className="cartao-pessoa-acao" aria-label={`Reativar ${employee.name}`} onClick={() => onReativar(employee)}>
+                  Reativar
+                </button>
+              ) : onExcluir && (
+                <button
+                  type="button"
+                  className="cartao-pessoa-acao perigo"
+                  aria-label={`Desativar ${employee.name}`}
+                  onClick={() => onExcluir(employee)}
+                >
+                  Desativar
+                </button>
+              )}
+            />
+          </li>
+        );
+      })}
     </GradePessoas>
   );
 }

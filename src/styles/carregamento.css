@@ -1,0 +1,41 @@
+/* Tela de carregamento: a página continua visível por trás, borrada, e o
+   ícone da Intermedi fica no centro com o anel de processamento girando. */
+.carregando-tela {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 0s linear 180ms;
+}
+.carregando-tela.is-ativo {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  cursor: progress;
+  transition: opacity 180ms ease;
+}
+.carregando-icone { position: relative; display: grid; place-items: center; }
+.carregando-anel { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.carregando-anel-trilho { fill: none; stroke: rgb(8 127 69 / 0.15); stroke-width: 5; }
+.carregando-anel-giro {
+  fill: none;
+  stroke: #087f45;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 26 74;
+  transform-origin: 50% 50%;
+  animation: carregando-gira 0.9s linear infinite;
+}
+.carregando-pilula { width: 34%; height: auto; display: block; }
+@keyframes carregando-gira { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .carregando-anel-giro { animation-duration: 2.4s; }
+}

@@ -1060,3 +1060,10 @@ body.perfil-tela-cheia { overflow: hidden; }
   .ficha-fatos dl { grid-template-columns: minmax(0, 1fr); }
   .ficha-rede li { grid-template-columns: minmax(0, 1fr) 64px 48px; }
 }
+
+/* Chamado pendente: faixa com Aceitar/Recusar logo abaixo do cabeçalho */
+.rel-aceitar-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 0 20px; padding: 14px 18px; border: 1px solid #c5e4d1; border-left: 4px solid #16804a; border-radius: 10px; background: #f1f9f4; }
+.rel-aceitar-topo > p { margin: 0; color: #1f3a2b; font-size: 14px; }
+.rel-aceitar-topo .chamado-acoes { margin: 0; }
+.rel-aceitar-topo .mgr-modal-actions { margin: 0; }
+@media print { .rel-aceitar-topo { display: none; } }

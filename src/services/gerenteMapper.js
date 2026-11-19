@@ -24,7 +24,8 @@ export function normalizeGerentes(payload = []) {
       farmaciaId: manager.fkIdFarmacia ?? manager.idFarmacia ?? null,
       idEndereco: manager.idEndereco ?? null,
       unit,
-      status: manager.status || "Ativo",
+      ativo: manager.ativo !== 0,
+      status: manager.ativo === 0 ? "Desativado" : manager.status || "Ativo",
     };
   });
 }

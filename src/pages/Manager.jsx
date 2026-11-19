@@ -59,6 +59,7 @@ import {
   normalizeFuncionario,
   normalizePaciente,
   normalizeText,
+  reativarCadastro,
 } from "../services/api";
 import {
   formatDate,
@@ -69,6 +70,8 @@ import {
 import { primeiroNome } from "../services/nomes";
 import BoasVindas from "../components/BoasVindas";
 import { usePresenca } from "../services/presenca";
+import useFarmaciaAtiva from "../hooks/useFarmaciaAtiva";
+import PaginaAviso from "./PaginaAviso";
 import "../styles/manager.css";
 import "../styles/managerRefresh.css";
 
@@ -201,6 +204,9 @@ export default function Manager() {
       document.title = "Intermedi";
     };
   }, []);
+  // farmácia desativada pelo admin: ninguém dela usa a plataforma
+  const farmacia = useFarmaciaAtiva(gerente.idFarmacia ?? user?.idFarmacia);
+  if (farmacia.desativada) return <PaginaAviso tipo="farmacia-desativada" nomeFarmacia={farmacia.nome} />;
   return (
     <div className="mgr-shell">
       {gerente.temSessao && user && (
@@ -645,17 +651,18 @@ export function ManagerEmployees() {
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
         throw new Error(
-          result.error || "Não foi possível excluir o funcionário.",
+          result.error || "Não foi possível desativar o funcionário.",
         );
       }
+      // desativado não some: fica na lista, em cinza, e pode ser reativado
       setFuncionarios((current) =>
-        current.filter((item) => item.id !== employee.id),
+        current.map((item) => (item.id === employee.id ? { ...item, ativo: false } : item)),
       );
       setSelected(null);
       setConfirmDelete(false);
       setCadastroNotificacao(null);
       setDeleteNotice(
-        `${employee.name} · Matrícula: ${employee.matricula || "não informada"}. Funcionário excluído com sucesso.`,
+        `${employee.name} · Matrícula: ${employee.matricula || "não informada"}. Funcionário desativado: ele não entra mais na plataforma até ser reativado.`,
       );
     } catch (error) {
       setDeleteError(
@@ -759,8 +766,20 @@ export function ManagerEmployees() {
         ) : (
           <TeamTable
             employees={employees}
-            onAbrir={(employee, el) => abrirPerfil("funcionario", employee.id, el)}
+            onAbrir={(employee, el) =>
+              employee.ativo === false
+                ? setDeleteNotice(`${employee.name} está desativado. Use "Reativar" no cartão para liberar o acesso de novo.`)
+                : abrirPerfil("funcionario", employee.id, el)}
             onExcluir={(employee) => { setSelected(employee); setPeriod(""); setConfirmDelete(true); }}
+            onReativar={async (employee) => {
+              try {
+                await reativarCadastro("funcionario", employee.id);
+                setFuncionarios((current) => current.map((item) => (item.id === employee.id ? { ...item, ativo: true } : item)));
+                setDeleteNotice(`${employee.name} foi reativado e já pode entrar na plataforma.`);
+              } catch (error) {
+                setDeleteNotice(error.message || "Não foi possível reativar.");
+              }
+            }}
           />
         )}
         <p className="mgr-table-note">{employees.length} de {funcionarios.length} registros</p>
@@ -869,14 +888,14 @@ export function ManagerEmployees() {
                 disabled={selected.id == null}
                 onClick={() => setConfirmDelete(true)}
               >
-                Excluir funcionário
+                Desativar funcionário
               </button>
             ) : (
               <>
                 <p>
-                  Excluir <strong>{selected.name}</strong> (matrícula{" "}
-                  {selected.matricula || "não informada"})? Esta ação não pode
-                  ser desfeita.
+                  Desativar <strong>{selected.name}</strong> (matrícula{" "}
+                  {selected.matricula || "não informada"})? Ele perde o acesso,
+                  mas o cadastro continua salvo e pode ser reativado.
                 </p>
                 <div className="mgr-modal-actions">
                   <button
@@ -894,7 +913,7 @@ export function ManagerEmployees() {
                     disabled={deleting}
                     onClick={deleteEmployee}
                   >
-                    {deleting ? "Excluindo…" : "Confirmar exclusão"}
+                    {deleting ? "Desativando…" : "Confirmar"}
                   </button>
                 </div>
                 {deleteError && <p role="alert">{deleteError}</p>}
@@ -1002,6 +1021,7 @@ export function ManagerPatients() {
                     role="paciente"
                     nome={p.name}
                     foto={p.photo}
+                    desativado={p.ativo === false}
                     papel={p.frequentMedicine ? `Usa ${p.frequentMedicine}` : "Paciente"}
                     linhas={[
                       ["id", p.cpf && `CPF ${mascararCpf(p.cpf)}`],

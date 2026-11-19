@@ -123,6 +123,12 @@ export default function RelatorioChamado({ id }) {
   const [aviso, setAviso] = useState("");
   const [semFornecedor, setSemFornecedor] = useState(false);
   const c = estado.data;
+  // O gerente que está vendo é da farmácia do chamado? (pela lista de gerentes
+  // da unidade que vem no próprio chamado, sem depender da farmácia já carregada)
+  const gerenteDaUnidade = c && plataforma === "gerente" && (
+    (c.gerentes ?? []).some((g) => String(g.idGerente) === String(idGerenteAtual)) ||
+    (Boolean(idGerenteAtual) && String(c.farmacia?.idFarmacia) === String(idFarmaciaAtual))
+  );
   // acompanha sozinho enquanto há resposta pendente ou remédio a caminho
   const rastreaveis = c ? pedidosDoChamadoParaRastrear(c) : [];
   useAtualizacaoPeriodica(Boolean(c) && (c.status === "pendente" || rastreaveis.some(emAndamento)), estado.atualizar);
@@ -135,7 +141,7 @@ export default function RelatorioChamado({ id }) {
           raiz={raiz}
           enderecos={enderecos}
           abrirPerfil={abrirPerfil}
-          podeResponder={plataforma === "gerente" && Boolean(idGerenteAtual) && String(c.farmacia?.idFarmacia) === String(idFarmaciaAtual)}
+          podeResponder={Boolean(gerenteDaUnidade)}
           idGerente={idGerenteAtual}
           despacho={despacho}
           aviso={aviso}
@@ -199,6 +205,20 @@ function Relatorio({ c, raiz, enderecos, abrirPerfil, podeResponder, idGerente, 
             Imprimir / PDF
           </button>
         </header>
+
+        {/* chamado aguardando: aceitar direto, logo no topo do detalhe */}
+        {podeResponder && c.status === "pendente" && (
+          <div className="rel-aceitar-topo">
+            <p><strong>Aguardando sua decisão.</strong> Aceite para pedir os remédios às farmácias da rede.</p>
+            <ResponderChamado
+              chamado={c}
+              idGerente={idGerente}
+              avisoSemFornecedor={semFornecedor}
+              onRespondido={(_, resultado) => aoResponder(resultado)}
+              onConflito={aoConflito}
+            />
+          </div>
+        )}
 
         <div className="rel-titulo">
           <div>
@@ -316,15 +336,8 @@ function Relatorio({ c, raiz, enderecos, abrirPerfil, podeResponder, idGerente, 
           {c.status === "pendente" ? (
             podeResponder ? (
               <div className="rel-responder">
-                <p className="rel-vazio">Este chamado aguarda a sua decisão. Antes de aceitar, confira se a rede tem os remédios.</p>
+                <p className="rel-vazio">Este chamado aguarda a sua decisão. Veja abaixo quais farmácias da rede têm os remédios; o botão Aceitar fica no topo do relatório.</p>
                 <DisponibilidadeRede chamado={c} idGerente={idGerente} onCarregado={(dados) => setSemFornecedor(dados.todosTemFornecedor === false)} />
-                <ResponderChamado
-                  chamado={c}
-                  idGerente={idGerente}
-                  avisoSemFornecedor={semFornecedor}
-                  onRespondido={(_, resultado) => aoResponder(resultado)}
-                  onConflito={aoConflito}
-                />
               </div>
             ) : (
               <p className="rel-vazio">

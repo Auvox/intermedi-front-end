@@ -3,6 +3,7 @@ import ManagerIcon from "../../components/ManagerIcon";
 import useApiList from "../../hooks/useApiList";
 import useFiltrosDesempenho from "../../hooks/useFiltrosDesempenho";
 import { listarFarmacias } from "../../services/api";
+import BotaoExportarPdf from "../../components/BotaoExportarPdf";
 import "../../styles/desempenho.css";
 
 const SUB_ABAS = [
@@ -27,6 +28,11 @@ export default function Desempenho() {
           <h1>Desempenho</h1>
           <p>Como o sistema está sendo usado e se tudo está funcionando.</p>
         </div>
+        {/* relatório em PDF com tudo do desempenho, nos filtros escolhidos */}
+        <BotaoExportarPdf
+          track="exportar-desempenho-pdf"
+          exportar={() => import("../../services/exportarRelatorios").then((m) => m.exportarDesempenhoPdf(filtros, farmacias))}
+        />
       </header>
 
         <>

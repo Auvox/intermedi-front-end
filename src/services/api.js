@@ -12,6 +12,8 @@ export async function apiRequest(path, options = {}) {
     });
   } catch (error) {
     if (error?.name === "AbortError") throw error;
+    // GuardaSistema confere se o servidor caiu e mostra a página "fora do ar"
+    window.dispatchEvent(new Event("intermedi:fora-do-ar"));
     throw new Error(`Não foi possível conectar ao servidor (${API_URL}).`, { cause: error });
   }
   const payload = await response.json().catch(() => ({}));
@@ -19,7 +21,8 @@ export async function apiRequest(path, options = {}) {
     // status permite tratar casos específicos (ex.: 409 chamado já respondido)
     throw Object.assign(
       new Error(payload.error || payload.message || payload.mensagem || `Erro ${response.status} na API.`),
-      { status: response.status },
+      // dados: o corpo inteiro (ex.: codigo FARMACIA_DESATIVADA no login)
+      { status: response.status, dados: payload },
     );
   }
   return payload;
@@ -191,8 +194,15 @@ export function normalizePaciente(item) {
     state: item.estadoPaciente ?? item.estado ?? "",
     frequentMedicine: item.medicamentoFrequentePaciente ?? "",
     createdAt: item.createdAtPaciente ?? item.createdAt ?? "",
+    ativo: item.ativo !== 0,
   };
 }
+
+// Desativar (DELETE) não apaga do banco; reativar devolve o acesso
+export const desativarCadastro = (tipo, id) =>
+  apiRequest(`/${tipo}/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const reativarCadastro = (tipo, id) =>
+  apiRequest(`/${tipo}/${encodeURIComponent(id)}/reativar`, { method: "PUT" });
 
 export function normalizeFuncionario(item) {
   return {
@@ -205,6 +215,7 @@ export function normalizeFuncionario(item) {
     phone: item.telFuncionario ?? item.phone ?? "",
     matricula: item.matriculaFuncionario ?? item.matricula ?? "",
     farmaciaId: String(item.fkIdFarmacia ?? item.idFarmacia ?? item.farmaciaId ?? ""),
+    ativo: item.ativo !== 0,
   };
 }
 

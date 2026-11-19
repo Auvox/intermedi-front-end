@@ -154,6 +154,28 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
     setConfirmando(true);
   }
 
+  // Aceitar direto, num clique: o chamado vai para a rede na hora
+  async function aceitarDireto() {
+    if (envioEmCurso.current) return;
+    envioEmCurso.current = true;
+    setEnviando(true);
+    setErro("");
+    try {
+      const resposta = await responderChamado(chamado.idChamado, {
+        idGerente: Number(idGerente),
+        aceitar: true,
+        nomeGerenteConfirmacao: nomeGerente.trim(),
+      });
+      onRespondido(resposta.chamado, resposta.despacho ?? []);
+    } catch (error) {
+      setErro(error.message);
+      if (error.status === 409) onConflito?.(error.message);
+    } finally {
+      envioEmCurso.current = false;
+      setEnviando(false);
+    }
+  }
+
   async function enviar() {
     if (envioEmCurso.current || (aceitar && !nomeConfere)) return;
     envioEmCurso.current = true;
@@ -187,8 +209,10 @@ export function ResponderChamado({ chamado, idGerente, avisoSemFornecedor = fals
           </p>
         )}
         <div className="mgr-modal-actions">
-          <button type="button" className="mgr-primary" onClick={() => escolher("aceitar")} data-track="aceitar-chamado">Aceitar e pedir à rede</button>
-          <button type="button" className="mgr-delete-button chamado-recusar" onClick={() => escolher("recusar")} data-track="recusar-chamado">Recusar</button>
+          <button type="button" className="mgr-primary" disabled={enviando || !nomeGerente} onClick={aceitarDireto} data-track="aceitar-chamado">
+            {enviando ? "Aceitando…" : "Aceitar"}
+          </button>
+          <button type="button" className="mgr-delete-button chamado-recusar" disabled={enviando} onClick={() => escolher("recusar")} data-track="recusar-chamado">Recusar</button>
         </div>
       </div>
     );

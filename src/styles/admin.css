@@ -437,3 +437,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Botão "Exportar PDF" (Visão geral e Desempenho) */
+.exportar-pdf { display: grid; justify-items: end; gap: 4px; margin-left: auto; }
+.exportar-pdf-botao { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 16px; border: 1px solid #b9d8c4; border-radius: 999px; background: #fff; color: #0f5c34; font: 600 13px/1 var(--font-sans); cursor: pointer; }
+.exportar-pdf-botao:hover { background: #eef7f1; border-color: #16804a; }
+.exportar-pdf-botao:disabled { opacity: 0.7; cursor: progress; }
+.exportar-pdf-status { min-height: 14px; font-size: 12px; color: #4b5d52; }
